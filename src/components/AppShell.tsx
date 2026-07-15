@@ -52,22 +52,24 @@ export default function AppShell() {
   const totalSeeds = Object.values(seedsByOrigin).reduce((a, b) => a + b, 0);
 
   return (
-    <div className="min-h-dvh w-full pb-20">
-      {activeTab === "Origin" ? (
-        <OriginTab
-          gold={gold}
-          diamonds={diamonds}
-          totalSeeds={totalSeeds}
-          creatures={creatures}
-          freePacks={freePacks}
-          onSpendGold={(amount) => setGold((g) => g - amount)}
-          onSpendDiamonds={(amount) => setDiamonds((d) => d - amount)}
-          onSpendFreePack={() => setFreePacks((f) => f - 1)}
-          onApplyPull={applySlot2}
-        />
-      ) : (
-        <UnderConstruction tab={activeTab} />
-      )}
+    <div className="flex h-dvh w-full flex-col overflow-hidden bg-zinc-950 pt-[env(safe-area-inset-top)]">
+      <div className="min-h-0 flex-1 overflow-hidden">
+        {activeTab === "Origin" ? (
+          <OriginTab
+            gold={gold}
+            diamonds={diamonds}
+            totalSeeds={totalSeeds}
+            creatures={creatures}
+            freePacks={freePacks}
+            onSpendGold={(amount) => setGold((g) => g - amount)}
+            onSpendDiamonds={(amount) => setDiamonds((d) => d - amount)}
+            onSpendFreePack={() => setFreePacks((f) => f - 1)}
+            onApplyPull={applySlot2}
+          />
+        ) : (
+          <UnderConstruction tab={activeTab} />
+        )}
+      </div>
 
       <TabBar active={activeTab} onChange={setActiveTab} />
     </div>

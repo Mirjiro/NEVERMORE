@@ -70,7 +70,7 @@ export default function RevealFlow({ pull, onDismiss }: { pull: PullResult; onDi
   const slot2Content = getSlot2Content(pull.slot2);
 
   return (
-    <div className="relative flex w-full flex-1 flex-col items-center justify-center gap-4 py-4">
+    <div className="relative flex w-full flex-col items-center justify-center gap-4 py-4">
       <ScreenFlash signal={flashSignal} />
 
       {/* Full reveal-stage background: tapping anywhere here advances/collects */}

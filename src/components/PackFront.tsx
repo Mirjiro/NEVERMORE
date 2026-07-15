@@ -11,7 +11,7 @@ export default function PackFront({ packType }: { packType: PackType }) {
   return (
     <div
       className={cn(
-        "relative flex h-96 w-64 flex-col items-center justify-center overflow-hidden rounded-xl border-2 px-3 text-center sm:h-[28rem] sm:w-72",
+        "relative flex aspect-[4/5] h-[85%] max-h-[420px] w-auto flex-col items-center justify-center overflow-hidden rounded-xl border-2 px-4 text-center",
         PACK_BG,
       )}
     >

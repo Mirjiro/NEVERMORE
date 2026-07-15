@@ -11,8 +11,8 @@ export default function TabBar({
   onChange: (tab: TabName) => void;
 }) {
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-zinc-800 bg-zinc-950/95 backdrop-blur">
-      <div className="mx-auto flex w-full max-w-md items-stretch justify-between px-1 pb-[env(safe-area-inset-bottom)]">
+    <nav className="shrink-0 border-t border-zinc-800 bg-zinc-950/95">
+      <div className="mx-auto flex w-full max-w-md items-stretch justify-between px-1 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
         {TABS.map((tab) => {
           const isActive = tab.name === active;
           return (
