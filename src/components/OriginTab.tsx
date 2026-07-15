@@ -71,7 +71,7 @@ export default function OriginTab({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="flex w-full flex-col items-center"
+            className="flex w-full flex-1 flex-col items-center"
           >
             <RevealFlow pull={pull} onDismiss={() => setPull(null)} />
           </motion.div>
@@ -99,7 +99,7 @@ export default function OriginTab({
               <button
                 onClick={() => setInfoOpen(true)}
                 className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-zinc-600 font-serif text-sm italic text-zinc-300"
-                aria-label={`${activePack} Origin Pack rate info`}
+                aria-label={`${activePack} Origin Box rate info`}
               >
                 i
               </button>
@@ -107,7 +107,7 @@ export default function OriginTab({
 
             {!canAfford && (
               <p className="text-center text-xs text-zinc-500">
-                Not enough {config.currency} for {activePack === "Elite" ? "an" : "a"} {activePack} Origin Pack.
+                Not enough {config.currency} for {activePack === "Elite" ? "an" : "a"} {activePack} Origin Box.
               </p>
             )}
 
@@ -116,7 +116,7 @@ export default function OriginTab({
                 onClick={openFreePack}
                 className="w-full rounded-full border border-yellow-400/60 bg-yellow-400/10 px-6 py-3 text-sm font-semibold text-yellow-200 transition active:scale-95"
               >
-                Open Free Pack ({freePacks})
+                Open Free Origin Box ({freePacks})
               </button>
             )}
           </motion.div>

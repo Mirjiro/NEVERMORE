@@ -6,6 +6,20 @@ export const PACK_CONFIG: Record<PackType, { label: string; cost: number; curren
   Elite: { label: "Elite", cost: 100, currency: "Diamonds", available: true },
 };
 
+/** Concise product description shown in the Box-level info modal. */
+export const BOX_DESCRIPTIONS: Record<PackType, string> = {
+  Classic: "Contains one random Origin Pack with cards/bonus ranging from Common through Legendary.",
+  Elite: "Contains one random Origin Pack with cards/bonus ranging from Legendary through Forbidden.",
+};
+
+/**
+ * The "OriginCardPack" bonus outcome grants a free Classic Origin Box. Its
+ * display name is isolated here (rather than inlined at each call site) so
+ * it can be renamed safely later without hunting through components — its
+ * underlying type/logic is unchanged.
+ */
+export const ORIGIN_CARD_PACK_DISPLAY_NAME = "Free Origin Box";
+
 function weightedPick<T extends string>(table: Record<T, number>): T {
   const entries = Object.entries(table) as [T, number][];
   const total = entries.reduce((sum, [, weight]) => sum + weight, 0);

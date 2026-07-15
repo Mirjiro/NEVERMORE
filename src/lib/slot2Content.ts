@@ -1,5 +1,6 @@
 import type { Slot2Result } from "./types";
 import { RARITY_STYLES } from "./rarityStyles";
+import { ORIGIN_CARD_PACK_DISPLAY_NAME } from "./odds";
 
 export interface Slot2Content {
   icon: string;
@@ -41,8 +42,8 @@ export function getSlot2Content(slot2: Slot2Result): Slot2Content {
     case "OriginCardPack":
       return {
         icon: "🎁",
-        title: "Origin Card Pack!",
-        subtitle: "+1 Free Classic Pack",
+        title: `${ORIGIN_CARD_PACK_DISPLAY_NAME}!`,
+        subtitle: "+1 added to inventory",
         accent: "text-yellow-300",
       };
     case "Creature":

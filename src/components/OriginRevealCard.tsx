@@ -44,7 +44,7 @@ export default function OriginRevealCard({
           >
             <div className="font-serif text-base font-bold leading-tight tracking-wide text-zinc-100 sm:text-lg">
               <div>NEVERMORE:</div>
-              <div>ORIGIN PACK</div>
+              <div>ORIGIN BOX</div>
             </div>
             <div
               className={cn(
@@ -94,7 +94,7 @@ export default function OriginRevealCard({
           <button
             onClick={() => setInfoOpen(true)}
             className="flex h-7 w-7 items-center justify-center rounded-full border border-zinc-600 font-serif text-xs italic text-zinc-300"
-            aria-label={`What's in an ${origin} ${packType} Pack`}
+            aria-label={`${origin} Pack info`}
           >
             i
           </button>
