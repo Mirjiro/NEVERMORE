@@ -81,7 +81,7 @@ export default function OriginTab({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="flex w-full flex-col items-center gap-4"
+            className="flex w-full flex-1 flex-col items-center justify-center gap-3"
           >
             <PackCarousel active={activePack} onSwitch={setActivePack} />
 
