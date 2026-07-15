@@ -61,6 +61,7 @@ export default function AppShell() {
           creatures={creatures}
           freePacks={freePacks}
           onSpendGold={(amount) => setGold((g) => g - amount)}
+          onSpendDiamonds={(amount) => setDiamonds((d) => d - amount)}
           onSpendFreePack={() => setFreePacks((f) => f - 1)}
           onApplyPull={applySlot2}
         />

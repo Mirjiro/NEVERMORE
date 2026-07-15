@@ -1,14 +1,23 @@
-import { rollPull, ORIGIN_ODDS, RARITY_ODDS, SLOT2_ODDS } from "../src/lib/odds.ts";
+import {
+  rollPull,
+  ORIGIN_ODDS,
+  RARITY_ODDS_CLASSIC,
+  RARITY_ODDS_ELITE,
+  SLOT2_ODDS_CLASSIC,
+  SLOT2_ODDS_ELITE,
+  AMOUNT_RANGES,
+} from "../src/lib/odds.ts";
 import { CARD_POOL } from "../src/lib/cardPool.ts";
+import type { PackType } from "../src/lib/types.ts";
 
 /**
- * Simulates a large batch of pulls and checks the actual distribution
- * against the odds tables in src/lib/odds.ts, plus sanity-checks the card
- * pool data itself. Run with: npm run verify:odds
+ * Simulates large batches of pulls for both pack types and checks the actual
+ * distribution against the odds tables in src/lib/odds.ts, plus sanity-checks
+ * the card pool data itself. Run with: npm run verify:odds
  *
  * This exists to catch odds/data bugs (e.g. a Classic Pack somehow producing
- * a Mythic card, or a rarity cell missing a name) before they ship, since
- * nothing else in this client-only prototype would ever flag that.
+ * a Mythic card, or an Elite Gold drop outside its range) before they ship,
+ * since nothing else in this client-only prototype would ever flag that.
  */
 
 const SAMPLE_SIZE = 500_000;
@@ -42,33 +51,58 @@ function checkDistribution(
   }
 }
 
-console.log(`Simulating ${SAMPLE_SIZE.toLocaleString()} Classic Pack pulls...\n`);
+function verifyPackType(packType: PackType) {
+  console.log(`\n${"#".repeat(50)}\n${packType} Origin Pack — simulating ${SAMPLE_SIZE.toLocaleString()} pulls\n${"#".repeat(50)}`);
 
-const originCounts = tally(Object.keys(ORIGIN_ODDS));
-const rarityCounts = tally(Object.keys(RARITY_ODDS));
-const slot2Counts = tally(Object.keys(SLOT2_ODDS));
+  const rarityOdds = packType === "Elite" ? RARITY_ODDS_ELITE : RARITY_ODDS_CLASSIC;
+  const slot2Odds = packType === "Elite" ? SLOT2_ODDS_ELITE : SLOT2_ODDS_CLASSIC;
+  const { gold, diamonds } = AMOUNT_RANGES[packType];
 
-for (let i = 0; i < SAMPLE_SIZE; i++) {
-  const pull = rollPull();
-  originCounts[pull.origin]++;
-  rarityCounts[pull.rarity]++;
-  slot2Counts[pull.slot2.type]++;
+  const originCounts = tally(Object.keys(ORIGIN_ODDS));
+  const rarityCounts = tally(Object.keys(rarityOdds));
+  const slot2Counts = tally(Object.keys(slot2Odds));
+  let goldOutOfRange = 0;
+  let diamondsOutOfRange = 0;
+
+  for (let i = 0; i < SAMPLE_SIZE; i++) {
+    const pull = rollPull(packType);
+    originCounts[pull.origin]++;
+    rarityCounts[pull.rarity]++;
+    slot2Counts[pull.slot2.type]++;
+    if (pull.slot2.type === "Gold" && (pull.slot2.amount < gold[0] || pull.slot2.amount > gold[1])) {
+      goldOutOfRange++;
+    }
+    if (pull.slot2.type === "Diamonds" && (pull.slot2.amount < diamonds[0] || pull.slot2.amount > diamonds[1])) {
+      diamondsOutOfRange++;
+    }
+  }
+
+  console.log("\nOrigin distribution:");
+  checkDistribution("Origin", ORIGIN_ODDS, originCounts, SAMPLE_SIZE);
+
+  console.log("\nRarity distribution:");
+  checkDistribution("Rarity", rarityOdds, rarityCounts, SAMPLE_SIZE);
+
+  for (const [rarity, pct] of Object.entries(rarityOdds)) {
+    if (pct === 0 && rarityCounts[rarity] > 0) {
+      failures.push(`${packType} Rarity: "${rarity}" should be unreachable but got ${rarityCounts[rarity]} pulls.`);
+    }
+  }
+
+  console.log("\nSlot 2 distribution:");
+  checkDistribution("Slot2", slot2Odds, slot2Counts, SAMPLE_SIZE);
+
+  if (goldOutOfRange > 0) {
+    failures.push(`${packType} Gold: ${goldOutOfRange} drop(s) fell outside [${gold[0]}, ${gold[1]}]`);
+  }
+  if (diamondsOutOfRange > 0) {
+    failures.push(`${packType} Diamonds: ${diamondsOutOfRange} drop(s) fell outside [${diamonds[0]}, ${diamonds[1]}]`);
+  }
+  console.log(`\nAmount ranges: Gold out-of-range: ${goldOutOfRange}, Diamonds out-of-range: ${diamondsOutOfRange}`);
 }
 
-console.log("Origin distribution:");
-checkDistribution("Origin", ORIGIN_ODDS, originCounts, SAMPLE_SIZE);
-
-console.log("\nRarity distribution (Classic Pack):");
-checkDistribution("Rarity", RARITY_ODDS, rarityCounts, SAMPLE_SIZE);
-
-if (rarityCounts.Mythic > 0 || rarityCounts.Forbidden > 0) {
-  failures.push(
-    `Rarity: Classic Pack produced Mythic (${rarityCounts.Mythic}) or Forbidden (${rarityCounts.Forbidden}) pulls — these must be unreachable from this pack type.`,
-  );
-}
-
-console.log("\nSlot 2 distribution:");
-checkDistribution("Slot2", SLOT2_ODDS, slot2Counts, SAMPLE_SIZE);
+verifyPackType("Classic");
+verifyPackType("Elite");
 
 console.log("\nCard pool integrity:");
 let poolIssues = 0;

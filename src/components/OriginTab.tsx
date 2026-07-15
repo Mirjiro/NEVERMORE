@@ -3,10 +3,11 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { rollPull, PACK_CONFIG } from "@/lib/odds";
-import type { PullResult } from "@/lib/types";
+import type { PackType, PullResult } from "@/lib/types";
+import { cn } from "@/lib/cn";
 import InventoryBar from "./InventoryBar";
-import PackFront from "./PackFront";
-import InfoModal from "./InfoModal";
+import PackCarousel from "./PackCarousel";
+import PackInfoModal from "./PackInfoModal";
 import RevealFlow from "./RevealFlow";
 
 export default function OriginTab({
@@ -16,6 +17,7 @@ export default function OriginTab({
   creatures,
   freePacks,
   onSpendGold,
+  onSpendDiamonds,
   onSpendFreePack,
   onApplyPull,
 }: {
@@ -25,18 +27,23 @@ export default function OriginTab({
   creatures: number;
   freePacks: number;
   onSpendGold: (amount: number) => void;
+  onSpendDiamonds: (amount: number) => void;
   onSpendFreePack: () => void;
   onApplyPull: (pull: PullResult) => void;
 }) {
+  const [activePack, setActivePack] = useState<PackType>("Classic");
   const [pull, setPull] = useState<PullResult | null>(null);
   const [infoOpen, setInfoOpen] = useState(false);
 
-  const canAffordClassic = gold >= PACK_CONFIG.Classic.cost;
+  const config = PACK_CONFIG[activePack];
+  const balance = activePack === "Classic" ? gold : diamonds;
+  const canAfford = balance >= config.cost;
 
-  const openClassic = () => {
-    if (!canAffordClassic) return;
-    onSpendGold(PACK_CONFIG.Classic.cost);
-    const result = rollPull("Classic");
+  const openActivePack = () => {
+    if (!canAfford) return;
+    if (activePack === "Classic") onSpendGold(config.cost);
+    else onSpendDiamonds(config.cost);
+    const result = rollPull(activePack);
     onApplyPull(result);
     setPull(result);
   };
@@ -50,10 +57,9 @@ export default function OriginTab({
   };
 
   return (
-    <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col items-center gap-6 px-4 py-8">
+    <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col items-center gap-5 px-4 py-6">
       <header className="text-center">
         <h1 className="text-2xl font-bold tracking-wide text-zinc-50">NEVERMORE</h1>
-        <p className="mt-1 text-xs uppercase tracking-widest text-zinc-500">Origin</p>
       </header>
 
       <InventoryBar gold={gold} diamonds={diamonds} seeds={totalSeeds} creatures={creatures} />
@@ -77,31 +83,33 @@ export default function OriginTab({
             exit={{ opacity: 0 }}
             className="flex w-full flex-col items-center gap-4"
           >
-            <div className="flex w-full items-center justify-between">
-              <h2 className="text-sm font-semibold uppercase tracking-wider text-zinc-400">Origin Packs</h2>
+            <PackCarousel active={activePack} onSwitch={setActivePack} />
+
+            <div className="flex items-center gap-3">
+              <button
+                onClick={openActivePack}
+                disabled={!canAfford}
+                className={cn(
+                  "rounded-full px-6 py-3 text-sm font-bold text-zinc-950 transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-40",
+                  "bg-gradient-to-b from-zinc-100 to-zinc-300 shadow-lg shadow-black/40",
+                )}
+              >
+                {config.cost.toLocaleString()} {config.currency}
+              </button>
               <button
                 onClick={() => setInfoOpen(true)}
-                className="flex h-8 w-8 items-center justify-center rounded-full border border-zinc-600 font-serif text-sm italic text-zinc-300"
-                aria-label="Pack rate info"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-zinc-600 font-serif text-sm italic text-zinc-300"
+                aria-label={`${activePack} Origin Pack rate info`}
               >
                 i
               </button>
             </div>
 
-            <div className="grid w-full grid-cols-2 gap-3">
-              <PackFront
-                packType="Classic"
-                priceLabel={`${PACK_CONFIG.Classic.cost.toLocaleString()} Gold`}
-                onTap={canAffordClassic ? openClassic : undefined}
-                disabled={!canAffordClassic}
-              />
-              <PackFront
-                packType="Elite"
-                priceLabel={`${PACK_CONFIG.Elite.cost} Diamonds`}
-                disabled
-                disabledLabel="Coming Soon"
-              />
-            </div>
+            {!canAfford && (
+              <p className="text-center text-xs text-zinc-500">
+                Not enough {config.currency} for {activePack === "Elite" ? "an" : "a"} {activePack} Origin Pack.
+              </p>
+            )}
 
             {freePacks > 0 && (
               <button
@@ -111,17 +119,11 @@ export default function OriginTab({
                 Open Free Pack ({freePacks})
               </button>
             )}
-
-            {!canAffordClassic && freePacks === 0 && (
-              <p className="text-center text-xs text-zinc-500">
-                Not enough Gold for a Classic Origin Pack.
-              </p>
-            )}
           </motion.div>
         )}
       </AnimatePresence>
 
-      <InfoModal open={infoOpen} onClose={() => setInfoOpen(false)} />
+      <PackInfoModal open={infoOpen} packType={activePack} onClose={() => setInfoOpen(false)} />
     </div>
   );
 }

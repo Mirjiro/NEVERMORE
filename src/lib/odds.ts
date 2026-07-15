@@ -1,13 +1,9 @@
 import { pickCardName } from "./cardPool.ts";
 import type { Origin, PackType, PullResult, Rarity, Slot2Result } from "./types";
 
-/**
- * Elite's odds aren't in the spec yet — kept disabled in the UI until real
- * numbers are provided rather than guessed.
- */
 export const PACK_CONFIG: Record<PackType, { label: string; cost: number; currency: "Gold" | "Diamonds"; available: boolean }> = {
   Classic: { label: "Classic", cost: 5_000, currency: "Gold", available: true },
-  Elite: { label: "Elite", cost: 100, currency: "Diamonds", available: false },
+  Elite: { label: "Elite", cost: 100, currency: "Diamonds", available: true },
 };
 
 function weightedPick<T extends string>(table: Record<T, number>): T {
@@ -25,7 +21,7 @@ function randInt(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-/** Origin Drop Odds — Classic Pack rolls an Origin before rolling a card. */
+/** Origin Drop Odds — same table for both pack types. */
 export const ORIGIN_ODDS: Record<Origin, number> = {
   Royal: 30,
   Werewolf: 25,
@@ -37,7 +33,7 @@ export const ORIGIN_ODDS: Record<Origin, number> = {
 };
 
 /** Classic Pack rarity odds. Mythic/Forbidden never surface from this pack type. */
-export const RARITY_ODDS: Record<Rarity, number> = {
+export const RARITY_ODDS_CLASSIC: Record<Rarity, number> = {
   Common: 60,
   Rare: 30,
   Epic: 9,
@@ -46,9 +42,24 @@ export const RARITY_ODDS: Record<Rarity, number> = {
   Forbidden: 0,
 };
 
-type Slot2Outcome = "Card" | "Seed" | "Gold" | "Diamonds" | "OriginCardPack" | "Creature";
+/** Elite Pack rarity odds. Only the top three rarities ever surface. */
+export const RARITY_ODDS_ELITE: Record<Rarity, number> = {
+  Common: 0,
+  Rare: 0,
+  Epic: 0,
+  Legendary: 60,
+  Mythic: 35,
+  Forbidden: 5,
+};
 
-export const SLOT2_ODDS: Record<Slot2Outcome, number> = {
+export function getRarityOdds(packType: PackType): Record<Rarity, number> {
+  return packType === "Elite" ? RARITY_ODDS_ELITE : RARITY_ODDS_CLASSIC;
+}
+
+type ClassicSlot2Outcome = "Card" | "Seed" | "Gold" | "Diamonds" | "OriginCardPack" | "Creature";
+type EliteSlot2Outcome = "Card" | "Seed" | "Gold" | "Diamonds" | "Creature";
+
+export const SLOT2_ODDS_CLASSIC: Record<ClassicSlot2Outcome, number> = {
   Card: 50,
   Seed: 30,
   Gold: 15,
@@ -57,29 +68,45 @@ export const SLOT2_ODDS: Record<Slot2Outcome, number> = {
   Creature: 0.5,
 };
 
+/** Elite Slot 2 has no Origin Card Pack outcome. */
+export const SLOT2_ODDS_ELITE: Record<EliteSlot2Outcome, number> = {
+  Card: 50,
+  Seed: 25,
+  Gold: 10,
+  Diamonds: 10,
+  Creature: 5,
+};
+
+export function getSlot2Odds(packType: PackType): Record<string, number> {
+  return packType === "Elite" ? SLOT2_ODDS_ELITE : SLOT2_ODDS_CLASSIC;
+}
+
+/** Gold/Diamonds drop amount ranges, inclusive, per pack type. */
+export const AMOUNT_RANGES: Record<PackType, { gold: [number, number]; diamonds: [number, number] }> = {
+  Classic: { gold: [100, 5_000], diamonds: [1, 50] },
+  Elite: { gold: [10_000, 50_000], diamonds: [500, 1_000] },
+};
+
 export function rollOrigin(): Origin {
   return weightedPick(ORIGIN_ODDS);
 }
 
-export function rollRarity(): Rarity {
-  return weightedPick(RARITY_ODDS);
+export function rollRarity(packType: PackType = "Classic"): Rarity {
+  return weightedPick(getRarityOdds(packType));
 }
 
-function rollSlot2Outcome(): Slot2Outcome {
-  return weightedPick(SLOT2_ODDS);
-}
-
-function rollSlot2(origin: Origin, rarity: Rarity): Slot2Result {
-  const outcome = rollSlot2Outcome();
+function rollSlot2(origin: Origin, rarity: Rarity, packType: PackType): Slot2Result {
+  const { gold, diamonds } = AMOUNT_RANGES[packType];
+  const outcome = weightedPick(getSlot2Odds(packType)) as ClassicSlot2Outcome;
   switch (outcome) {
     case "Card":
       return { type: "Card", origin, rarity, name: pickCardName(origin, rarity) };
     case "Seed":
       return { type: "Seed", origin };
     case "Gold":
-      return { type: "Gold", amount: randInt(100, 5000) };
+      return { type: "Gold", amount: randInt(gold[0], gold[1]) };
     case "Diamonds":
-      return { type: "Diamonds", amount: randInt(1, 50) };
+      return { type: "Diamonds", amount: randInt(diamonds[0], diamonds[1]) };
     case "OriginCardPack":
       return { type: "OriginCardPack" };
     case "Creature":
@@ -90,8 +117,8 @@ function rollSlot2(origin: Origin, rarity: Rarity): Slot2Result {
 /** Runs the full pack pull: Origin roll -> Slot 1 card -> Slot 2 outcome. */
 export function rollPull(packType: PackType = "Classic"): PullResult {
   const origin = rollOrigin();
-  const rarity = rollRarity();
+  const rarity = rollRarity(packType);
   const slot1 = { origin, rarity, name: pickCardName(origin, rarity) };
-  const slot2 = rollSlot2(origin, rarity);
+  const slot2 = rollSlot2(origin, rarity, packType);
   return { packType, origin, rarity, slot1, slot2 };
 }

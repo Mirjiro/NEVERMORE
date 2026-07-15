@@ -1,5 +1,7 @@
 "use client";
 
+import { Fragment } from "react";
+
 export default function InventoryBar({
   gold,
   diamonds,
@@ -12,23 +14,22 @@ export default function InventoryBar({
   creatures: number;
 }) {
   const items = [
-    { icon: "🪙", label: "Gold", value: gold.toLocaleString() },
-    { icon: "💎", label: "Diamonds", value: diamonds.toLocaleString() },
-    { icon: "🌱", label: "Seeds", value: seeds.toLocaleString() },
-    { icon: "🐾", label: "Creatures", value: creatures.toLocaleString() },
+    { icon: "🪙", value: gold.toLocaleString() },
+    { icon: "💎", value: diamonds.toLocaleString() },
+    { icon: "🌱", value: seeds.toLocaleString() },
+    { icon: "🐾", value: creatures.toLocaleString() },
   ];
 
   return (
-    <div className="grid w-full max-w-xs grid-cols-2 gap-2 sm:max-w-sm sm:grid-cols-4">
-      {items.map((item) => (
-        <div
-          key={item.label}
-          className="flex flex-col items-center rounded-lg border border-zinc-800 bg-zinc-900/60 py-2"
-        >
-          <span className="text-base leading-none">{item.icon}</span>
-          <span className="mt-1 text-sm font-semibold text-zinc-100">{item.value}</span>
-          <span className="text-[10px] uppercase tracking-wide text-zinc-500">{item.label}</span>
-        </div>
+    <div className="flex w-full items-center justify-center gap-2 text-sm text-zinc-200 sm:gap-3">
+      {items.map((item, i) => (
+        <Fragment key={i}>
+          {i > 0 && <span className="text-zinc-700">·</span>}
+          <span className="flex items-center gap-1">
+            <span className="text-sm leading-none">{item.icon}</span>
+            <span className="font-semibold tabular-nums">{item.value}</span>
+          </span>
+        </Fragment>
       ))}
     </div>
   );

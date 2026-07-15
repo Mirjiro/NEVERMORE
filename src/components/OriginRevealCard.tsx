@@ -4,6 +4,8 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import type { Origin, PackType } from "@/lib/types";
 import { cn } from "@/lib/cn";
+import { ORIGIN_THEME } from "@/lib/originTheme";
+import OriginPackInfoModal from "./OriginPackInfoModal";
 
 const PACK_BG =
   "bg-[radial-gradient(ellipse_at_center,_#6b4423_0%,_#3b2415_55%,_#0d0805_100%)] border-amber-900/60";
@@ -18,6 +20,8 @@ export default function OriginRevealCard({
   onTapToReveal: () => void;
 }) {
   const [settled, setSettled] = useState(false);
+  const [infoOpen, setInfoOpen] = useState(false);
+  const theme = ORIGIN_THEME[origin];
 
   return (
     <div className="relative">
@@ -30,7 +34,7 @@ export default function OriginRevealCard({
           transition={{ duration: 0.9, ease: [0.25, 0.8, 0.3, 1] }}
           onAnimationComplete={() => setSettled(true)}
         >
-          {/* Front: pack placeholder art */}
+          {/* Front: pack placeholder art (not Origin-specific yet) */}
           <div
             className={cn(
               "absolute inset-0 flex flex-col items-center justify-center rounded-xl border-2 px-3 text-center",
@@ -52,11 +56,12 @@ export default function OriginRevealCard({
             </div>
           </div>
 
-          {/* Back: origin result */}
+          {/* Back: origin-specific cover */}
           <div
             className={cn(
               "absolute inset-0 flex flex-col items-center justify-center rounded-xl border-2 px-3 text-center",
-              PACK_BG,
+              theme.bg,
+              theme.border,
             )}
             style={{ backfaceVisibility: "hidden", transform: "rotateY(180deg)" }}
           >
@@ -77,15 +82,31 @@ export default function OriginRevealCard({
       </div>
 
       {settled && (
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: [0.5, 1, 0.5] }}
-          transition={{ opacity: { duration: 1.4, repeat: Infinity } }}
-          className="mt-4 text-center text-sm font-semibold uppercase tracking-widest text-zinc-300"
-        >
-          Tap To Reveal
-        </motion.p>
+        <div className="mt-4 flex flex-col items-center gap-2">
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: [0.5, 1, 0.5] }}
+            transition={{ opacity: { duration: 1.4, repeat: Infinity } }}
+            className="text-center text-sm font-semibold uppercase tracking-widest text-zinc-300"
+          >
+            Tap To Reveal
+          </motion.p>
+          <button
+            onClick={() => setInfoOpen(true)}
+            className="flex h-7 w-7 items-center justify-center rounded-full border border-zinc-600 font-serif text-xs italic text-zinc-300"
+            aria-label={`What's in an ${origin} ${packType} Pack`}
+          >
+            i
+          </button>
+        </div>
       )}
+
+      <OriginPackInfoModal
+        open={infoOpen}
+        origin={origin}
+        packType={packType}
+        onClose={() => setInfoOpen(false)}
+      />
     </div>
   );
 }
