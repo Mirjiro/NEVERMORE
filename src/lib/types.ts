@@ -15,6 +15,8 @@ export type Rarity =
   | "Mythic"
   | "Forbidden";
 
+export type PackType = "Classic" | "Elite";
+
 export interface CardSlot {
   origin: Origin;
   rarity: Rarity;
@@ -23,13 +25,14 @@ export interface CardSlot {
 
 export type Slot2Result =
   | { type: "Card"; origin: Origin; rarity: Rarity; name: string }
-  | { type: "Seed" }
+  | { type: "Seed"; origin: Origin }
   | { type: "Gold"; amount: number }
   | { type: "Diamonds"; amount: number }
   | { type: "OriginCardPack" }
   | { type: "Creature" };
 
 export interface PullResult {
+  packType: PackType;
   origin: Origin;
   rarity: Rarity;
   slot1: CardSlot;

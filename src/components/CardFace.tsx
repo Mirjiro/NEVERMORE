@@ -12,12 +12,15 @@ export default function CardFace({
   rarity,
   name,
   size = "lg",
+  reverse = false,
   onFlipComplete,
 }: {
   origin: Origin;
   rarity: Rarity;
   name: string;
   size?: "lg" | "sm";
+  /** Flips in from the opposite rotation direction, faster — used for the second reveal flip. */
+  reverse?: boolean;
   onFlipComplete?: () => void;
 }) {
   const [revealed, setRevealed] = useState(false);
@@ -33,11 +36,11 @@ export default function CardFace({
       <motion.div
         className="relative h-full w-full"
         style={{ transformStyle: "preserve-3d" }}
-        initial={{ rotateY: 180 }}
+        initial={{ rotateY: reverse ? -180 : 180 }}
         animate={{ rotateY: 0 }}
         transition={{
-          duration: style.flipDurationS,
-          delay: style.silenceBeatMs / 1000,
+          duration: reverse ? style.flipDurationS * 0.7 : style.flipDurationS,
+          delay: reverse ? 0 : style.silenceBeatMs / 1000,
           ease: [0.25, 0.8, 0.3, 1],
         }}
         onAnimationComplete={() => {

@@ -1,5 +1,14 @@
 import { pickCardName } from "./cardPool.ts";
-import type { Origin, PullResult, Rarity, Slot2Result } from "./types";
+import type { Origin, PackType, PullResult, Rarity, Slot2Result } from "./types";
+
+/**
+ * Elite's odds aren't in the spec yet — kept disabled in the UI until real
+ * numbers are provided rather than guessed.
+ */
+export const PACK_CONFIG: Record<PackType, { label: string; cost: number; currency: "Gold" | "Diamonds"; available: boolean }> = {
+  Classic: { label: "Classic", cost: 5_000, currency: "Gold", available: true },
+  Elite: { label: "Elite", cost: 100, currency: "Diamonds", available: false },
+};
 
 function weightedPick<T extends string>(table: Record<T, number>): T {
   const entries = Object.entries(table) as [T, number][];
@@ -66,7 +75,7 @@ function rollSlot2(origin: Origin, rarity: Rarity): Slot2Result {
     case "Card":
       return { type: "Card", origin, rarity, name: pickCardName(origin, rarity) };
     case "Seed":
-      return { type: "Seed" };
+      return { type: "Seed", origin };
     case "Gold":
       return { type: "Gold", amount: randInt(100, 5000) };
     case "Diamonds":
@@ -79,10 +88,10 @@ function rollSlot2(origin: Origin, rarity: Rarity): Slot2Result {
 }
 
 /** Runs the full pack pull: Origin roll -> Slot 1 card -> Slot 2 outcome. */
-export function rollPull(): PullResult {
+export function rollPull(packType: PackType = "Classic"): PullResult {
   const origin = rollOrigin();
   const rarity = rollRarity();
   const slot1 = { origin, rarity, name: pickCardName(origin, rarity) };
   const slot2 = rollSlot2(origin, rarity);
-  return { origin, rarity, slot1, slot2 };
+  return { packType, origin, rarity, slot1, slot2 };
 }
