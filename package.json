@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "verify:odds": "node --experimental-strip-types scripts/verify-odds.ts"
   },
   "dependencies": {
     "framer-motion": "^12.42.2",

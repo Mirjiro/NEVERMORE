@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Slot2Result } from "@/lib/types";
+import type { Slot2Result } from "@/lib/types";
 import { RARITY_STYLES } from "@/lib/rarityStyles";
 import { cn } from "@/lib/cn";
 

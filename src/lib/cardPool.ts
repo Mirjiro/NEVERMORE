@@ -1,4 +1,4 @@
-import { Origin, Rarity } from "./types";
+import type { Origin, Rarity } from "./types";
 
 /**
  * Two names per Origin/Rarity cell (original Card name + merged former Item

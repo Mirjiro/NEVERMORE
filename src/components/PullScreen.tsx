@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from "react";
 import { rollPull } from "@/lib/odds";
-import { PullResult, Rarity } from "@/lib/types";
+import type { PullResult, Rarity } from "@/lib/types";
 import { RARITY_STYLES } from "@/lib/rarityStyles";
 import { playRaritySound } from "@/lib/sound";
 import { cn } from "@/lib/cn";

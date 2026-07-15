@@ -1,4 +1,4 @@
-import { Rarity } from "./types";
+import type { Rarity } from "./types";
 
 export type ParticleLevel = "none" | "subtle" | "burst" | "storm";
 

@@ -1,5 +1,5 @@
-import { pickCardName } from "./cardPool";
-import { Origin, PullResult, Rarity, Slot2Result } from "./types";
+import { pickCardName } from "./cardPool.ts";
+import type { Origin, PullResult, Rarity, Slot2Result } from "./types";
 
 function weightedPick<T extends string>(table: Record<T, number>): T {
   const entries = Object.entries(table) as [T, number][];

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Origin, Rarity } from "@/lib/types";
+import type { Origin, Rarity } from "@/lib/types";
 import { RARITY_STYLES } from "@/lib/rarityStyles";
 import { cn } from "@/lib/cn";
 import ParticleBurst from "./ParticleBurst";
