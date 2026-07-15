@@ -7,12 +7,13 @@ const PACK_BG =
   "bg-[radial-gradient(ellipse_at_center,_#6b4423_0%,_#3b2415_55%,_#0d0805_100%)] border-amber-900/60";
 
 /** Placeholder Box art (brown/vignette background + wordmark) until real art ships. */
-export default function PackFront({ packType }: { packType: PackType }) {
+export default function PackFront({ packType, active = true }: { packType: PackType; active?: boolean }) {
   return (
     <div
       className={cn(
-        "relative flex aspect-[4/5] h-[85%] max-h-[420px] w-auto flex-col items-center justify-center overflow-hidden rounded-xl border-2 px-4 text-center",
+        "relative flex aspect-[4/5] h-[92%] max-h-[480px] w-auto flex-col items-center justify-center overflow-hidden rounded-xl border-2 px-4 text-center",
         PACK_BG,
+        active && "shadow-[0_0_32px_-4px_rgba(217,150,60,0.45)]",
       )}
     >
       <div className="font-serif text-lg font-bold leading-tight tracking-wide text-zinc-100 sm:text-xl">

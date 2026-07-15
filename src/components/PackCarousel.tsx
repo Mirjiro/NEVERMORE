@@ -89,13 +89,13 @@ export default function PackCarousel({
             >
               <div
                 className={cn(
-                  "flex h-full items-center justify-center rounded-xl py-4 transition-all duration-300 ease-out",
+                  "flex h-full items-center justify-center py-4 transition-all duration-300 ease-out",
                   isActive
-                    ? "scale-100 opacity-100 shadow-[0_0_32px_-4px_rgba(217,150,60,0.45)] blur-none"
+                    ? "scale-100 opacity-100 blur-none"
                     : "pointer-events-none scale-[0.82] opacity-30 blur-[3px] saturate-50",
                 )}
               >
-                <PackFront packType={pack} />
+                <PackFront packType={pack} active={isActive} />
               </div>
             </div>
           );
