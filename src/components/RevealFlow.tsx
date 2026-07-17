@@ -2,7 +2,7 @@
 
 import { useCallback, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import type { PullResult } from "@/lib/types";
+import type { CreatureRarity, PullResult } from "@/lib/types";
 import { RARITY_STYLES } from "@/lib/rarityStyles";
 import { getSlot2Content } from "@/lib/slot2Content";
 import { playRaritySound } from "@/lib/sound";
@@ -10,6 +10,7 @@ import { cn } from "@/lib/cn";
 import OriginRevealCard from "./OriginRevealCard";
 import CardFace from "./CardFace";
 import Slot2Card from "./Slot2Card";
+import CreatureCard from "./CreatureCard";
 import ScreenFlash, { FlashSignal } from "./ScreenFlash";
 
 type Stage = "origin" | "rewards";
@@ -58,6 +59,11 @@ export default function RevealFlow({ pull, onDismiss }: { pull: PullResult; onDi
     }
   };
 
+  const handleCreatureRevealed = (rarity: CreatureRarity) => {
+    playRaritySound(rarity);
+    setFlashSignal({ key: Date.now(), type: "pink" });
+  };
+
   if (stage === "origin") {
     return (
       <div className="flex w-full flex-col items-center justify-center gap-3 py-4">
@@ -68,6 +74,10 @@ export default function RevealFlow({ pull, onDismiss }: { pull: PullResult; onDi
 
   const slot1Style = RARITY_STYLES[pull.slot1.rarity];
   const slot2Content = getSlot2Content(pull.slot2);
+
+  function handleBonusCreatureRevealed() {
+    if (pull.slot2.type === "Creature") handleCreatureRevealed(pull.slot2.rarity);
+  }
 
   return (
     <div className="relative flex w-full flex-col items-center justify-center gap-4 py-4">
@@ -124,6 +134,8 @@ export default function RevealFlow({ pull, onDismiss }: { pull: PullResult; onDi
           >
             {pull.slot2.type === "Card" ? (
               <CardFace origin={pull.slot2.origin} rarity={pull.slot2.rarity} name={pull.slot2.name} />
+            ) : pull.slot2.type === "Creature" ? (
+              <CreatureCard creature={pull.slot2} onFlipComplete={handleBonusCreatureRevealed} />
             ) : (
               <Slot2Card slot2={pull.slot2} />
             )}

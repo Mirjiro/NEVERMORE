@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import type { PackType, PullResult, Rarity } from "@/lib/types";
+import type { CreatureRarity, PackType, PullResult, Rarity } from "@/lib/types";
 import { RARITY_STYLES, RARITY_ORDER } from "@/lib/rarityStyles";
 import { getSlot2Content, getBonusToastText } from "@/lib/slot2Content";
 import { ORIGIN_CARD_PACK_DISPLAY_NAME } from "@/lib/odds";
@@ -10,6 +10,7 @@ import { playRaritySound } from "@/lib/sound";
 import { cn } from "@/lib/cn";
 import CardFace from "./CardFace";
 import Slot2Card from "./Slot2Card";
+import CreatureCard from "./CreatureCard";
 import OriginRevealCard from "./OriginRevealCard";
 import ScreenFlash, { FlashSignal } from "./ScreenFlash";
 
@@ -54,6 +55,11 @@ export default function RevealDeck({ pulls, onDismiss }: { pulls: PullResult[]; 
     }
   };
 
+  const handleCreatureRevealed = (rarity: CreatureRarity) => {
+    playRaritySound(rarity);
+    setFlashSignal({ key: Date.now(), type: "pink" });
+  };
+
   function advance() {
     if (locked.current) return;
     locked.current = true;
@@ -95,6 +101,8 @@ export default function RevealDeck({ pulls, onDismiss }: { pulls: PullResult[]; 
       handleCardRevealed(item.pull.slot1.rarity);
     } else if (bonus.type === "Card") {
       handleCardRevealed(bonus.rarity);
+    } else if (bonus.type === "Creature") {
+      handleCreatureRevealed(bonus.rarity);
     }
   }
 
@@ -162,6 +170,8 @@ export default function RevealDeck({ pulls, onDismiss }: { pulls: PullResult[]; 
               />
             ) : bonus.type === "Card" ? (
               <CardFace origin={bonus.origin} rarity={bonus.rarity} name={bonus.name} onFlipComplete={revealCurrentCard} />
+            ) : bonus.type === "Creature" ? (
+              <CreatureCard creature={bonus} onFlipComplete={revealCurrentCard} />
             ) : (
               <Slot2Card slot2={bonus} />
             )}
@@ -219,7 +229,7 @@ function DeckSummary({ pulls, onDismiss }: { pulls: PullResult[]; onDismiss: () 
   let totalGold = 0;
   let totalDiamonds = 0;
   let totalSeeds = 0;
-  let totalCreatures = 0;
+  const creatureNames: string[] = [];
   let totalFreeBoxes = 0;
 
   for (const pull of pulls) {
@@ -239,7 +249,7 @@ function DeckSummary({ pulls, onDismiss }: { pulls: PullResult[]; onDismiss: () 
         totalSeeds += 1;
         break;
       case "Creature":
-        totalCreatures += 1;
+        creatureNames.push(bonus.name);
         break;
       case "OriginCardPack":
         totalFreeBoxes += 1;
@@ -280,11 +290,11 @@ function DeckSummary({ pulls, onDismiss }: { pulls: PullResult[]; onDismiss: () 
           }
         : null,
     creature: () =>
-      totalCreatures > 0
+      creatureNames.length > 0
         ? {
             key: "creature",
-            accent: getSlot2Content({ type: "Creature" }).accent,
-            title: `+${totalCreatures} Creature${totalCreatures > 1 ? "s" : ""}`,
+            accent: "text-pink-300",
+            title: creatureNames.join(", "),
             subtitle: "added to inventory",
           }
         : null,

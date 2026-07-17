@@ -1,4 +1,5 @@
 import { pickCardName } from "./cardPool.ts";
+import { CREATURE_NAMES, CREATURE_RARITY_ODDS } from "./creatures.ts";
 import type { Origin, PackType, PullResult, Rarity, Slot2Result } from "./types";
 
 export const PACK_CONFIG: Record<
@@ -130,8 +131,10 @@ function rollSlot2(origin: Origin, packType: PackType): Slot2Result {
       return { type: "Diamonds", amount: randInt(diamonds[0], diamonds[1]) };
     case "OriginCardPack":
       return { type: "OriginCardPack" };
-    case "Creature":
-      return { type: "Creature" };
+    case "Creature": {
+      const creatureRarity = weightedPick(CREATURE_RARITY_ODDS);
+      return { type: "Creature", origin, rarity: creatureRarity, name: CREATURE_NAMES[origin][creatureRarity] };
+    }
   }
 }
 

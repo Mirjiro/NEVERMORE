@@ -8,6 +8,7 @@ import {
   AMOUNT_RANGES,
 } from "../src/lib/odds.ts";
 import { CARD_POOL } from "../src/lib/cardPool.ts";
+import { CREATURE_NAMES, CREATURE_RARITY_ODDS } from "../src/lib/creatures.ts";
 import type { PackType } from "../src/lib/types.ts";
 
 /**
@@ -36,12 +37,13 @@ function checkDistribution(
   odds: Record<string, number>,
   counts: Record<string, number>,
   total: number,
+  tolerancePP: number = TOLERANCE_PP,
 ) {
   for (const key of Object.keys(odds)) {
     const expectedPct = odds[key];
     const actualPct = ((counts[key] ?? 0) / total) * 100;
     const diff = Math.abs(actualPct - expectedPct);
-    const ok = diff <= TOLERANCE_PP;
+    const ok = diff <= tolerancePP;
     console.log(
       `  ${key.padEnd(16)} expected ${expectedPct.toFixed(2).padStart(6)}%  actual ${actualPct.toFixed(2).padStart(6)}%  ${ok ? "OK" : "FAIL"}`,
     );
@@ -62,10 +64,13 @@ function verifyPackType(packType: PackType) {
   const rarityCounts = tally(Object.keys(rarityOdds));
   const slot2Counts = tally(Object.keys(slot2Odds));
   const bonusCardRarityCounts = tally(Object.keys(rarityOdds));
+  const creatureRarityCounts = tally(Object.keys(CREATURE_RARITY_ODDS));
   let goldOutOfRange = 0;
   let diamondsOutOfRange = 0;
   let bonusCardSamples = 0;
   let bonusCardMatchesSlot1 = 0;
+  let creatureSamples = 0;
+  let creatureNameMismatches = 0;
 
   for (let i = 0; i < SAMPLE_SIZE; i++) {
     const pull = rollPull(packType);
@@ -82,6 +87,11 @@ function verifyPackType(packType: PackType) {
       bonusCardRarityCounts[pull.slot2.rarity]++;
       bonusCardSamples++;
       if (pull.slot2.rarity === pull.rarity) bonusCardMatchesSlot1++;
+    }
+    if (pull.slot2.type === "Creature") {
+      creatureRarityCounts[pull.slot2.rarity]++;
+      creatureSamples++;
+      if (pull.slot2.name !== CREATURE_NAMES[pull.slot2.origin][pull.slot2.rarity]) creatureNameMismatches++;
     }
   }
 
@@ -120,6 +130,16 @@ function verifyPackType(packType: PackType) {
       `${packType} Bonus Card: rarity matches Slot 1 ${(matchRate * 100).toFixed(1)}% of the time — looks like it's copying Slot 1 instead of rolling independently.`,
     );
   }
+
+  console.log("\nCreature bonus rarity distribution (Legendary/Mythic/Forbidden):");
+  // Creature is itself a rare Slot 2 outcome (0.5%-5%), so this sub-sample is
+  // much smaller than the others (~2.5K-25K vs 500K) — wider tolerance to
+  // avoid flagging ordinary sampling noise as a false failure.
+  checkDistribution("CreatureRarity", CREATURE_RARITY_ODDS, creatureRarityCounts, creatureSamples, 3);
+  console.log(`  Creature name matches its Origin/Rarity cell: ${creatureSamples - creatureNameMismatches}/${creatureSamples}`);
+  if (creatureNameMismatches > 0) {
+    failures.push(`${packType} Creature: ${creatureNameMismatches} sample(s) had a name not matching CREATURE_NAMES.`);
+  }
 }
 
 verifyPackType("Classic");
@@ -142,6 +162,30 @@ console.log(
   poolIssues === 0
     ? `  all ${cellCount} Origin/Rarity cells have 2 distinct names — OK`
     : `  ${poolIssues} issue(s) found across ${cellCount} cells`,
+);
+
+console.log("\nCreature name pool integrity:");
+const allCreatureNames: string[] = [];
+let creaturePoolIssues = 0;
+for (const [origin, rarities] of Object.entries(CREATURE_NAMES)) {
+  for (const [rarity, name] of Object.entries(rarities)) {
+    if (!name || typeof name !== "string") {
+      failures.push(`CreatureNames: ${origin}/${rarity} has an invalid name: "${name}"`);
+      creaturePoolIssues++;
+    } else {
+      allCreatureNames.push(name);
+    }
+  }
+}
+const duplicateCreatureNames = allCreatureNames.filter((name, i) => allCreatureNames.indexOf(name) !== i);
+if (duplicateCreatureNames.length > 0) {
+  failures.push(`CreatureNames: duplicate name(s) across cells: ${[...new Set(duplicateCreatureNames)].join(", ")}`);
+  creaturePoolIssues++;
+}
+console.log(
+  creaturePoolIssues === 0
+    ? `  all ${allCreatureNames.length} creature names present and unique — OK`
+    : `  ${creaturePoolIssues} issue(s) found`,
 );
 
 console.log("\n" + "=".repeat(50));

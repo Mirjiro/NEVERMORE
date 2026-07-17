@@ -15,6 +15,9 @@ export type Rarity =
   | "Mythic"
   | "Forbidden";
 
+/** Creatures only ever roll among the top three rarities. */
+export type CreatureRarity = "Legendary" | "Mythic" | "Forbidden";
+
 export type PackType = "Classic" | "Elite";
 
 export interface CardSlot {
@@ -29,7 +32,7 @@ export type Slot2Result =
   | { type: "Gold"; amount: number }
   | { type: "Diamonds"; amount: number }
   | { type: "OriginCardPack" }
-  | { type: "Creature" };
+  | { type: "Creature"; origin: Origin; rarity: CreatureRarity; name: string };
 
 export interface PullResult {
   packType: PackType;
