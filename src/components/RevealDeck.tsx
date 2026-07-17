@@ -1,10 +1,10 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
-import { motion } from "framer-motion";
+import { useRef, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import type { PullResult } from "@/lib/types";
-import { RARITY_STYLES } from "@/lib/rarityStyles";
-import { getSlot2Content } from "@/lib/slot2Content";
+import { RARITY_STYLES, RARITY_ORDER } from "@/lib/rarityStyles";
+import { getSlot2Content, getBonusToastText } from "@/lib/slot2Content";
 import { playRaritySound } from "@/lib/sound";
 import { cn } from "@/lib/cn";
 import CardFace from "./CardFace";
@@ -12,35 +12,33 @@ import Slot2Card from "./Slot2Card";
 import ScreenFlash, { FlashSignal } from "./ScreenFlash";
 
 type DeckItem = { kind: "card" | "bonus"; pull: PullResult };
+type Toast = { key: number; text: string; leftPercent: number };
 
 const SWIPE_THRESHOLD = 70;
 const ADVANCE_LOCK_MS = 250;
+const TOAST_DURATION_S = 1.6;
 
 /**
- * Sequential one-at-a-time reveal for a batch of pulls (x10 opens): 10
- * guaranteed cards + 10 bonuses, interleaved per pull. Unlike the single-pull
- * RevealFlow this is forward-only — a revealed item is discarded on advance,
- * not something you can swipe back to.
+ * Sequential one-at-a-time reveal for a batch of pulls (x10 opens): the 10
+ * guaranteed cards first — lowest rarity to highest — then the 10 bonuses.
+ * Unlike the single-pull RevealFlow this is forward-only — a revealed item is
+ * discarded on advance, not something you can swipe back to.
  */
 export default function RevealDeck({ pulls, onDismiss }: { pulls: PullResult[]; onDismiss: () => void }) {
-  const items: DeckItem[] = pulls.flatMap((pull) => [
-    { kind: "card" as const, pull },
-    { kind: "bonus" as const, pull },
-  ]);
+  const guaranteedCount = pulls.length;
+  const sortedPulls = [...pulls].sort(
+    (a, b) => RARITY_ORDER.indexOf(a.slot1.rarity) - RARITY_ORDER.indexOf(b.slot1.rarity),
+  );
+  const items: DeckItem[] = [
+    ...sortedPulls.map((pull) => ({ kind: "card" as const, pull })),
+    ...sortedPulls.map((pull) => ({ kind: "bonus" as const, pull })),
+  ];
   const total = items.length;
 
   const [current, setCurrent] = useState(0);
   const [flashSignal, setFlashSignal] = useState<FlashSignal | null>(null);
+  const [toast, setToast] = useState<Toast | null>(null);
   const locked = useRef(false);
-
-  const advance = useCallback(() => {
-    if (locked.current) return;
-    locked.current = true;
-    setCurrent((c) => Math.min(c + 1, total));
-    setTimeout(() => {
-      locked.current = false;
-    }, ADVANCE_LOCK_MS);
-  }, [total]);
 
   const handleCardRevealed = (rarity: PullResult["rarity"]) => {
     playRaritySound(rarity);
@@ -50,12 +48,32 @@ export default function RevealDeck({ pulls, onDismiss }: { pulls: PullResult[]; 
     }
   };
 
+  function advance() {
+    if (locked.current) return;
+    locked.current = true;
+
+    const next = Math.min(current + 1, total);
+    // Fire the pickup toast the moment a bonus is revealed, not on the swipe
+    // that dismisses it — that way the very last bonus's toast still gets to
+    // play out on the deck stage instead of being cut off by the summary.
+    if (next < total && next >= guaranteedCount) {
+      const upcoming = items[next];
+      setToast({ key: next, text: getBonusToastText(upcoming.pull.slot2), leftPercent: 20 + Math.random() * 60 });
+    }
+    setCurrent(next);
+
+    setTimeout(() => {
+      locked.current = false;
+    }, ADVANCE_LOCK_MS);
+  }
+
   if (current >= total) {
     return <DeckSummary pulls={pulls} onDismiss={onDismiss} />;
   }
 
   const item = items[current];
   const bonus = item.pull.slot2;
+  const isBonusRound = current >= guaranteedCount;
 
   function revealCurrentCard() {
     if (item.kind === "card") {
@@ -84,6 +102,16 @@ export default function RevealDeck({ pulls, onDismiss }: { pulls: PullResult[]; 
       />
 
       <div className="relative z-10 flex flex-col items-center gap-3" onClick={advance}>
+        {isBonusRound && (
+          <motion.p
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-sm font-bold uppercase tracking-[0.35em] text-yellow-300 [text-shadow:0_0_12px_rgba(250,204,21,0.85)]"
+          >
+            Bonus
+          </motion.p>
+        )}
+
         {/* Decorative deck stack behind the current item */}
         <div className="relative">
           <div className="pointer-events-none absolute left-2 top-2 h-80 w-56 rounded-xl border-2 border-zinc-800 bg-zinc-900/40 sm:h-96 sm:w-64" />
@@ -112,6 +140,25 @@ export default function RevealDeck({ pulls, onDismiss }: { pulls: PullResult[]; 
               <Slot2Card slot2={bonus} />
             )}
           </motion.div>
+        </div>
+
+        {/* Bonus pickup confirmation — random horizontal spot, slow fade, never replays. */}
+        <div className="relative h-6 w-56 sm:w-64">
+          <AnimatePresence>
+            {toast && (
+              <motion.span
+                key={toast.key}
+                initial={{ opacity: 0, y: 0 }}
+                animate={{ opacity: [0, 1, 1, 0], y: -18 }}
+                transition={{ duration: TOAST_DURATION_S, times: [0, 0.15, 0.75, 1], ease: "easeOut" }}
+                onAnimationComplete={() => setToast(null)}
+                className="absolute top-0 whitespace-nowrap text-sm font-bold text-yellow-300 [text-shadow:0_0_8px_rgba(250,204,21,0.7)]"
+                style={{ left: `${toast.leftPercent}%`, transform: "translateX(-50%)" }}
+              >
+                {toast.text}
+              </motion.span>
+            )}
+          </AnimatePresence>
         </div>
 
         <span className="text-xs uppercase tracking-widest text-zinc-500">

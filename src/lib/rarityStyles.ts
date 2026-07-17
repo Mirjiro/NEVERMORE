@@ -22,6 +22,9 @@ export interface RarityStyle {
   flipDurationS: number;
 }
 
+/** Ascending order for sorting reveal sequences — lowest tier first, highest last. */
+export const RARITY_ORDER: Rarity[] = ["Common", "Rare", "Epic", "Legendary", "Mythic", "Forbidden"];
+
 export const RARITY_STYLES: Record<Rarity, RarityStyle> = {
   Common: {
     label: "Common",
