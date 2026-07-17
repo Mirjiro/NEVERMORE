@@ -47,7 +47,12 @@ export function getSlot2Content(slot2: Slot2Result): Slot2Content {
         accent: "text-yellow-300",
       };
     case "Creature":
-      return { icon: "🐾", title: "Creature", subtitle: "+1 added to inventory", accent: "text-rose-300" };
+      return {
+        icon: "🐾",
+        title: slot2.name,
+        subtitle: `${slot2.origin} · ${slot2.rarity} Creature`,
+        accent: "text-pink-300",
+      };
   }
 }
 
