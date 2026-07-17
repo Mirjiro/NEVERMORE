@@ -2,29 +2,35 @@
 
 import { useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import type { PullResult } from "@/lib/types";
+import type { PackType, PullResult, Rarity } from "@/lib/types";
 import { RARITY_STYLES, RARITY_ORDER } from "@/lib/rarityStyles";
 import { getSlot2Content, getBonusToastText } from "@/lib/slot2Content";
+import { ORIGIN_CARD_PACK_DISPLAY_NAME } from "@/lib/odds";
 import { playRaritySound } from "@/lib/sound";
 import { cn } from "@/lib/cn";
 import CardFace from "./CardFace";
 import Slot2Card from "./Slot2Card";
+import OriginRevealCard from "./OriginRevealCard";
 import ScreenFlash, { FlashSignal } from "./ScreenFlash";
 
 type DeckItem = { kind: "card" | "bonus"; pull: PullResult };
 type Toast = { key: number; text: string; leftPercent: number };
+type Stage = "cover" | "deck";
 
 const SWIPE_THRESHOLD = 70;
 const ADVANCE_LOCK_MS = 250;
 const TOAST_DURATION_S = 1.6;
 
 /**
- * Sequential one-at-a-time reveal for a batch of pulls (x10 opens): the 10
- * guaranteed cards first — lowest rarity to highest — then the 10 bonuses.
- * Unlike the single-pull RevealFlow this is forward-only — a revealed item is
- * discarded on advance, not something you can swipe back to.
+ * Sequential one-at-a-time reveal for a batch of pulls (x10 opens): an
+ * Origin-themed cover (same as the x1 open), then the 10 guaranteed cards —
+ * lowest rarity to highest — then the 10 bonuses. Unlike the single-pull
+ * RevealFlow the deck itself is forward-only — a revealed item is discarded
+ * on advance, not something you can swipe back to.
  */
 export default function RevealDeck({ pulls, onDismiss }: { pulls: PullResult[]; onDismiss: () => void }) {
+  const [stage, setStage] = useState<Stage>("cover");
+
   const guaranteedCount = pulls.length;
   const sortedPulls = [...pulls].sort(
     (a, b) => RARITY_ORDER.indexOf(a.slot1.rarity) - RARITY_ORDER.indexOf(b.slot1.rarity),
@@ -65,6 +71,15 @@ export default function RevealDeck({ pulls, onDismiss }: { pulls: PullResult[]; 
     setTimeout(() => {
       locked.current = false;
     }, ADVANCE_LOCK_MS);
+  }
+
+  if (stage === "cover") {
+    const first = pulls[0];
+    return (
+      <div className="flex w-full flex-1 flex-col items-center justify-center gap-3 py-4">
+        <OriginRevealCard packType={first.packType} origin={first.origin} onTapToReveal={() => setStage("deck")} />
+      </div>
+    );
   }
 
   if (current >= total) {
@@ -181,7 +196,114 @@ export default function RevealDeck({ pulls, onDismiss }: { pulls: PullResult[]; 
   );
 }
 
+type CardEntry = { name: string; rarity: Rarity };
+type TotalRow = { key: string; accent: string; title: string; subtitle: string };
+
+/** Which aggregate categories show, and in what order, after the rarity groups — per pack type. */
+const SUMMARY_CATEGORY_ORDER: Record<PackType, string[]> = {
+  Classic: ["gold", "diamonds", "seeds", "creature", "freeBox"],
+  Elite: ["gold", "diamonds", "seeds", "freeBox", "creature"],
+};
+
 function DeckSummary({ pulls, onDismiss }: { pulls: PullResult[]; onDismiss: () => void }) {
+  const packType = pulls[0].packType;
+  const origin = pulls[0].origin;
+
+  const cardsByRarity = new Map<Rarity, CardEntry[]>();
+  const addCard = (name: string, rarity: Rarity) => {
+    const list = cardsByRarity.get(rarity) ?? [];
+    list.push({ name, rarity });
+    cardsByRarity.set(rarity, list);
+  };
+
+  let totalGold = 0;
+  let totalDiamonds = 0;
+  let totalSeeds = 0;
+  let totalCreatures = 0;
+  let totalFreeBoxes = 0;
+
+  for (const pull of pulls) {
+    addCard(pull.slot1.name, pull.slot1.rarity);
+    const bonus = pull.slot2;
+    switch (bonus.type) {
+      case "Card":
+        addCard(bonus.name, bonus.rarity);
+        break;
+      case "Gold":
+        totalGold += bonus.amount;
+        break;
+      case "Diamonds":
+        totalDiamonds += bonus.amount;
+        break;
+      case "Seed":
+        totalSeeds += 1;
+        break;
+      case "Creature":
+        totalCreatures += 1;
+        break;
+      case "OriginCardPack":
+        totalFreeBoxes += 1;
+        break;
+    }
+  }
+
+  const rarityGroups = RARITY_ORDER.map((rarity) => ({ rarity, cards: cardsByRarity.get(rarity) ?? [] })).filter(
+    (group) => group.cards.length > 0,
+  );
+
+  const categoryBuilders: Record<string, () => TotalRow | null> = {
+    gold: () =>
+      totalGold > 0
+        ? {
+            key: "gold",
+            accent: getSlot2Content({ type: "Gold", amount: 0 }).accent,
+            title: `+${totalGold.toLocaleString()} Gold`,
+            subtitle: "added to balance",
+          }
+        : null,
+    diamonds: () =>
+      totalDiamonds > 0
+        ? {
+            key: "diamonds",
+            accent: getSlot2Content({ type: "Diamonds", amount: 0 }).accent,
+            title: `+${totalDiamonds.toLocaleString()} Diamonds`,
+            subtitle: "added to balance",
+          }
+        : null,
+    seeds: () =>
+      totalSeeds > 0
+        ? {
+            key: "seeds",
+            accent: getSlot2Content({ type: "Seed", origin }).accent,
+            title: `+${totalSeeds} ${origin} Seeds`,
+            subtitle: "added to inventory",
+          }
+        : null,
+    creature: () =>
+      totalCreatures > 0
+        ? {
+            key: "creature",
+            accent: getSlot2Content({ type: "Creature" }).accent,
+            title: `+${totalCreatures} Creature${totalCreatures > 1 ? "s" : ""}`,
+            subtitle: "added to inventory",
+          }
+        : null,
+    freeBox: () =>
+      totalFreeBoxes > 0
+        ? {
+            key: "freeBox",
+            accent: getSlot2Content({ type: "OriginCardPack" }).accent,
+            title: totalFreeBoxes > 1 ? `${ORIGIN_CARD_PACK_DISPLAY_NAME} ×${totalFreeBoxes}` : `${ORIGIN_CARD_PACK_DISPLAY_NAME}!`,
+            subtitle: "added to inventory",
+          }
+        : null,
+  };
+
+  const totalRows = SUMMARY_CATEGORY_ORDER[packType].flatMap((key) => {
+    const row = categoryBuilders[key]();
+    return row ? [row] : [];
+  });
+
   return (
     <div className="relative flex w-full flex-1 flex-col items-center justify-center gap-3 py-4">
       {/* Full-stage tap target, matching the deck stage — not just the panel itself. */}
@@ -211,24 +333,30 @@ function DeckSummary({ pulls, onDismiss }: { pulls: PullResult[]; onDismiss: () 
         </p>
 
         <div className="w-full flex-1 overflow-y-auto text-left">
-          {pulls.map((pull, i) => {
-            const slot1Style = RARITY_STYLES[pull.slot1.rarity];
-            const slot2Content = getSlot2Content(pull.slot2);
+          {rarityGroups.map(({ rarity, cards }) => {
+            const style = RARITY_STYLES[rarity];
             return (
-              <div key={i} className={cn("py-2", i > 0 && "border-t border-zinc-800")}>
-                <div className="flex items-center justify-between gap-2">
-                  <span className={cn("truncate text-sm font-semibold", slot1Style.accent)}>{pull.slot1.name}</span>
-                  <span className="shrink-0 text-[11px] text-zinc-500">
-                    {pull.origin} · {slot1Style.label}
-                  </span>
-                </div>
-                <div className="mt-0.5 flex items-center justify-between gap-2">
-                  <span className={cn("truncate text-xs font-medium", slot2Content.accent)}>{slot2Content.title}</span>
-                  <span className="shrink-0 text-[11px] text-zinc-500">{slot2Content.subtitle}</span>
+              <div key={rarity} className="border-t border-zinc-800 py-2 first:border-t-0 first:pt-0">
+                <p className={cn("text-xs font-bold uppercase tracking-wider", style.accent)}>
+                  {style.label} · {cards.length}
+                </p>
+                <div className="mt-1 flex flex-wrap gap-x-2 gap-y-0.5">
+                  {cards.map((card, i) => (
+                    <span key={i} className="text-sm text-zinc-200">
+                      {card.name}
+                    </span>
+                  ))}
                 </div>
               </div>
             );
           })}
+
+          {totalRows.map((row) => (
+            <div key={row.key} className="flex items-center justify-between gap-2 border-t border-zinc-800 py-2">
+              <span className={cn("truncate text-sm font-semibold", row.accent)}>{row.title}</span>
+              <span className="shrink-0 text-[11px] text-zinc-500">{row.subtitle}</span>
+            </div>
+          ))}
         </div>
 
         <p className="shrink-0 text-[11px] text-zinc-600">Tap anywhere to continue</p>
