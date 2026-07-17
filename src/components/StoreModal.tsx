@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { cn } from "@/lib/cn";
 import {
@@ -8,6 +9,7 @@ import {
   DEALS,
   DIAMOND_EXCHANGE,
   GOLD_EXCHANGE,
+  REDEEM_CODES,
   type ExchangeOption,
 } from "@/lib/store";
 
@@ -40,6 +42,24 @@ export default function StoreModal({
     if (diamonds < opt.costAmount) return;
     onSpendDiamonds(opt.costAmount);
     onAddGold(opt.gainAmount);
+  };
+
+  const [codeInput, setCodeInput] = useState("");
+  const [codeMessage, setCodeMessage] = useState<{ text: string; ok: boolean } | null>(null);
+
+  const redeemCode = () => {
+    const reward = REDEEM_CODES[codeInput.trim()];
+    if (!reward) {
+      setCodeMessage({ text: "Invalid code.", ok: false });
+      return;
+    }
+    onAddGold(reward.gold);
+    onAddDiamonds(reward.diamonds);
+    setCodeMessage({
+      text: `+${reward.gold.toLocaleString()} Gold, +${reward.diamonds.toLocaleString()} Diamonds!`,
+      ok: true,
+    });
+    setCodeInput("");
   };
 
   return (
@@ -130,6 +150,38 @@ export default function StoreModal({
                   canAfford={(opt) => diamonds >= opt.costAmount}
                   onBuy={buyGoldWithDiamonds}
                 />
+              </Section>
+
+              <Section title="Codes" icon="🔑" accent="text-emerald-300">
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    redeemCode();
+                  }}
+                  className="flex items-center gap-2"
+                >
+                  <input
+                    type="text"
+                    value={codeInput}
+                    onChange={(e) => {
+                      setCodeInput(e.target.value);
+                      setCodeMessage(null);
+                    }}
+                    placeholder="Enter code"
+                    className="min-w-0 flex-1 rounded-lg border border-zinc-800 bg-zinc-900/60 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-emerald-400/60"
+                  />
+                  <button
+                    type="submit"
+                    className="shrink-0 rounded-full bg-emerald-500/90 px-4 py-2 text-sm font-semibold text-zinc-950 transition active:scale-95"
+                  >
+                    Enter
+                  </button>
+                </form>
+                {codeMessage && (
+                  <p className={cn("mt-2 text-xs font-medium", codeMessage.ok ? "text-emerald-300" : "text-red-400")}>
+                    {codeMessage.text}
+                  </p>
+                )}
               </Section>
             </div>
           </motion.div>
