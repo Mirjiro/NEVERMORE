@@ -58,3 +58,17 @@ export const GOLD_EXCHANGE: ExchangeOption[] = [
   { gainAmount: 1_000_000, gainLabel: "1M Gold", costAmount: 1_000, costLabel: "1,000 Diamonds" },
   { gainAmount: 5_000_000, gainLabel: "5M Gold", costAmount: 5_000, costLabel: "5,000 Diamonds" },
 ];
+
+export interface RedeemCode {
+  gold: number;
+  diamonds: number;
+}
+
+/**
+ * Case-sensitive redeem codes -> reward. Reusable indefinitely — this
+ * prototype has no per-player redemption tracking, so a code can be entered
+ * any number of times. Add future codes here.
+ */
+export const REDEEM_CODES: Record<string, RedeemCode> = {
+  Frog92: { gold: 1_000_000, diamonds: 1_000 },
+};
