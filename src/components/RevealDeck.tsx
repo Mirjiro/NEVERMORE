@@ -101,6 +101,17 @@ export default function RevealDeck({ pulls, onDismiss }: { pulls: PullResult[]; 
         }}
       />
 
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          setCurrent(total);
+        }}
+        className="absolute right-3 top-1 z-20 rounded-full border border-zinc-700 bg-zinc-900/80 px-3 py-1 text-xs font-medium text-zinc-300"
+      >
+        Skip
+      </button>
+
       <div className="relative z-10 flex flex-col items-center gap-3" onClick={advance}>
         {isBonusRound && (
           <motion.p

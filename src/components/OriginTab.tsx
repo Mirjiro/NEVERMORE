@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { rollPull, PACK_CONFIG } from "@/lib/odds";
+import { rollPull, rollOrigin, PACK_CONFIG } from "@/lib/odds";
 import type { PackType, PullResult } from "@/lib/types";
 import { cn } from "@/lib/cn";
 import InventoryBar from "./InventoryBar";
@@ -52,7 +52,11 @@ export default function OriginTab({
     if (balance < cost) return;
     if (activePack === "Classic") onSpendGold(cost);
     else onSpendDiamonds(cost);
-    const results = Array.from({ length: count }, () => rollPull(activePack));
+    // An x10 open is 10 pulls from a single Origin Pack — lock every card and
+    // bonus in the batch to one shared Origin, same as a single x1 open does.
+    const batchOrigin = rollOrigin();
+    const results =
+      count === 1 ? [rollPull(activePack)] : Array.from({ length: count }, () => rollPull(activePack, batchOrigin));
     results.forEach(onApplyPull);
     setPulls(results);
   };

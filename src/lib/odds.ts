@@ -135,9 +135,13 @@ function rollSlot2(origin: Origin, packType: PackType): Slot2Result {
   }
 }
 
-/** Runs the full pack pull: Origin roll -> Slot 1 card -> Slot 2 outcome. */
-export function rollPull(packType: PackType = "Classic"): PullResult {
-  const origin = rollOrigin();
+/**
+ * Runs the full pack pull: Origin roll -> Slot 1 card -> Slot 2 outcome.
+ * Pass a fixed `origin` to lock a batch of pulls (an x10 open) to the single
+ * Origin Pack it's supposed to represent — every card and bonus in the batch
+ * then comes from that same Origin, matching how an x1 open already works.
+ */
+export function rollPull(packType: PackType = "Classic", origin: Origin = rollOrigin()): PullResult {
   const rarity = rollRarity(packType);
   const slot1 = { origin, rarity, name: pickCardName(origin, rarity) };
   const slot2 = rollSlot2(origin, packType);
