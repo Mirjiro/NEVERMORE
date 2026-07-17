@@ -1,9 +1,12 @@
 import { pickCardName } from "./cardPool.ts";
 import type { Origin, PackType, PullResult, Rarity, Slot2Result } from "./types";
 
-export const PACK_CONFIG: Record<PackType, { label: string; cost: number; currency: "Gold" | "Diamonds"; available: boolean }> = {
-  Classic: { label: "Classic", cost: 5_000, currency: "Gold", available: true },
-  Elite: { label: "Elite", cost: 100, currency: "Diamonds", available: true },
+export const PACK_CONFIG: Record<
+  PackType,
+  { label: string; costX1: number; costX10: number; currency: "Gold" | "Diamonds"; available: boolean }
+> = {
+  Classic: { label: "Classic", costX1: 2_000, costX10: 18_000, currency: "Gold", available: true },
+  Elite: { label: "Elite", costX1: 100, costX10: 800, currency: "Diamonds", available: true },
 };
 
 /** Concise product description shown in the Box-level info modal. */

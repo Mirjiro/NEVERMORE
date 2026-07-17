@@ -9,6 +9,7 @@ import InventoryBar from "./InventoryBar";
 import PackCarousel from "./PackCarousel";
 import PackInfoModal from "./PackInfoModal";
 import RevealFlow from "./RevealFlow";
+import RevealDeck from "./RevealDeck";
 import StoreModal from "./StoreModal";
 
 export default function OriginTab({
@@ -37,21 +38,23 @@ export default function OriginTab({
   onApplyPull: (pull: PullResult) => void;
 }) {
   const [activePack, setActivePack] = useState<PackType>("Classic");
-  const [pull, setPull] = useState<PullResult | null>(null);
+  const [pulls, setPulls] = useState<PullResult[] | null>(null);
   const [infoOpen, setInfoOpen] = useState(false);
   const [storeOpen, setStoreOpen] = useState(false);
 
   const config = PACK_CONFIG[activePack];
   const balance = activePack === "Classic" ? gold : diamonds;
-  const canAfford = balance >= config.cost;
+  const canAffordX1 = balance >= config.costX1;
+  const canAffordX10 = balance >= config.costX10;
 
-  const openActivePack = () => {
-    if (!canAfford) return;
-    if (activePack === "Classic") onSpendGold(config.cost);
-    else onSpendDiamonds(config.cost);
-    const result = rollPull(activePack);
-    onApplyPull(result);
-    setPull(result);
+  const openActivePack = (count: 1 | 10) => {
+    const cost = count === 1 ? config.costX1 : config.costX10;
+    if (balance < cost) return;
+    if (activePack === "Classic") onSpendGold(cost);
+    else onSpendDiamonds(cost);
+    const results = Array.from({ length: count }, () => rollPull(activePack));
+    results.forEach(onApplyPull);
+    setPulls(results);
   };
 
   const openFreePack = () => {
@@ -59,7 +62,7 @@ export default function OriginTab({
     onSpendFreePack();
     const result = rollPull("Classic");
     onApplyPull(result);
-    setPull(result);
+    setPulls([result]);
   };
 
   return (
@@ -75,7 +78,7 @@ export default function OriginTab({
       </div>
 
       <AnimatePresence mode="wait">
-        {pull ? (
+        {pulls ? (
           <motion.div
             key="reveal"
             initial={{ opacity: 0 }}
@@ -83,7 +86,11 @@ export default function OriginTab({
             exit={{ opacity: 0 }}
             className="flex min-h-0 flex-1 flex-col items-center justify-center overflow-y-auto"
           >
-            <RevealFlow pull={pull} onDismiss={() => setPull(null)} />
+            {pulls.length === 1 ? (
+              <RevealFlow pull={pulls[0]} onDismiss={() => setPulls(null)} />
+            ) : (
+              <RevealDeck pulls={pulls} onDismiss={() => setPulls(null)} />
+            )}
           </motion.div>
         ) : (
           <motion.div
@@ -100,16 +107,32 @@ export default function OriginTab({
 
             {/* Purchase controls — fixed directly above bottom navigation */}
             <div className="flex shrink-0 flex-col items-center gap-2 pb-4 pt-2">
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
                 <button
-                  onClick={openActivePack}
-                  disabled={!canAfford}
+                  onClick={() => openActivePack(1)}
+                  disabled={!canAffordX1}
                   className={cn(
-                    "rounded-full px-6 py-3 text-sm font-bold text-zinc-950 transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-40",
+                    "flex flex-col items-center rounded-full px-4 py-2 leading-tight transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-40",
                     "bg-gradient-to-b from-zinc-100 to-zinc-300 shadow-lg shadow-black/40",
                   )}
                 >
-                  {config.cost.toLocaleString()} {config.currency}
+                  <span className="text-sm font-bold text-zinc-950">Open X1</span>
+                  <span className="text-[11px] font-medium text-zinc-700">
+                    {config.costX1.toLocaleString()} {config.currency}
+                  </span>
+                </button>
+                <button
+                  onClick={() => openActivePack(10)}
+                  disabled={!canAffordX10}
+                  className={cn(
+                    "flex flex-col items-center rounded-full px-4 py-2 leading-tight transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-40",
+                    "bg-gradient-to-b from-zinc-100 to-zinc-300 shadow-lg shadow-black/40",
+                  )}
+                >
+                  <span className="text-sm font-bold text-zinc-950">Open X10</span>
+                  <span className="text-[11px] font-medium text-zinc-700">
+                    {config.costX10.toLocaleString()} {config.currency}
+                  </span>
                 </button>
                 <button
                   onClick={() => setInfoOpen(true)}
@@ -121,7 +144,7 @@ export default function OriginTab({
               </div>
 
               {/* Reserve fixed height regardless of content so the block above never shifts. */}
-              <div className={cn("flex items-center justify-center gap-2", canAfford && "invisible")}>
+              <div className={cn("flex items-center justify-center gap-2", canAffordX1 && "invisible")}>
                 <p className="text-center text-xs text-zinc-500">
                   Not enough {config.currency} for {activePack === "Elite" ? "an" : "a"} {activePack} Origin Box.
                 </p>
