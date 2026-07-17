@@ -50,3 +50,21 @@ export function getSlot2Content(slot2: Slot2Result): Slot2Content {
       return { icon: "🐾", title: "Creature", subtitle: "+1 added to inventory", accent: "text-rose-300" };
   }
 }
+
+/** Short confirmation text for the RevealDeck bonus-pickup toast. */
+export function getBonusToastText(slot2: Slot2Result): string {
+  switch (slot2.type) {
+    case "Card":
+      return "+1 Card";
+    case "Seed":
+      return "+Seeds";
+    case "Gold":
+      return "+Gold";
+    case "Diamonds":
+      return "+Diamonds";
+    case "OriginCardPack":
+      return "+1 Origin Box";
+    case "Creature":
+      return "+Creature";
+  }
+}
