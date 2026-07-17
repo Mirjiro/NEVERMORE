@@ -45,16 +45,16 @@ export interface ExchangeOption {
 
 /** Functional: spend Gold, receive Diamonds. */
 export const DIAMOND_EXCHANGE: ExchangeOption[] = [
-  { gainAmount: 10, gainLabel: "10 Diamonds", costAmount: 5_000, costLabel: "5,000 Gold" },
-  { gainAmount: 100, gainLabel: "100 Diamonds", costAmount: 50_000, costLabel: "50K Gold" },
-  { gainAmount: 1_000, gainLabel: "1,000 Diamonds", costAmount: 500_000, costLabel: "500K Gold" },
-  { gainAmount: 5_000, gainLabel: "5,000 Diamonds", costAmount: 2_500_000, costLabel: "2.5M Gold" },
+  { gainAmount: 10, gainLabel: "10 Diamonds", costAmount: 50_000, costLabel: "50K Gold" },
+  { gainAmount: 100, gainLabel: "100 Diamonds", costAmount: 500_000, costLabel: "500K Gold" },
+  { gainAmount: 1_000, gainLabel: "1,000 Diamonds", costAmount: 2_000_000, costLabel: "2M Gold" },
+  { gainAmount: 5_000, gainLabel: "5,000 Diamonds", costAmount: 10_000_000, costLabel: "10M Gold" },
 ];
 
 /** Functional: spend Diamonds, receive Gold. */
 export const GOLD_EXCHANGE: ExchangeOption[] = [
-  { gainAmount: 10_000, gainLabel: "10K Gold", costAmount: 10, costLabel: "10 Diamonds" },
-  { gainAmount: 100_000, gainLabel: "100K Gold", costAmount: 100, costLabel: "100 Diamonds" },
-  { gainAmount: 500_000, gainLabel: "500K Gold", costAmount: 500, costLabel: "500 Diamonds" },
+  { gainAmount: 20_000, gainLabel: "20K Gold", costAmount: 10, costLabel: "10 Diamonds" },
+  { gainAmount: 200_000, gainLabel: "200K Gold", costAmount: 100, costLabel: "100 Diamonds" },
   { gainAmount: 1_000_000, gainLabel: "1M Gold", costAmount: 1_000, costLabel: "1,000 Diamonds" },
+  { gainAmount: 5_000_000, gainLabel: "5M Gold", costAmount: 5_000, costLabel: "5,000 Diamonds" },
 ];
