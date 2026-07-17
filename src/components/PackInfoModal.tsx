@@ -36,9 +36,11 @@ export default function PackInfoModal({
           >
             <div className="flex items-start justify-between gap-3 border-b border-zinc-800 px-5 pb-3 pt-5">
               <div>
-                <h2 className="text-base font-bold text-zinc-50">
-                  {config.label} Origin Box — {config.cost.toLocaleString()} {config.currency}
-                </h2>
+                <h2 className="text-base font-bold text-zinc-50">{config.label} Origin Box</h2>
+                <p className="mt-0.5 text-xs text-zinc-400">
+                  X1: {config.costX1.toLocaleString()} {config.currency} · X10: {config.costX10.toLocaleString()}{" "}
+                  {config.currency}
+                </p>
                 <p className="mt-1 text-xs text-zinc-500">{BOX_DESCRIPTIONS[packType]}</p>
               </div>
               <button
