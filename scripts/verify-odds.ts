@@ -61,8 +61,11 @@ function verifyPackType(packType: PackType) {
   const originCounts = tally(Object.keys(ORIGIN_ODDS));
   const rarityCounts = tally(Object.keys(rarityOdds));
   const slot2Counts = tally(Object.keys(slot2Odds));
+  const bonusCardRarityCounts = tally(Object.keys(rarityOdds));
   let goldOutOfRange = 0;
   let diamondsOutOfRange = 0;
+  let bonusCardSamples = 0;
+  let bonusCardMatchesSlot1 = 0;
 
   for (let i = 0; i < SAMPLE_SIZE; i++) {
     const pull = rollPull(packType);
@@ -74,6 +77,11 @@ function verifyPackType(packType: PackType) {
     }
     if (pull.slot2.type === "Diamonds" && (pull.slot2.amount < diamonds[0] || pull.slot2.amount > diamonds[1])) {
       diamondsOutOfRange++;
+    }
+    if (pull.slot2.type === "Card") {
+      bonusCardRarityCounts[pull.slot2.rarity]++;
+      bonusCardSamples++;
+      if (pull.slot2.rarity === pull.rarity) bonusCardMatchesSlot1++;
     }
   }
 
@@ -99,6 +107,19 @@ function verifyPackType(packType: PackType) {
     failures.push(`${packType} Diamonds: ${diamondsOutOfRange} drop(s) fell outside [${diamonds[0]}, ${diamonds[1]}]`);
   }
   console.log(`\nAmount ranges: Gold out-of-range: ${goldOutOfRange}, Diamonds out-of-range: ${diamondsOutOfRange}`);
+
+  console.log("\nBonus +1 Card rarity distribution (must roll independently of Slot 1, same table):");
+  checkDistribution("BonusCardRarity", rarityOdds, bonusCardRarityCounts, bonusCardSamples);
+
+  const matchRate = bonusCardMatchesSlot1 / bonusCardSamples;
+  console.log(`  Bonus card rarity == Slot 1 rarity: ${(matchRate * 100).toFixed(1)}% of the time`);
+  // If independent, this should land near sum(p_i^2) (~46-49% for these tables) — not near 100%,
+  // which is what a bug reintroducing "bonus copies Slot 1's rarity" would look like.
+  if (matchRate > 0.7) {
+    failures.push(
+      `${packType} Bonus Card: rarity matches Slot 1 ${(matchRate * 100).toFixed(1)}% of the time — looks like it's copying Slot 1 instead of rolling independently.`,
+    );
+  }
 }
 
 verifyPackType("Classic");

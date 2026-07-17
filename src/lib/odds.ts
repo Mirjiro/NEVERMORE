@@ -109,12 +109,16 @@ export function rollRarity(packType: PackType = "Classic"): Rarity {
   return weightedPick(getRarityOdds(packType));
 }
 
-function rollSlot2(origin: Origin, rarity: Rarity, packType: PackType): Slot2Result {
+function rollSlot2(origin: Origin, packType: PackType): Slot2Result {
   const { gold, diamonds } = AMOUNT_RANGES[packType];
   const outcome = weightedPick(getSlot2Odds(packType)) as ClassicSlot2Outcome;
   switch (outcome) {
-    case "Card":
-      return { type: "Card", origin, rarity, name: pickCardName(origin, rarity) };
+    case "Card": {
+      // Independent roll from the same rarity table as the guaranteed card —
+      // not a copy of Slot 1's rarity, so it can land on a different tier.
+      const bonusRarity = rollRarity(packType);
+      return { type: "Card", origin, rarity: bonusRarity, name: pickCardName(origin, bonusRarity) };
+    }
     case "Seed":
       return { type: "Seed", origin };
     case "Gold":
@@ -133,6 +137,6 @@ export function rollPull(packType: PackType = "Classic"): PullResult {
   const origin = rollOrigin();
   const rarity = rollRarity(packType);
   const slot1 = { origin, rarity, name: pickCardName(origin, rarity) };
-  const slot2 = rollSlot2(origin, rarity, packType);
+  const slot2 = rollSlot2(origin, packType);
   return { packType, origin, rarity, slot1, slot2 };
 }
