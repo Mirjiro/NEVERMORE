@@ -9,6 +9,7 @@ import InventoryBar from "./InventoryBar";
 import PackCarousel from "./PackCarousel";
 import PackInfoModal from "./PackInfoModal";
 import RevealFlow from "./RevealFlow";
+import StoreModal from "./StoreModal";
 
 export default function OriginTab({
   gold,
@@ -18,6 +19,8 @@ export default function OriginTab({
   freePacks,
   onSpendGold,
   onSpendDiamonds,
+  onAddGold,
+  onAddDiamonds,
   onSpendFreePack,
   onApplyPull,
 }: {
@@ -28,12 +31,15 @@ export default function OriginTab({
   freePacks: number;
   onSpendGold: (amount: number) => void;
   onSpendDiamonds: (amount: number) => void;
+  onAddGold: (amount: number) => void;
+  onAddDiamonds: (amount: number) => void;
   onSpendFreePack: () => void;
   onApplyPull: (pull: PullResult) => void;
 }) {
   const [activePack, setActivePack] = useState<PackType>("Classic");
   const [pull, setPull] = useState<PullResult | null>(null);
   const [infoOpen, setInfoOpen] = useState(false);
+  const [storeOpen, setStoreOpen] = useState(false);
 
   const config = PACK_CONFIG[activePack];
   const balance = activePack === "Classic" ? gold : diamonds;
@@ -115,9 +121,18 @@ export default function OriginTab({
               </div>
 
               {/* Reserve fixed height regardless of content so the block above never shifts. */}
-              <p className={cn("text-center text-xs text-zinc-500", canAfford && "invisible")}>
-                Not enough {config.currency} for {activePack === "Elite" ? "an" : "a"} {activePack} Origin Box.
-              </p>
+              <div className={cn("flex items-center justify-center gap-2", canAfford && "invisible")}>
+                <p className="text-center text-xs text-zinc-500">
+                  Not enough {config.currency} for {activePack === "Elite" ? "an" : "a"} {activePack} Origin Box.
+                </p>
+                <button
+                  onClick={() => setStoreOpen(true)}
+                  className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-zinc-500 text-xs font-bold leading-none text-zinc-300"
+                  aria-label="Buy Gold or Diamonds"
+                >
+                  +
+                </button>
+              </div>
 
               <div className={cn("w-full", freePacks <= 0 && "invisible pointer-events-none")}>
                 <button
@@ -134,6 +149,16 @@ export default function OriginTab({
       </AnimatePresence>
 
       <PackInfoModal open={infoOpen} packType={activePack} onClose={() => setInfoOpen(false)} />
+      <StoreModal
+        open={storeOpen}
+        onClose={() => setStoreOpen(false)}
+        gold={gold}
+        diamonds={diamonds}
+        onSpendGold={onSpendGold}
+        onSpendDiamonds={onSpendDiamonds}
+        onAddGold={onAddGold}
+        onAddDiamonds={onAddDiamonds}
+      />
     </div>
   );
 }
