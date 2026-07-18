@@ -1,6 +1,7 @@
 "use client";
 
 import type { PackType } from "@/lib/types";
+import { CLASSIC_ORIGIN_BOX_ASSETS } from "@/lib/originBoxAssets";
 import { cn } from "@/lib/cn";
 
 const PACK_BG =
@@ -8,6 +9,32 @@ const PACK_BG =
 
 /** Placeholder Box art (brown/vignette background + wordmark) until real art ships. */
 export default function PackFront({ packType, active = true }: { packType: PackType; active?: boolean }) {
+  if (packType === "Classic") {
+    return (
+      <div
+        className={cn(
+          "relative aspect-[4/5] h-[92%] max-h-[480px] w-auto",
+          active && "drop-shadow-[0_0_28px_rgba(217,150,60,0.45)]",
+        )}
+      >
+        <img
+          src={CLASSIC_ORIGIN_BOX_ASSETS.baseSrc}
+          alt=""
+          draggable={false}
+          className="absolute inset-0 h-full w-full select-none"
+          style={{ objectFit: "contain" }}
+        />
+        <img
+          src={CLASSIC_ORIGIN_BOX_ASSETS.lidSrc}
+          alt=""
+          draggable={false}
+          className="absolute inset-0 h-full w-full select-none"
+          style={{ objectFit: "contain" }}
+        />
+      </div>
+    );
+  }
+
   return (
     <div
       className={cn(
@@ -21,12 +48,7 @@ export default function PackFront({ packType, active = true }: { packType: PackT
         <div>ORIGIN BOX</div>
       </div>
 
-      <div
-        className={cn(
-          "mt-3 font-sans text-sm italic tracking-[0.2em] text-zinc-400",
-          packType === "Elite" && "text-white [text-shadow:0_0_8px_rgba(255,255,255,0.55)]",
-        )}
-      >
+      <div className="mt-3 font-sans text-sm italic tracking-[0.2em] text-zinc-400 text-white [text-shadow:0_0_8px_rgba(255,255,255,0.55)]">
         {packType}
       </div>
     </div>
