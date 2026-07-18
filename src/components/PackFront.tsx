@@ -1,7 +1,8 @@
 "use client";
 
+import { motion } from "framer-motion";
 import type { PackType } from "@/lib/types";
-import { CLASSIC_ORIGIN_BOX_ASSETS } from "@/lib/originBoxAssets";
+import { CLASSIC_ORIGIN_BOX_ASSETS, CLASSIC_BOX_IDLE_ANIMATE, CLASSIC_BOX_IDLE_TRANSITION } from "@/lib/originBoxAssets";
 import { cn } from "@/lib/cn";
 
 const PACK_BG =
@@ -11,7 +12,9 @@ const PACK_BG =
 export default function PackFront({ packType, active = true }: { packType: PackType; active?: boolean }) {
   if (packType === "Classic") {
     return (
-      <div
+      <motion.div
+        animate={CLASSIC_BOX_IDLE_ANIMATE}
+        transition={CLASSIC_BOX_IDLE_TRANSITION}
         className={cn(
           "relative aspect-[4/5] h-[92%] max-h-[480px] w-auto",
           active && "drop-shadow-[0_0_28px_rgba(217,150,60,0.45)]",
@@ -31,7 +34,7 @@ export default function PackFront({ packType, active = true }: { packType: PackT
           className="absolute inset-0 h-full w-full select-none"
           style={{ objectFit: "contain" }}
         />
-      </div>
+      </motion.div>
     );
   }
 
