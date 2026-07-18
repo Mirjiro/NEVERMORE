@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence, useReducedMotion, type Variants } from "framer-motion";
+import { CLASSIC_BOX_IDLE_ANIMATE, CLASSIC_BOX_IDLE_TRANSITION } from "@/lib/originBoxAssets";
 import { cn } from "@/lib/cn";
 
 export type ClassicOriginBoxOpeningProps = {
@@ -65,20 +66,22 @@ const REDUCED_MOTION_MS = 260;
 
 const wrapperVariants: Variants = {
   idle: {
-    y: [0, -1.5, 0],
-    transition: { duration: 3, repeat: Infinity, ease: "easeInOut" },
+    // Shared with the PackFront carousel tile so both stay consistent.
+    ...CLASSIC_BOX_IDLE_ANIMATE,
+    transition: CLASSIC_BOX_IDLE_TRANSITION,
   },
   pressing: {
     scale: [1, PRESS.downScale, PRESS.reboundScale],
     y: [0, PRESS.downY, 0],
+    rotate: 0,
     transition: {
       duration: (PRESS.downMs + PRESS.reboundMs) / 1000,
       times: [0, PRESS.downMs / (PRESS.downMs + PRESS.reboundMs), 1],
       ease: "easeOut",
     },
   },
-  opening: { scale: 1, y: 0 },
-  open: { scale: 1, y: 0 },
+  opening: { scale: 1, y: 0, rotate: 0 },
+  open: { scale: 1, y: 0, rotate: 0 },
 };
 
 const lidShadowVariants: Variants = {
