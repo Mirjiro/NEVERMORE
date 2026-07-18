@@ -6,8 +6,10 @@ import type { CreatureRarity, PullResult } from "@/lib/types";
 import { RARITY_STYLES } from "@/lib/rarityStyles";
 import { getSlot2Content } from "@/lib/slot2Content";
 import { playRaritySound } from "@/lib/sound";
+import { CLASSIC_ORIGIN_BOX_ASSETS } from "@/lib/originBoxAssets";
 import { cn } from "@/lib/cn";
 import OriginRevealCard from "./OriginRevealCard";
+import ClassicOriginBoxOpening from "./ClassicOriginBoxOpening";
 import CardFace from "./CardFace";
 import Slot2Card from "./Slot2Card";
 import CreatureCard from "./CreatureCard";
@@ -67,7 +69,15 @@ export default function RevealFlow({ pull, onDismiss }: { pull: PullResult; onDi
   if (stage === "origin") {
     return (
       <div className="flex w-full flex-col items-center justify-center gap-3 py-4">
-        <OriginRevealCard packType={pull.packType} origin={pull.origin} onTapToReveal={() => setStage("rewards")} />
+        {pull.packType === "Classic" ? (
+          <ClassicOriginBoxOpening
+            lidSrc={CLASSIC_ORIGIN_BOX_ASSETS.lidSrc}
+            baseSrc={CLASSIC_ORIGIN_BOX_ASSETS.baseSrc}
+            onOpened={() => setStage("rewards")}
+          />
+        ) : (
+          <OriginRevealCard packType={pull.packType} origin={pull.origin} onTapToReveal={() => setStage("rewards")} />
+        )}
       </div>
     );
   }

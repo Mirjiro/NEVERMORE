@@ -7,11 +7,13 @@ import { RARITY_STYLES, RARITY_ORDER } from "@/lib/rarityStyles";
 import { getSlot2Content, getBonusToastText } from "@/lib/slot2Content";
 import { ORIGIN_CARD_PACK_DISPLAY_NAME } from "@/lib/odds";
 import { playRaritySound } from "@/lib/sound";
+import { CLASSIC_ORIGIN_BOX_ASSETS } from "@/lib/originBoxAssets";
 import { cn } from "@/lib/cn";
 import CardFace from "./CardFace";
 import Slot2Card from "./Slot2Card";
 import CreatureCard from "./CreatureCard";
 import OriginRevealCard from "./OriginRevealCard";
+import ClassicOriginBoxOpening from "./ClassicOriginBoxOpening";
 import ScreenFlash, { FlashSignal } from "./ScreenFlash";
 
 type DeckItem = { kind: "card" | "bonus"; pull: PullResult };
@@ -83,7 +85,15 @@ export default function RevealDeck({ pulls, onDismiss }: { pulls: PullResult[]; 
     const first = pulls[0];
     return (
       <div className="flex w-full flex-1 flex-col items-center justify-center gap-3 py-4">
-        <OriginRevealCard packType={first.packType} origin={first.origin} onTapToReveal={() => setStage("deck")} />
+        {first.packType === "Classic" ? (
+          <ClassicOriginBoxOpening
+            lidSrc={CLASSIC_ORIGIN_BOX_ASSETS.lidSrc}
+            baseSrc={CLASSIC_ORIGIN_BOX_ASSETS.baseSrc}
+            onOpened={() => setStage("deck")}
+          />
+        ) : (
+          <OriginRevealCard packType={first.packType} origin={first.origin} onTapToReveal={() => setStage("deck")} />
+        )}
       </div>
     );
   }
