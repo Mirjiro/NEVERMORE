@@ -242,67 +242,71 @@ export default function ClassicOriginBoxOpening({
         variants={wrapperVariants}
         animate={state}
         className="relative mx-auto block appearance-none border-0 bg-transparent p-0 disabled:cursor-default"
-        style={{ width: "clamp(230px, 68vw, 340px)" }}
+        style={{ width: "clamp(270px, 86vw, 420px)" }}
       >
-        {/* Reserved headroom so the lifted lid has somewhere to go without being clipped. */}
-        <div style={{ paddingTop: 110 }}>
-          <div className="relative w-full overflow-visible" style={{ aspectRatio: ART_ASPECT_RATIO }}>
-            {/* Growing shadow gap beneath the lid as it separates */}
-            <motion.div
-              variants={lidShadowVariants}
-              animate={state}
-              className="absolute inset-x-[14%] bottom-[9%] h-[6%] rounded-[50%] bg-black blur-md"
-            />
+        {/*
+         * The lid's upward drift is a transform (doesn't affect layout), so
+         * no reserved space is allocated for it here — it just extends into
+         * the natural centering gap the parent's `justify-center` already
+         * leaves above the box. Reserving space with real padding used to
+         * push the box down and shrink it relative to true center.
+         */}
+        <div className="relative w-full overflow-visible" style={{ aspectRatio: ART_ASPECT_RATIO }}>
+          {/* Growing shadow gap beneath the lid as it separates */}
+          <motion.div
+            variants={lidShadowVariants}
+            animate={state}
+            className="absolute inset-x-[14%] bottom-[9%] h-[6%] rounded-[50%] bg-black blur-md"
+          />
 
-            {/* Base / tray — stays essentially still */}
-            <img
-              src={baseSrc}
-              alt=""
-              draggable={false}
-              className="absolute inset-0 h-full w-full select-none"
-              style={{ objectFit: "contain" }}
-            />
+          {/* Base / tray — stays essentially still */}
+          <img
+            src={baseSrc}
+            alt=""
+            draggable={false}
+            className="absolute inset-0 h-full w-full select-none"
+            style={{ objectFit: "contain" }}
+          />
 
-            {/* Interior glow — brightens the tray floor as the lid clears it.
-                This region is also the reserved slot for a future pack asset
-                to rise from; keep it free of visual content for now. */}
-            <motion.div
-              data-slot="pack-rise-glow"
-              variants={interiorGlowVariants}
-              animate={state}
-              className="pointer-events-none absolute inset-x-[22%] bottom-[14%] top-[38%] rounded-[40%]"
-              style={{
-                background:
-                  "radial-gradient(ellipse at center, rgba(255,214,150,0.85) 0%, rgba(214,160,90,0.35) 45%, transparent 75%)",
-              }}
-            />
+          {/* Interior glow — brightens the tray floor as the lid clears it.
+              This region is also the reserved slot for a future pack asset
+              to rise from; keep it free of visual content for now. */}
+          <motion.div
+            data-slot="pack-rise-glow"
+            variants={interiorGlowVariants}
+            animate={state}
+            className="pointer-events-none absolute inset-x-[22%] bottom-[14%] top-[38%] rounded-[40%]"
+            style={{
+              background:
+                "radial-gradient(ellipse at center, rgba(255,214,150,0.85) 0%, rgba(214,160,90,0.35) 45%, transparent 75%)",
+            }}
+          />
 
-            {/* Seam glow — a warm antique light awakening at the lid/base boundary */}
-            <motion.div
-              variants={seamGlowVariants}
-              animate={state}
-              className="pointer-events-none absolute inset-x-[16%] bottom-[10%] h-[5%]"
-              style={{
-                background:
-                  "linear-gradient(90deg, transparent 0%, rgba(240,205,140,0.9) 20%, rgba(255,224,170,1) 50%, rgba(240,205,140,0.9) 80%, transparent 100%)",
-                filter: "blur(6px)",
-              }}
-            />
+          {/* Seam glow — a warm antique light awakening at the lid/base boundary */}
+          <motion.div
+            variants={seamGlowVariants}
+            animate={state}
+            className="pointer-events-none absolute inset-x-[16%] bottom-[10%] h-[5%]"
+            style={{
+              background:
+                "linear-gradient(90deg, transparent 0%, rgba(240,205,140,0.9) 20%, rgba(255,224,170,1) 50%, rgba(240,205,140,0.9) 80%, transparent 100%)",
+              filter: "blur(6px)",
+            }}
+          />
 
-            {/* Dust motes — only once the tray is open */}
-            <DustMotes visible={state === "open"} />
+          {/* Dust motes — only once the tray is open */}
+          <DustMotes visible={state === "open"} />
 
-            {/* Lid — the piece that separates and drifts away */}
-            <motion.img
-              src={lidSrc}
-              alt=""
-              draggable={false}
-              variants={lidVariants}
-              animate={state}
-              className="absolute inset-0 h-full w-full select-none"
-              style={{ objectFit: "contain", transformOrigin: "50% 60%" }}
-            />
-          </div>
+          {/* Lid — the piece that separates and drifts away */}
+          <motion.img
+            src={lidSrc}
+            alt=""
+            draggable={false}
+            variants={lidVariants}
+            animate={state}
+            className="absolute inset-0 h-full w-full select-none"
+            style={{ objectFit: "contain", transformOrigin: "50% 60%" }}
+          />
         </div>
       </motion.button>
 
