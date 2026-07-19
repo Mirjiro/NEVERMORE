@@ -109,19 +109,19 @@ export default function OriginTab({
               <PackCarousel active={activePack} onSwitch={setActivePack} />
             </div>
 
-            {/* Purchase controls — fixed directly above bottom navigation */}
-            <div className="flex shrink-0 flex-col items-center gap-2 pb-4 pt-2">
-              <div className="flex items-center gap-2">
+            {/* Purchase controls — lifted clear of the bottom navigation */}
+            <div className="flex shrink-0 flex-col items-center gap-3 pb-8 pt-2">
+              <div className="flex items-center justify-center gap-4">
                 <button
                   onClick={() => openActivePack(1)}
                   disabled={!canAffordX1}
                   className={cn(
-                    "flex flex-col items-center rounded-full px-4 py-2 leading-tight transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-40",
+                    "flex min-w-[112px] flex-col items-center rounded-full px-5 py-3 leading-tight transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-40",
                     "bg-gradient-to-b from-zinc-100 to-zinc-300 shadow-lg shadow-black/40",
                   )}
                 >
-                  <span className="text-sm font-bold text-zinc-950">Open X1</span>
-                  <span className="text-[11px] font-medium text-zinc-700">
+                  <span className="text-base font-bold text-zinc-950">Open X1</span>
+                  <span className="text-xs font-medium text-zinc-700">
                     {config.costX1.toLocaleString()} {config.currency}
                   </span>
                 </button>
@@ -129,18 +129,18 @@ export default function OriginTab({
                   onClick={() => openActivePack(10)}
                   disabled={!canAffordX10}
                   className={cn(
-                    "flex flex-col items-center rounded-full px-4 py-2 leading-tight transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-40",
+                    "flex min-w-[112px] flex-col items-center rounded-full px-5 py-3 leading-tight transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-40",
                     "bg-gradient-to-b from-zinc-100 to-zinc-300 shadow-lg shadow-black/40",
                   )}
                 >
-                  <span className="text-sm font-bold text-zinc-950">Open X10</span>
-                  <span className="text-[11px] font-medium text-zinc-700">
+                  <span className="text-base font-bold text-zinc-950">Open X10</span>
+                  <span className="text-xs font-medium text-zinc-700">
                     {config.costX10.toLocaleString()} {config.currency}
                   </span>
                 </button>
                 <button
                   onClick={() => setInfoOpen(true)}
-                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-zinc-600 font-serif text-sm italic text-zinc-300"
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-zinc-600 font-serif text-base italic text-zinc-300"
                   aria-label={`${activePack} Origin Box rate info`}
                 >
                   i
