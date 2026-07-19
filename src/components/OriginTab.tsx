@@ -147,29 +147,31 @@ export default function OriginTab({
                 </button>
               </div>
 
-              {/* Reserve fixed height regardless of content so the block above never shifts. */}
-              <div className={cn("flex items-center justify-center gap-2", canAffordX1 && "invisible")}>
-                <p className="text-center text-xs text-zinc-500">
-                  Not enough {config.currency} for {activePack === "Elite" ? "an" : "a"} {activePack} Origin Box.
-                </p>
-                <button
-                  onClick={() => setStoreOpen(true)}
-                  className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-zinc-500 text-xs font-bold leading-none text-zinc-300"
-                  aria-label="Buy Gold or Diamonds"
-                >
-                  +
-                </button>
-              </div>
+              {!canAffordX1 && (
+                <div className="flex items-center justify-center gap-2">
+                  <p className="text-center text-xs text-zinc-500">
+                    Not enough {config.currency} for {activePack === "Elite" ? "an" : "a"} {activePack} Origin Box.
+                  </p>
+                  <button
+                    onClick={() => setStoreOpen(true)}
+                    className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-zinc-500 text-xs font-bold leading-none text-zinc-300"
+                    aria-label="Buy Gold or Diamonds"
+                  >
+                    +
+                  </button>
+                </div>
+              )}
 
-              <div className={cn("w-full", freePacks <= 0 && "invisible pointer-events-none")}>
-                <button
-                  onClick={openFreePack}
-                  disabled={freePacks <= 0}
-                  className="w-full rounded-full border border-yellow-400/60 bg-yellow-400/10 px-6 py-3 text-sm font-semibold text-yellow-200 transition active:scale-95"
-                >
-                  Open Free Origin Box ({freePacks})
-                </button>
-              </div>
+              {freePacks > 0 && (
+                <div className="w-full">
+                  <button
+                    onClick={openFreePack}
+                    className="w-full rounded-full border border-yellow-400/60 bg-yellow-400/10 px-6 py-3 text-sm font-semibold text-yellow-200 transition active:scale-95"
+                  >
+                    Open Free Origin Box ({freePacks})
+                  </button>
+                </div>
+              )}
             </div>
           </motion.div>
         )}

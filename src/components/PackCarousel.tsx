@@ -102,6 +102,11 @@ export default function PackCarousel({
         })}
       </div>
 
+      {/* Fade the scrollable edges to the page background so the transition
+          between slides reads as a smooth dissolve rather than a hard cut. */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-20 bg-gradient-to-b from-[#09090b] to-transparent" />
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-20 bg-gradient-to-t from-[#09090b] to-transparent" />
+
       {/* Vertical two-position indicator, beside the carousel */}
       <div className="absolute right-1 top-1/2 flex -translate-y-1/2 flex-col items-center gap-2">
         {ORDER.map((pack) => (
