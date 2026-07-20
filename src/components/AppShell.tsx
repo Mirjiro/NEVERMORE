@@ -19,6 +19,7 @@ const STARTING_GOLD = 100_000;
 
 export default function AppShell() {
   const [activeTab, setActiveTab] = useState<TabName>("Origin");
+  const [navHeight, setNavHeight] = useState(0);
 
   const [gold, setGold] = useState(STARTING_GOLD);
   const [diamonds, setDiamonds] = useState(0);
@@ -53,25 +54,27 @@ export default function AppShell() {
 
   return (
     <div className="flex h-svh w-full flex-col overflow-hidden bg-zinc-950 pt-[env(safe-area-inset-top)]">
-      {activeTab === "Origin" ? (
-        <OriginTab
-          gold={gold}
-          diamonds={diamonds}
-          totalSeeds={totalSeeds}
-          creatures={creatures}
-          freePacks={freePacks}
-          onSpendGold={(amount) => setGold((g) => g - amount)}
-          onSpendDiamonds={(amount) => setDiamonds((d) => d - amount)}
-          onAddGold={(amount) => setGold((g) => g + amount)}
-          onAddDiamonds={(amount) => setDiamonds((d) => d + amount)}
-          onSpendFreePack={() => setFreePacks((f) => f - 1)}
-          onApplyPull={applySlot2}
-        />
-      ) : (
-        <UnderConstruction tab={activeTab} />
-      )}
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden" style={{ paddingBottom: navHeight }}>
+        {activeTab === "Origin" ? (
+          <OriginTab
+            gold={gold}
+            diamonds={diamonds}
+            totalSeeds={totalSeeds}
+            creatures={creatures}
+            freePacks={freePacks}
+            onSpendGold={(amount) => setGold((g) => g - amount)}
+            onSpendDiamonds={(amount) => setDiamonds((d) => d - amount)}
+            onAddGold={(amount) => setGold((g) => g + amount)}
+            onAddDiamonds={(amount) => setDiamonds((d) => d + amount)}
+            onSpendFreePack={() => setFreePacks((f) => f - 1)}
+            onApplyPull={applySlot2}
+          />
+        ) : (
+          <UnderConstruction tab={activeTab} />
+        )}
+      </div>
 
-      <TabBar active={activeTab} onChange={setActiveTab} />
+      <TabBar active={activeTab} onChange={setActiveTab} onHeightChange={setNavHeight} />
     </div>
   );
 }
