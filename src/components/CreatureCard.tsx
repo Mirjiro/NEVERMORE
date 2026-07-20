@@ -54,7 +54,7 @@ export default function CreatureCard({
           className="absolute inset-0 flex items-center justify-center rounded-xl border-2 border-zinc-700 bg-zinc-950"
           style={{ backfaceVisibility: "hidden", transform: "rotateY(180deg)" }}
         >
-          <span className="font-serif text-2xl tracking-[0.3em] text-zinc-600">NM</span>
+          <span className="font-serif text-2xl tracking-[0.3em] text-ink-faint">NM</span>
         </div>
 
         {/* Front: the creature reveal */}

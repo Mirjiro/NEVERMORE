@@ -42,13 +42,13 @@ export default function OriginRevealCard({
             )}
             style={{ backfaceVisibility: "hidden" }}
           >
-            <div className="font-serif text-base font-bold leading-tight tracking-wide text-zinc-100 sm:text-lg">
+            <div className="font-serif text-base font-bold leading-tight tracking-wide text-ink sm:text-lg">
               <div>NEVERMORE:</div>
               <div>ORIGIN BOX</div>
             </div>
             <div
               className={cn(
-                "mt-3 font-sans text-xs italic tracking-[0.2em] text-zinc-400",
+                "mt-3 font-sans text-xs italic tracking-[0.2em] text-ink-muted",
                 packType === "Elite" && "text-white [text-shadow:0_0_8px_rgba(255,255,255,0.55)]",
               )}
             >
@@ -65,8 +65,8 @@ export default function OriginRevealCard({
             )}
             style={{ backfaceVisibility: "hidden", transform: "rotateY(180deg)" }}
           >
-            <div className="font-serif text-lg font-bold tracking-wide text-zinc-100 sm:text-xl">ORIGIN:</div>
-            <div className="mt-1 font-serif text-lg font-bold tracking-wide text-zinc-100 sm:text-xl">
+            <div className="font-serif text-lg font-bold tracking-wide text-ink sm:text-xl">ORIGIN:</div>
+            <div className="mt-1 font-serif text-lg font-bold tracking-wide text-ink sm:text-xl">
               {origin} Pack
             </div>
           </div>
@@ -87,13 +87,13 @@ export default function OriginRevealCard({
             initial={{ opacity: 0 }}
             animate={{ opacity: [0.5, 1, 0.5] }}
             transition={{ opacity: { duration: 1.4, repeat: Infinity } }}
-            className="text-center text-sm font-semibold uppercase tracking-widest text-zinc-300"
+            className="text-center text-sm font-semibold uppercase tracking-widest text-ink-muted"
           >
             Tap To Reveal
           </motion.p>
           <button
             onClick={() => setInfoOpen(true)}
-            className="flex h-7 w-7 items-center justify-center rounded-full border border-zinc-600 font-serif text-xs italic text-zinc-300"
+            className="flex h-7 w-7 items-center justify-center rounded-full border border-zinc-600 font-serif text-xs italic text-ink-muted"
             aria-label={`${origin} Pack info`}
           >
             i

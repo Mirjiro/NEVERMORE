@@ -81,10 +81,10 @@ export default function StoreModal({
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex shrink-0 items-center justify-between border-b border-zinc-800 px-5 py-4">
-              <h2 className="text-lg font-bold text-zinc-50">Store</h2>
+              <h2 className="text-lg font-bold text-ink">Store</h2>
               <button
                 onClick={onClose}
-                className="flex h-8 w-8 items-center justify-center rounded-full border border-zinc-700 text-zinc-400"
+                className="flex h-8 w-8 items-center justify-center rounded-full border border-zinc-700 text-ink-muted"
                 aria-label="Close store"
               >
                 ✕
@@ -116,14 +116,14 @@ export default function StoreModal({
                       className="flex items-center justify-between rounded-lg border border-zinc-800 bg-zinc-900/60 px-3 py-2.5"
                     >
                       <div className="min-w-0">
-                        <p className="text-sm font-semibold text-zinc-100">{d.name}</p>
-                        <p className="truncate text-xs text-zinc-400">
+                        <p className="text-sm font-semibold text-ink">{d.name}</p>
+                        <p className="truncate text-xs text-ink-muted">
                           🪙 {d.goldLabel} · 💎 {d.diamondLabel}
                         </p>
                       </div>
                       <button
                         disabled
-                        className="shrink-0 cursor-not-allowed rounded-full bg-zinc-800 px-3 py-1.5 text-xs font-semibold text-zinc-500"
+                        className="shrink-0 cursor-not-allowed rounded-full bg-zinc-800 px-3 py-1.5 text-xs font-semibold text-ink-faint"
                       >
                         {d.price}
                       </button>
@@ -132,7 +132,7 @@ export default function StoreModal({
                 </div>
               </Section>
 
-              <Section title="Convert Gold/Diamonds" icon="🔄" accent="text-zinc-300">
+              <Section title="Convert Gold/Diamonds" icon="🔄" accent="text-ink-muted">
                 <ExchangeBox
                   title="Diamond Exchange"
                   colorClass="border-sky-300/40 bg-sky-400/10"
@@ -168,11 +168,11 @@ export default function StoreModal({
                       setCodeMessage(null);
                     }}
                     placeholder="Enter code"
-                    className="min-w-0 flex-1 rounded-lg border border-zinc-800 bg-zinc-900/60 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-emerald-400/60"
+                    className="min-w-0 flex-1 rounded-lg border border-zinc-800 bg-zinc-900/60 px-3 py-2 text-sm text-ink placeholder:text-ink-faint focus:outline-none focus:ring-1 focus:ring-emerald-400/60"
                   />
                   <button
                     type="submit"
-                    className="shrink-0 rounded-full bg-emerald-500/90 px-4 py-2 text-sm font-semibold text-zinc-950 transition active:scale-95"
+                    className="shrink-0 rounded-full bg-emerald-500/90 px-4 py-2 text-sm font-semibold text-ink-dark transition active:scale-95"
                   >
                     Enter
                   </button>
@@ -216,10 +216,10 @@ function PurchaseTile({ icon, amountLabel, price }: { icon: string; amountLabel:
   return (
     <div className="flex flex-col items-center gap-1 rounded-lg border border-zinc-800 bg-zinc-900/60 px-2 py-3">
       <span className="text-xl">{icon}</span>
-      <span className="text-sm font-semibold text-zinc-100">{amountLabel}</span>
+      <span className="text-sm font-semibold text-ink">{amountLabel}</span>
       <button
         disabled
-        className="mt-1 w-full cursor-not-allowed rounded-full bg-zinc-800 px-2 py-1 text-[11px] font-semibold text-zinc-500"
+        className="mt-1 w-full cursor-not-allowed rounded-full bg-zinc-800 px-2 py-1 text-[11px] font-semibold text-ink-faint"
       >
         {price}
       </button>
@@ -256,7 +256,7 @@ function ExchangeBox({
               className="flex items-center justify-between rounded-lg bg-black/20 px-3 py-2 text-sm transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
             >
               <span className={cn("font-semibold", textClass)}>{opt.gainLabel}</span>
-              <span className="text-xs text-zinc-300">for {opt.costLabel}</span>
+              <span className="text-xs text-ink-muted">for {opt.costLabel}</span>
             </button>
           );
         })}

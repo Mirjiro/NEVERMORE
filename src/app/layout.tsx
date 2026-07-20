@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist_Mono, IM_Fell_English } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const imFellEnglish = IM_Fell_English({
+  variable: "--font-im-fell",
+  weight: "400",
+  style: ["normal", "italic"],
   subsets: ["latin"],
 });
 
@@ -32,7 +34,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${imFellEnglish.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="h-full overflow-hidden bg-zinc-950">{children}</body>
     </html>

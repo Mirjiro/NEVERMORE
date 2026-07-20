@@ -36,16 +36,16 @@ export default function PackInfoModal({
           >
             <div className="flex items-start justify-between gap-3 border-b border-zinc-800 px-5 pb-3 pt-5">
               <div>
-                <h2 className="text-base font-bold text-zinc-50">{config.label} Origin Box</h2>
-                <p className="mt-0.5 text-xs text-zinc-400">
+                <h2 className="text-base font-bold text-ink">{config.label} Origin Box</h2>
+                <p className="mt-0.5 text-xs text-ink-muted">
                   X1: {config.costX1.toLocaleString()} {config.currency} · X10: {config.costX10.toLocaleString()}{" "}
                   {config.currency}
                 </p>
-                <p className="mt-1 text-xs text-zinc-500">{BOX_DESCRIPTIONS[packType]}</p>
+                <p className="mt-1 text-xs text-ink-faint">{BOX_DESCRIPTIONS[packType]}</p>
               </div>
               <button
                 onClick={onClose}
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-zinc-700 text-zinc-400"
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-zinc-700 text-ink-muted"
                 aria-label="Close"
               >
                 ✕
@@ -53,14 +53,14 @@ export default function PackInfoModal({
             </div>
 
             <div className="overflow-y-auto px-5 py-3">
-              <h3 className="mb-1 text-xs font-semibold uppercase tracking-wider text-zinc-500">Origin Odds</h3>
+              <h3 className="mb-1 text-xs font-semibold uppercase tracking-wider text-ink-faint">Origin Odds</h3>
               {originOdds.map(([origin, pct], i) => (
                 <div
                   key={origin}
                   className={`flex items-center justify-between py-1.5 text-sm ${i > 0 ? "border-t border-zinc-900" : ""}`}
                 >
-                  <span className="text-zinc-300">{origin} Pack</span>
-                  <span className="font-mono text-zinc-100">{pct}%</span>
+                  <span className="text-ink-muted">{origin} Pack</span>
+                  <span className="font-mono text-ink">{pct}%</span>
                 </div>
               ))}
             </div>

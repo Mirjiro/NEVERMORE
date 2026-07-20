@@ -25,12 +25,12 @@ export default function TabBar({
                 src={tab.icon}
                 alt=""
                 draggable={false}
-                className={cn("h-6 w-6 select-none object-contain", !isActive && "opacity-50")}
+                className={cn("h-9 w-9 select-none object-contain", !isActive && "opacity-50")}
               />
               <span
                 className={cn(
-                  "text-[10px] uppercase tracking-wide",
-                  isActive ? "font-semibold text-zinc-100" : "text-zinc-500",
+                  "text-[8px] uppercase tracking-wide",
+                  isActive ? "font-semibold text-ink" : "text-ink-faint",
                 )}
               >
                 {tab.name}

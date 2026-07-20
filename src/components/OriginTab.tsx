@@ -73,7 +73,7 @@ export default function OriginTab({
     <div className="mx-auto flex h-full w-full max-w-md flex-col overflow-hidden px-4">
       {/* Header — fixed within the layout, never scrolls */}
       <header className="shrink-0 pt-4 text-center">
-        <h1 className="text-2xl font-bold tracking-wide text-zinc-50">NEVERMORE</h1>
+        <h1 className="text-2xl font-bold tracking-wide text-ink">NEVERMORE</h1>
       </header>
 
       {/* Currency row — fixed within the layout, never scrolls */}
@@ -120,8 +120,8 @@ export default function OriginTab({
                     "bg-gradient-to-b from-zinc-100 to-zinc-300 shadow-lg shadow-black/40",
                   )}
                 >
-                  <span className="text-base font-bold text-zinc-950">Open X1</span>
-                  <span className="text-xs font-medium text-zinc-700">
+                  <span className="text-base font-bold text-ink-dark">Open X1</span>
+                  <span className="text-xs font-medium text-ink-dark">
                     {config.costX1.toLocaleString()} {config.currency}
                   </span>
                 </button>
@@ -133,14 +133,14 @@ export default function OriginTab({
                     "bg-gradient-to-b from-zinc-100 to-zinc-300 shadow-lg shadow-black/40",
                   )}
                 >
-                  <span className="text-base font-bold text-zinc-950">Open X10</span>
-                  <span className="text-xs font-medium text-zinc-700">
+                  <span className="text-base font-bold text-ink-dark">Open X10</span>
+                  <span className="text-xs font-medium text-ink-dark">
                     {config.costX10.toLocaleString()} {config.currency}
                   </span>
                 </button>
                 <button
                   onClick={() => setInfoOpen(true)}
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-zinc-600 font-serif text-base italic text-zinc-300"
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-zinc-600 font-serif text-base italic text-ink-muted"
                   aria-label={`${activePack} Origin Box rate info`}
                 >
                   i
@@ -149,12 +149,12 @@ export default function OriginTab({
 
               {!canAffordX1 && (
                 <div className="flex items-center justify-center gap-2">
-                  <p className="text-center text-xs text-zinc-500">
+                  <p className="text-center text-xs text-ink-faint">
                     Not enough {config.currency} for {activePack === "Elite" ? "an" : "a"} {activePack} Origin Box.
                   </p>
                   <button
                     onClick={() => setStoreOpen(true)}
-                    className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-zinc-500 text-xs font-bold leading-none text-zinc-300"
+                    className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-zinc-500 text-xs font-bold leading-none text-ink-muted"
                     aria-label="Buy Gold or Diamonds"
                   >
                     +

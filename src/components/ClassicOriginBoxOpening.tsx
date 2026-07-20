@@ -318,7 +318,7 @@ export default function ClassicOriginBoxOpening({
           initial={{ opacity: 0 }}
           animate={{ opacity: [0.5, 1, 0.5] }}
           transition={{ opacity: { duration: 1.4, repeat: Infinity } }}
-          className="mt-2 text-center text-sm font-semibold uppercase tracking-widest text-zinc-300"
+          className="mt-2 text-center text-sm font-semibold uppercase tracking-widest text-ink-muted"
         >
           Tap to Open
         </motion.p>
