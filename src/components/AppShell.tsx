@@ -52,7 +52,7 @@ export default function AppShell() {
   const totalSeeds = Object.values(seedsByOrigin).reduce((a, b) => a + b, 0);
 
   return (
-    <div className="flex h-dvh w-full flex-col overflow-hidden bg-zinc-950 pt-[env(safe-area-inset-top)]">
+    <div className="flex h-svh w-full flex-col overflow-hidden bg-zinc-950 pt-[env(safe-area-inset-top)]">
       <div className="min-h-0 flex-1 overflow-hidden">
         {activeTab === "Origin" ? (
           <OriginTab

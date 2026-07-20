@@ -17,7 +17,7 @@ export default function TabBar({
   onChange: (tab: TabName) => void;
 }) {
   return (
-    <nav className="shrink-0 bg-zinc-950 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2">
+    <nav className="shrink-0 bg-zinc-950 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1">
       <div className="mx-auto w-full max-w-md px-2">
         {/* Icon row — icons sit inside the custom dock bar artwork */}
         <div className="relative w-full" style={{ aspectRatio: DOCK_BAR_ASPECT }}>
