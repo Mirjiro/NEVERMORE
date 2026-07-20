@@ -1,5 +1,6 @@
 "use client";
 
+import { useLayoutEffect, useRef } from "react";
 import { TABS, TabName } from "@/lib/tabs";
 import { cn } from "@/lib/cn";
 
@@ -10,20 +11,38 @@ const DOCK_BAR_ASPECT = "1200 / 601";
 const DOCK_INSET = "6.5%";
 
 /**
- * Single wrapper for the dock bar + its labels — kept as one group (not two
- * independently positioned pieces) so the label row always sits a fixed,
- * small gap beneath the artwork regardless of screen height.
+ * Pinned directly to the viewport via `position: fixed` — this does not
+ * depend on any ancestor's flex/height resolution, so it can't be thrown off
+ * by whatever percentage-height quirk affects the rest of the page on a given
+ * browser. Its real rendered height is measured in JS and reported up via
+ * `onHeightChange` so the scrollable content above it can reserve exact
+ * clearance instead of guessing a fixed padding value.
  */
 export default function TabBar({
   active,
   onChange,
+  onHeightChange,
 }: {
   active: TabName;
   onChange: (tab: TabName) => void;
+  onHeightChange?: (height: number) => void;
 }) {
+  const navRef = useRef<HTMLElement>(null);
+
+  useLayoutEffect(() => {
+    const el = navRef.current;
+    if (!el || !onHeightChange) return;
+    const report = () => onHeightChange(el.getBoundingClientRect().height);
+    report();
+    const observer = new ResizeObserver(report);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [onHeightChange]);
+
   return (
     <nav
-      className="mx-auto flex w-full max-w-md shrink-0 flex-col bg-zinc-950"
+      ref={navRef}
+      className="fixed inset-x-0 bottom-0 z-50 mx-auto flex w-full max-w-md flex-col bg-zinc-950"
       style={{
         gap: "3px",
         padding: `0 20px calc(env(safe-area-inset-bottom) + 12px)`,
