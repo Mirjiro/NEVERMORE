@@ -110,7 +110,7 @@ export default function OriginTab({
             </div>
 
             {/* Purchase controls — lifted clear of the bottom navigation */}
-            <div className="flex shrink-0 flex-col items-center gap-3 pb-3 pt-2">
+            <div className="flex shrink-0 flex-col items-center gap-3 pb-[6px] pt-2">
               <div className="flex items-center justify-center gap-4">
                 <button
                   onClick={() => openActivePack(1)}
