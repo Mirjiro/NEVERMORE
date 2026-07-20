@@ -25,7 +25,7 @@ export default function TabBar({
     <nav
       className="mx-auto flex w-full max-w-md shrink-0 flex-col bg-zinc-950"
       style={{
-        gap: "10px",
+        gap: "3px",
         padding: `0 20px calc(env(safe-area-inset-bottom) + 12px)`,
       }}
     >
