@@ -4,8 +4,8 @@ import { useLayoutEffect, useRef } from "react";
 import { TABS, TabName } from "@/lib/tabs";
 import { cn } from "@/lib/cn";
 
-const DOCK_BAR_ASSET = "/assets/dock/dock-bar.png";
-const DOCK_BAR_ASPECT = "1200 / 601";
+const DOCK_BAR_ASSET = "/assets/dock/dock-bar-cropped.png";
+const DOCK_BAR_ASPECT = "1161 / 163";
 
 /** Horizontal inset matching the artwork's ornate corner flourish, so icons sit inside the flat panel. */
 const DOCK_INSET = "6.5%";
