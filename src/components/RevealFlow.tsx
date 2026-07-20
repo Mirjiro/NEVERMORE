@@ -164,18 +164,18 @@ export default function RevealFlow({ pull, onDismiss }: { pull: PullResult; onDi
             }}
             className="flex w-full max-w-xs flex-col items-center gap-4 rounded-xl border border-zinc-700 bg-zinc-900 px-5 py-6 text-center"
           >
-            <p className="text-xs font-semibold uppercase tracking-widest text-zinc-500">Collected</p>
+            <p className="text-xs font-semibold uppercase tracking-widest text-ink-faint">Collected</p>
 
             <div className="flex w-full items-center justify-between gap-3 border-b border-zinc-800 pb-3">
               <span className={cn("text-sm font-semibold", slot1Style.accent)}>{pull.slot1.name}</span>
-              <span className="text-xs text-zinc-500">
+              <span className="text-xs text-ink-faint">
                 {pull.origin} · {slot1Style.label}
               </span>
             </div>
 
             <div className="flex w-full items-center justify-between gap-3">
               <span className={cn("text-sm font-semibold", slot2Content.accent)}>{slot2Content.title}</span>
-              <span className="text-xs text-zinc-500">{slot2Content.subtitle}</span>
+              <span className="text-xs text-ink-faint">{slot2Content.subtitle}</span>
             </div>
           </motion.div>
         )}
@@ -187,12 +187,12 @@ export default function RevealFlow({ pull, onDismiss }: { pull: PullResult; onDi
               goBack();
             }}
             disabled={position === 0}
-            className="px-2 text-lg text-zinc-500 disabled:opacity-20"
+            className="px-2 text-lg text-ink-faint disabled:opacity-20"
             aria-label="Previous reward"
           >
             ‹
           </button>
-          <span className="text-xs uppercase tracking-widest text-zinc-500">
+          <span className="text-xs uppercase tracking-widest text-ink-faint">
             {position < SUMMARY_POSITION ? `${position + 1} / ${REWARD_COUNT}` : "Collected"}
           </span>
           <button
@@ -200,14 +200,14 @@ export default function RevealFlow({ pull, onDismiss }: { pull: PullResult; onDi
               e.stopPropagation();
               advance();
             }}
-            className="px-2 text-lg text-zinc-500"
+            className="px-2 text-lg text-ink-faint"
             aria-label={position < SUMMARY_POSITION ? "Next reward" : "Continue"}
           >
             ›
           </button>
         </div>
 
-        <p className="text-[11px] text-zinc-600">Tap or swipe to continue</p>
+        <p className="text-[11px] text-ink-faint">Tap or swipe to continue</p>
       </div>
     </div>
   );

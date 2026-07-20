@@ -21,10 +21,10 @@ export default function InventoryBar({
   ];
 
   return (
-    <div className="flex w-full items-center justify-center gap-2 text-sm text-zinc-200 sm:gap-3">
+    <div className="flex w-full items-center justify-center gap-2 text-sm text-ink sm:gap-3">
       {items.map((item, i) => (
         <Fragment key={i}>
-          {i > 0 && <span className="text-zinc-700">·</span>}
+          {i > 0 && <span className="text-ink-faint">·</span>}
           <span className="flex items-center gap-1">
             <span className="text-sm leading-none">{item.icon}</span>
             <span className="font-semibold tabular-nums">{item.value}</span>

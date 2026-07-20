@@ -140,7 +140,7 @@ export default function RevealDeck({ pulls, onDismiss }: { pulls: PullResult[]; 
           e.stopPropagation();
           setCurrent(total);
         }}
-        className="absolute right-3 top-1 z-20 rounded-full border border-zinc-700 bg-zinc-900/80 px-3 py-1 text-xs font-medium text-zinc-300"
+        className="absolute right-3 top-1 z-20 rounded-full border border-zinc-700 bg-zinc-900/80 px-3 py-1 text-xs font-medium text-ink-muted"
       >
         Skip
       </button>
@@ -207,10 +207,10 @@ export default function RevealDeck({ pulls, onDismiss }: { pulls: PullResult[]; 
           </AnimatePresence>
         </div>
 
-        <span className="text-xs uppercase tracking-widest text-zinc-500">
+        <span className="text-xs uppercase tracking-widest text-ink-faint">
           {current + 1} / {total}
         </span>
-        <p className="text-[11px] text-zinc-600">Tap or swipe to reveal next</p>
+        <p className="text-[11px] text-ink-faint">Tap or swipe to reveal next</p>
       </div>
     </div>
   );
@@ -348,7 +348,7 @@ function DeckSummary({ pulls, onDismiss }: { pulls: PullResult[]; onDismiss: () 
         onClick={onDismiss}
         className="relative z-10 flex max-h-[70vh] w-full max-w-xs flex-col items-center gap-3 rounded-xl border border-zinc-700 bg-zinc-900 px-5 py-5 text-center"
       >
-        <p className="shrink-0 text-xs font-semibold uppercase tracking-widest text-zinc-500">
+        <p className="shrink-0 text-xs font-semibold uppercase tracking-widest text-ink-faint">
           Collected · {pulls.length}x Open
         </p>
 
@@ -362,7 +362,7 @@ function DeckSummary({ pulls, onDismiss }: { pulls: PullResult[]; onDismiss: () 
                 </p>
                 <div className="mt-1 flex flex-wrap gap-x-2 gap-y-0.5">
                   {cards.map((card, i) => (
-                    <span key={i} className="text-sm text-zinc-200">
+                    <span key={i} className="text-sm text-ink">
                       {card.name}
                     </span>
                   ))}
@@ -374,12 +374,12 @@ function DeckSummary({ pulls, onDismiss }: { pulls: PullResult[]; onDismiss: () 
           {totalRows.map((row) => (
             <div key={row.key} className="flex items-center justify-between gap-2 border-t border-zinc-800 py-2">
               <span className={cn("truncate text-sm font-semibold", row.accent)}>{row.title}</span>
-              <span className="shrink-0 text-[11px] text-zinc-500">{row.subtitle}</span>
+              <span className="shrink-0 text-[11px] text-ink-faint">{row.subtitle}</span>
             </div>
           ))}
         </div>
 
-        <p className="shrink-0 text-[11px] text-zinc-600">Tap anywhere to continue</p>
+        <p className="shrink-0 text-[11px] text-ink-faint">Tap anywhere to continue</p>
       </motion.button>
     </div>
   );

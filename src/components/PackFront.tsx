@@ -53,12 +53,12 @@ export default function PackFront({ packType, active = true }: { packType: PackT
       )}
       style={{ width: TILE_WIDTH, aspectRatio: "4 / 5" }}
     >
-      <div className="font-serif text-lg font-bold leading-tight tracking-wide text-zinc-100 sm:text-xl">
+      <div className="font-serif text-lg font-bold leading-tight tracking-wide text-ink sm:text-xl">
         <div>NEVERMORE:</div>
         <div>ORIGIN BOX</div>
       </div>
 
-      <div className="mt-3 font-sans text-sm italic tracking-[0.2em] text-zinc-400 text-white [text-shadow:0_0_8px_rgba(255,255,255,0.55)]">
+      <div className="mt-3 font-sans text-sm italic tracking-[0.2em] text-white [text-shadow:0_0_8px_rgba(255,255,255,0.55)]">
         {packType}
       </div>
     </div>
