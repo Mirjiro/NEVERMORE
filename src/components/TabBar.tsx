@@ -21,7 +21,12 @@ export default function TabBar({
               onClick={() => onChange(tab.name)}
               className="flex flex-1 flex-col items-center gap-0.5 py-2.5"
             >
-              <span className={cn("text-lg leading-none", !isActive && "opacity-50")}>{tab.icon}</span>
+              <img
+                src={tab.icon}
+                alt=""
+                draggable={false}
+                className={cn("h-6 w-6 select-none object-contain", !isActive && "opacity-50")}
+              />
               <span
                 className={cn(
                   "text-[10px] uppercase tracking-wide",
