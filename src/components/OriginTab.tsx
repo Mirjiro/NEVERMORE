@@ -70,7 +70,7 @@ export default function OriginTab({
   };
 
   return (
-    <div className="mx-auto flex h-full w-full max-w-md flex-col overflow-hidden px-4">
+    <div className="mx-auto flex min-h-0 w-full max-w-md flex-1 flex-col overflow-hidden px-4">
       {/* Header — fixed within the layout, never scrolls */}
       <header className="shrink-0 pt-4 text-center">
         <h1 className="text-2xl font-bold tracking-wide text-ink">NEVERMORE</h1>
