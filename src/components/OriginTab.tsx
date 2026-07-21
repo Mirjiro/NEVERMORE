@@ -73,7 +73,15 @@ export default function OriginTab({
     <div className="mx-auto flex min-h-0 w-full max-w-md flex-1 flex-col overflow-hidden px-4">
       {/* Header — fixed within the layout, never scrolls */}
       <header className="shrink-0 pt-4 text-center">
-        <h1 className="text-2xl font-bold tracking-wide text-ink">NEVERMORE</h1>
+        <h1>
+          <img
+            src="/assets/logo/nevermore-wordmark.png"
+            alt="NEVERMORE"
+            draggable={false}
+            className="mx-auto h-auto select-none"
+            style={{ width: "clamp(220px, 62vw, 300px)" }}
+          />
+        </h1>
       </header>
 
       {/* Currency row — fixed within the layout, never scrolls */}
