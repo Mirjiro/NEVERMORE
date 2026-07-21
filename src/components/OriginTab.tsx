@@ -131,7 +131,7 @@ export default function OriginTab({
                       alt=""
                       draggable={false}
                       className="pointer-events-none select-none"
-                      style={{ width: 150, aspectRatio: "340 / 191" }}
+                      style={{ height: 64, aspectRatio: "340 / 191" }}
                     />
                   </button>
                   <button
@@ -145,7 +145,7 @@ export default function OriginTab({
                       alt=""
                       draggable={false}
                       className="pointer-events-none select-none"
-                      style={{ width: 150, aspectRatio: "340 / 195" }}
+                      style={{ height: 64, aspectRatio: "340 / 195" }}
                     />
                   </button>
                   <button
@@ -158,7 +158,7 @@ export default function OriginTab({
                       alt=""
                       draggable={false}
                       className="pointer-events-none select-none"
-                      style={{ width: 64, aspectRatio: "130 / 148" }}
+                      style={{ height: 44, aspectRatio: "130 / 148" }}
                     />
                   </button>
                 </div>
