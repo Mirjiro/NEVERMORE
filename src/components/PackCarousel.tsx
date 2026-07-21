@@ -23,22 +23,9 @@ export default function PackCarousel({
   const slideRefs = useRef<Partial<Record<PackType, HTMLDivElement | null>>>({});
   const measureRef = useRef<HTMLDivElement>(null);
   const activeRef = useRef(active);
-  const scrollEndTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Which slide LOOKS active (full scale/opacity) is tracked separately from
-  // `active` itself. `active` only updates ~160ms after scrolling settles —
-  // exactly the debounce that keeps it from changing mid-swipe and (in an
-  // earlier version of this component) triggering a second programmatic
-  // scroll. That's the right call for `active`, since it's the value the
-  // parent uses for pricing/dot state and nothing should update those
-  // mid-gesture. But gating the box's own grow/shrink animation on that same
-  // debounce meant the box sat small for ~160ms after the swipe had already
-  // physically arrived, then took its own 300ms transition on top of that —
-  // close to half a second of visible dead time after the finger stops,
-  // for a purely local rendering concern that was never part of what
-  // caused the earlier double-scroll bug. Tracking it separately, live,
-  // off the same scroll position, removes that lag without reintroducing
-  // any programmatic scrolling.
+  // Which slide LOOKS active (opacity) is tracked locally so the box's own
+  // visual state can update live, every scroll event, with no debounce.
   const [visualActive, setVisualActive] = useState(active);
 
   // Measure the box's rendered height directly in JS, rather than
@@ -49,15 +36,11 @@ export default function PackCarousel({
   // bug entirely and guarantees the carousel region always matches exactly
   // what got rendered, everywhere.
   //
-  // This reads a dedicated, always-full-scale, never-transitioning sizer
-  // element — not any of the actual carousel slides. Both Classic and Elite
-  // share the same aspect ratio, so any slide would numerically give the same
-  // answer, but the slides themselves toggle between scale-100 (active) and
-  // scale-[0.82] (inactive) with a 300ms CSS transition; measuring one of
-  // them directly is liable to catch it mid-transition — e.g. right after a
-  // reveal-flow round trip remounts this component — and lock in a too-small
-  // height for good, since nothing ever fires a follow-up resize once a pure
-  // transform transition (rather than a real layout change) finishes.
+  // This reads a dedicated sizer element — not any of the actual carousel
+  // slides. Both Classic and Elite share the same aspect ratio, so any slide
+  // would numerically give the same answer, but keeping the measurement on
+  // its own always-mounted element avoids coupling it to whichever slide
+  // happens to be active at the moment ResizeObserver first fires.
   const [measuredHeight, setMeasuredHeight] = useState<number | null>(null);
 
   useEffect(() => {
@@ -102,10 +85,15 @@ export default function PackCarousel({
   // also walk up and scroll ancestor containers, not just this one.
   //
   // The fix: manual swipes are owned by native scroll-snap alone, with zero
-  // programmatic scrolling. `active` is only ever updated here — after
-  // scrolling has gone quiet for a beat — from whichever slide is nearest
-  // the container's resting scroll position. Nothing scrolls in response to
-  // that update; it only describes what already happened.
+  // programmatic scrolling. `active` used to only update here after a
+  // ~160ms debounce, on the theory that changing it mid-swipe was what
+  // caused the double-scroll — but the actual cause was the scrollIntoView
+  // effect above, which is gone entirely now. Nothing left reacts to
+  // `active` changing by scrolling, so debouncing it no longer protects
+  // against anything; it only meant the purchase buttons' pricing text
+  // visibly lagged behind the box's own (already-live) opacity. `active`
+  // and `visualActive` now update from the same calculation, at the same
+  // time, so the box and the buttons are never out of sync.
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
@@ -130,22 +118,12 @@ export default function PackCarousel({
     };
 
     const handleScroll = () => {
-      // Live, undebounced — purely local, drives only the box's own
-      // scale/opacity below. Never reaches the parent, so it can't feed
-      // back into any programmatic scroll.
-      setVisualActive(nearestPack());
-
-      if (scrollEndTimer.current) {
-        clearTimeout(scrollEndTimer.current);
+      const pack = nearestPack();
+      setVisualActive(pack);
+      if (pack !== activeRef.current) {
+        activeRef.current = pack;
+        onSwitch(pack);
       }
-
-      scrollEndTimer.current = setTimeout(() => {
-        const pack = nearestPack();
-        if (pack !== activeRef.current) {
-          activeRef.current = pack;
-          onSwitch(pack);
-        }
-      }, 160);
     };
 
     container.addEventListener("scroll", handleScroll, {
@@ -154,10 +132,6 @@ export default function PackCarousel({
 
     return () => {
       container.removeEventListener("scroll", handleScroll);
-
-      if (scrollEndTimer.current) {
-        clearTimeout(scrollEndTimer.current);
-      }
     };
   }, [onSwitch]);
 
@@ -215,27 +189,14 @@ export default function PackCarousel({
               style={{ height, scrollSnapAlign: "start", scrollSnapStop: "always" }}
             >
               <div
-                // transition-[transform,opacity] rather than transition-all:
-                // transform and opacity are the two properties the GPU
-                // compositor can animate independently of the main thread.
-                // blur()/saturate() filters (dropped below) don't have that
-                // path — animating them forces a full repaint on every
-                // frame, which is exactly the kind of main-thread work that
-                // can stall mid-swipe on a real phone, even though it never
-                // shows up testing on an unloaded desktop browser.
-                //
-                // duration-150, not duration-300: visualActive now flips the
-                // instant scroll crosses the midpoint (live, no debounce),
-                // but the box still has to visually finish animating from
-                // 82%/30%-opacity up to 100%/100% after that — at 300ms, a
-                // swipe that only crosses the midpoint right at the end of
-                // its glide could still be visibly growing well after the
-                // scroll itself has already arrived, reading as "still
-                // settling" even though the position is already correct.
-                // Half the duration finishes that visual catch-up sooner.
+                // No scale animation between slides — the box stays at its
+                // full/main size the whole time you're swiping, so there's
+                // no small-to-large pop to glitch. Opacity alone (a cheap,
+                // compositor-only property) still fades the inactive slide
+                // for a sense of focus, without ever changing its size.
                 className={cn(
-                  "flex origin-top items-start justify-center pt-0 pb-2 transition-[transform,opacity] duration-150 ease-out",
-                  isActive ? "scale-100 opacity-100" : "pointer-events-none scale-[0.82] opacity-30",
+                  "flex origin-top items-start justify-center pt-0 pb-2 transition-opacity duration-150 ease-out",
+                  isActive ? "opacity-100" : "pointer-events-none opacity-30",
                 )}
               >
                 <PackFront packType={pack} active={isActive} />
