@@ -10,9 +10,11 @@ const ORDER: PackType[] = ["Classic", "Elite"];
 export default function PackCarousel({
   active,
   onSwitch,
+  height,
 }: {
   active: PackType;
   onSwitch: (pack: PackType) => void;
+  height: string;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const slideRefs = useRef<Partial<Record<PackType, HTMLDivElement | null>>>({});
@@ -66,11 +68,12 @@ export default function PackCarousel({
   }, [active]);
 
   return (
-    <div className="relative h-full w-full">
+    <div className="relative w-full shrink-0 overflow-hidden" style={{ height }}>
       <div
         ref={containerRef}
-        className="no-scrollbar h-full w-full overflow-y-auto overscroll-y-contain"
+        className="no-scrollbar w-full overflow-y-auto overscroll-y-contain"
         style={{
+          height,
           scrollSnapType: "y mandatory",
           touchAction: "pan-y",
           WebkitOverflowScrolling: "touch",
@@ -84,16 +87,17 @@ export default function PackCarousel({
               ref={(el) => {
                 slideRefs.current[pack] = el;
               }}
-              className="flex h-full w-full shrink-0 items-start justify-center"
-              style={{ scrollSnapAlign: "center", scrollSnapStop: "always" }}
+              className="flex w-full shrink-0 items-start justify-center"
+              style={{ height, scrollSnapAlign: "center", scrollSnapStop: "always" }}
             >
               <div
                 className={cn(
-                  "flex h-full items-start justify-center pt-0 pb-4 transition-all duration-300 ease-out",
+                  "flex items-start justify-center pt-0 pb-2 transition-all duration-300 ease-out",
                   isActive
                     ? "scale-100 opacity-100 blur-none"
                     : "pointer-events-none scale-[0.82] opacity-30 blur-[3px] saturate-50",
                 )}
+                style={{ height }}
               >
                 <PackFront packType={pack} active={isActive} />
               </div>
