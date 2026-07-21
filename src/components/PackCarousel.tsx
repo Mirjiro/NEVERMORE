@@ -22,10 +22,8 @@ export default function PackCarousel({
   const containerRef = useRef<HTMLDivElement>(null);
   const slideRefs = useRef<Partial<Record<PackType, HTMLDivElement | null>>>({});
   const measureRef = useRef<HTMLDivElement>(null);
-  const isUserScrolling = useRef(false);
-  const settleFrame = useRef<number | null>(null);
-  const hasScrolledOnce = useRef(false);
-  const lastSyncedPack = useRef<PackType | null>(null);
+  const activeRef = useRef(active);
+  const scrollEndTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Measure the box's rendered height directly in JS, rather than
   // recomputing its width-driven aspect-ratio math a second time in a nested
@@ -58,137 +56,107 @@ export default function PackCarousel({
 
   const height = measuredHeight != null ? `${measuredHeight}px` : FALLBACK_HEIGHT;
 
-  // Which slide is "active" (full scale, full opacity) used to be driven by
-  // an IntersectionObserver watching each slide against the container. That
-  // added an extra async hop between the scroll actually arriving at a slide
-  // and the visual state catching up to it: IntersectionObserver callbacks
-  // are only guaranteed to run "at some point after" a layout/paint, not
-  // synchronously with the scroll that caused them, and can lag noticeably
-  // behind fast or compositor-driven scrolling. That gap is exactly what a
-  // swipe stalling mid-transition looks like from the outside — the scroll
-  // itself already arrived, but nothing told the box to grow into view yet,
-  // so it's still small/faded until something (another nudge, another
-  // scroll event) finally makes the observer report in.
+  useEffect(() => {
+    activeRef.current = active;
+  }, [active]);
+
+  // On mount only (e.g. right after a reveal-flow round trip remounts this
+  // component with active="Elite" already), snap the container to match the
+  // caller's active pack before paint — a direct scrollTop assignment, not
+  // scrollIntoView, so it can't touch any ancestor scroll container, and an
+  // empty dependency array so it never re-fires and never fights a swipe.
+  useLayoutEffect(() => {
+    const container = containerRef.current;
+    const slide = slideRefs.current[active];
+    if (!container || !slide) return;
+    container.scrollTop = slide.offsetTop;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Previously, two systems both tried to own the carousel's scroll
+  // position: native CSS scroll-snap (owning the actual swipe gesture) and
+  // a React effect that called `slideRefs.current[active]?.scrollIntoView()`
+  // whenever `active` changed. That was fine when only a dot tap ever
+  // changed `active`. But once the active pack started being derived from
+  // scroll position directly (so the UI updates without waiting on a
+  // separate observer), `active` also changes *during* a manual swipe —
+  // which made that same effect fire mid-gesture and re-scroll on top of
+  // native snap's own settle, producing exactly the "locks, then moves
+  // again" double-scroll this was rewritten to fix. `scrollIntoView` can
+  // also walk up and scroll ancestor containers, not just this one.
   //
-  // Deriving the active slide directly from scrollTop instead removes that
-  // extra hop entirely: it's the same value the browser is already using to
-  // decide where the scroll rests, read synchronously, every scroll event —
-  // no separate observer, no separate timing, nothing to lag behind.
+  // The fix: manual swipes are owned by native scroll-snap alone, with zero
+  // programmatic scrolling. `active` is only ever updated here — after
+  // scrolling has gone quiet for a beat — from whichever slide is nearest
+  // the container's resting scroll position. Nothing scrolls in response to
+  // that update; it only describes what already happened.
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
-    const syncActiveToScroll = () => {
-      const slideHeight = container.clientHeight;
-      if (!slideHeight) return;
-      const idx = Math.min(Math.max(Math.round(container.scrollTop / slideHeight), 0), ORDER.length - 1);
-      const pack = ORDER[idx];
-      // Every 'scroll' event during a gesture can fire many times a second;
-      // skip the call entirely (not just rely on React bailing out of a
-      // same-value setState) when the slide hasn't actually changed, so a
-      // swipe doesn't spend any extra work re-announcing the same pack over
-      // and over while the main thread already has plenty to do.
-      if (pack && pack !== lastSyncedPack.current) {
-        lastSyncedPack.current = pack;
-        onSwitch(pack);
+    const commitSettledPack = () => {
+      let nearestPack: PackType = ORDER[0];
+      let nearestDistance = Number.POSITIVE_INFINITY;
+
+      for (const pack of ORDER) {
+        const slide = slideRefs.current[pack];
+        if (!slide) continue;
+
+        const distance = Math.abs(slide.offsetTop - container.scrollTop);
+
+        if (distance < nearestDistance) {
+          nearestDistance = distance;
+          nearestPack = pack;
+        }
+      }
+
+      if (nearestPack !== activeRef.current) {
+        activeRef.current = nearestPack;
+        onSwitch(nearestPack);
       }
     };
 
-    // Detect user-initiated scrolling so the programmatic snap (below) never
-    // fights a swipe that's already in progress — native scroll-snap
-    // physics owns the gesture entirely.
-    //
-    // iOS Safari's momentum scrolling can decay and stop just short of an
-    // actual snap point on a short/moderate swipe, instead of always gliding
-    // all the way there — `scroll-snap-type: mandatory` constrains where
-    // the scroll is allowed to *rest*, but doesn't guarantee the
-    // deceleration itself travels the full remaining distance. Finishing
-    // that needs to know when the scroll has actually stopped moving — not
-    // just when 'scroll' events stop firing, since iOS's momentum decay can
-    // trail off with a long tail of sparse, barely-there scroll events that
-    // would keep resetting a plain debounce without ever leaving a clean
-    // gap. A rAF loop that watches scrollTop directly sidesteps that: once
-    // the position hasn't moved for a handful of consecutive frames, it's
-    // settled, full stop — however many (or few) 'scroll' events fired.
-    const STABLE_FRAMES_NEEDED = 6; // ~100ms at 60fps
-    const MAX_POLL_MS = 3000; // safety net against a runaway loop
-
-    const pollForSettle = () => {
-      let lastTop = container.scrollTop;
-      let stableFrames = 0;
-      const startedAt = performance.now();
-
-      const step = () => {
-        const top = container.scrollTop;
-        if (Math.abs(top - lastTop) < 0.5) {
-          stableFrames += 1;
-        } else {
-          stableFrames = 0;
-          lastTop = top;
-        }
-
-        if (stableFrames >= STABLE_FRAMES_NEEDED) {
-          isUserScrolling.current = false;
-          const slideHeight = container.clientHeight;
-          if (slideHeight) {
-            const nearest = Math.round(top / slideHeight) * slideHeight;
-            if (Math.abs(top - nearest) > 1) {
-              // Finishing the snap itself moves scrollTop, which the next
-              // 'scroll' event restarts this same poll for — so it keeps
-              // watching until *that* settles too, instead of assuming one
-              // correction is the end of it. Clearing the ref (rather than
-              // leaving it pointing at this now-finished frame) is what lets
-              // that next 'scroll' event actually start a fresh poll instead
-              // of assuming one is still running.
-              container.scrollTo({ top: nearest, behavior: "smooth" });
-              settleFrame.current = null;
-              return;
-            }
-          }
-          settleFrame.current = null;
-          return;
-        }
-
-        if (performance.now() - startedAt > MAX_POLL_MS) {
-          isUserScrolling.current = false;
-          settleFrame.current = null;
-          return;
-        }
-
-        settleFrame.current = requestAnimationFrame(step);
-      };
-
-      settleFrame.current = requestAnimationFrame(step);
-    };
-
     const handleScroll = () => {
-      isUserScrolling.current = true;
-      syncActiveToScroll();
-      if (settleFrame.current == null) pollForSettle();
+      if (scrollEndTimer.current) {
+        clearTimeout(scrollEndTimer.current);
+      }
+
+      scrollEndTimer.current = setTimeout(() => {
+        commitSettledPack();
+      }, 160);
     };
-    container.addEventListener("scroll", handleScroll, { passive: true });
+
+    container.addEventListener("scroll", handleScroll, {
+      passive: true,
+    });
+
     return () => {
       container.removeEventListener("scroll", handleScroll);
-      if (settleFrame.current != null) cancelAnimationFrame(settleFrame.current);
+
+      if (scrollEndTimer.current) {
+        clearTimeout(scrollEndTimer.current);
+      }
     };
   }, [onSwitch]);
 
-  // External switches (dot tap) programmatically snap to the target slide.
-  // Skipped while the user is mid-gesture so it never fights their swipe.
-  //
-  // The very first run (on mount) jumps instantly rather than smoothly: on
-  // a fresh mount with e.g. active="Elite" (right after a reveal-flow round
-  // trip), the container itself always starts scrolled-to-0 (Classic) in
-  // the DOM. A `useLayoutEffect` + instant jump settles the scroll onto the
-  // actual active slide before the browser ever paints, so there's no
-  // visible flash of Classic before it animates away to Elite. Subsequent
-  // dot-tap switches animate smoothly instead.
-  useLayoutEffect(() => {
-    if (isUserScrolling.current) return;
-    const behavior = hasScrolledOnce.current ? "smooth" : "auto";
-    hasScrolledOnce.current = true;
-    slideRefs.current[active]?.scrollIntoView({ behavior, block: "nearest" });
-  }, [active]);
+  // The only programmatic scrolling in this component: a dot tap. Scrolls
+  // exclusively the carousel's own container (never scrollIntoView, so
+  // never any ancestor), and updates `active` itself right away rather than
+  // waiting on the scroll-settle effect above to notice.
+  const scrollToPack = (pack: PackType) => {
+    const container = containerRef.current;
+    const slide = slideRefs.current[pack];
+
+    if (!container || !slide) return;
+
+    activeRef.current = pack;
+    onSwitch(pack);
+
+    container.scrollTo({
+      top: slide.offsetTop,
+      behavior: "smooth",
+    });
+  };
 
   return (
     <div className="relative w-full shrink-0 overflow-hidden" style={{ height }}>
@@ -221,7 +189,7 @@ export default function PackCarousel({
                 slideRefs.current[pack] = el;
               }}
               className="flex w-full shrink-0 items-start justify-center"
-              style={{ height, scrollSnapAlign: "center", scrollSnapStop: "always" }}
+              style={{ height, scrollSnapAlign: "start", scrollSnapStop: "always" }}
             >
               <div
                 // transition-[transform,opacity] rather than transition-all:
@@ -255,7 +223,7 @@ export default function PackCarousel({
           <button
             key={pack}
             type="button"
-            onClick={() => onSwitch(pack)}
+            onClick={() => scrollToPack(pack)}
             aria-label={`Show ${pack} Origin Box`}
             className={cn(
               "w-1.5 rounded-full transition-all",
