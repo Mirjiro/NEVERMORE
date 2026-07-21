@@ -154,20 +154,29 @@ export default function OriginTab({
                 </button>
               </div>
 
-              {!canAffordX1 && (
-                <div className="flex items-center justify-center gap-2">
-                  <p className="text-center text-xs text-ink-faint">
+              <div className="flex h-6 shrink-0 items-center justify-center">
+                <div
+                  className={cn(
+                    "flex items-center justify-center gap-2",
+                    canAffordX1 && "invisible",
+                  )}
+                  aria-hidden={canAffordX1}
+                >
+                  <p className="whitespace-nowrap text-center text-xs text-ink-faint">
                     Not enough {config.currency} for {activePack === "Elite" ? "an" : "a"} {activePack} Origin Box.
                   </p>
+
                   <button
+                    type="button"
                     onClick={() => setStoreOpen(true)}
                     className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-zinc-500 text-xs font-bold leading-none text-ink-muted"
                     aria-label="Buy Gold or Diamonds"
+                    tabIndex={canAffordX1 ? -1 : 0}
                   >
                     +
                   </button>
                 </div>
-              )}
+              </div>
             </div>
 
             {/* Absorbs remaining vertical space below the buttons instead of

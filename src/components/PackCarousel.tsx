@@ -25,6 +25,22 @@ export default function PackCarousel({
   const activeRef = useRef(active);
   const scrollEndTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Which slide LOOKS active (full scale/opacity) is tracked separately from
+  // `active` itself. `active` only updates ~160ms after scrolling settles —
+  // exactly the debounce that keeps it from changing mid-swipe and (in an
+  // earlier version of this component) triggering a second programmatic
+  // scroll. That's the right call for `active`, since it's the value the
+  // parent uses for pricing/dot state and nothing should update those
+  // mid-gesture. But gating the box's own grow/shrink animation on that same
+  // debounce meant the box sat small for ~160ms after the swipe had already
+  // physically arrived, then took its own 300ms transition on top of that —
+  // close to half a second of visible dead time after the finger stops,
+  // for a purely local rendering concern that was never part of what
+  // caused the earlier double-scroll bug. Tracking it separately, live,
+  // off the same scroll position, removes that lag without reintroducing
+  // any programmatic scrolling.
+  const [visualActive, setVisualActive] = useState(active);
+
   // Measure the box's rendered height directly in JS, rather than
   // recomputing its width-driven aspect-ratio math a second time in a nested
   // calc(clamp(...)) CSS expression — nested math functions inside calc()
@@ -94,8 +110,8 @@ export default function PackCarousel({
     const container = containerRef.current;
     if (!container) return;
 
-    const commitSettledPack = () => {
-      let nearestPack: PackType = ORDER[0];
+    const nearestPack = (): PackType => {
+      let result: PackType = ORDER[0];
       let nearestDistance = Number.POSITIVE_INFINITY;
 
       for (const pack of ORDER) {
@@ -106,23 +122,29 @@ export default function PackCarousel({
 
         if (distance < nearestDistance) {
           nearestDistance = distance;
-          nearestPack = pack;
+          result = pack;
         }
       }
 
-      if (nearestPack !== activeRef.current) {
-        activeRef.current = nearestPack;
-        onSwitch(nearestPack);
-      }
+      return result;
     };
 
     const handleScroll = () => {
+      // Live, undebounced — purely local, drives only the box's own
+      // scale/opacity below. Never reaches the parent, so it can't feed
+      // back into any programmatic scroll.
+      setVisualActive(nearestPack());
+
       if (scrollEndTimer.current) {
         clearTimeout(scrollEndTimer.current);
       }
 
       scrollEndTimer.current = setTimeout(() => {
-        commitSettledPack();
+        const pack = nearestPack();
+        if (pack !== activeRef.current) {
+          activeRef.current = pack;
+          onSwitch(pack);
+        }
       }, 160);
     };
 
@@ -150,6 +172,7 @@ export default function PackCarousel({
     if (!container || !slide) return;
 
     activeRef.current = pack;
+    setVisualActive(pack);
     onSwitch(pack);
 
     container.scrollTo({
@@ -181,7 +204,7 @@ export default function PackCarousel({
         }}
       >
         {ORDER.map((pack) => {
-          const isActive = pack === active;
+          const isActive = pack === visualActive;
           return (
             <div
               key={pack}
@@ -200,8 +223,18 @@ export default function PackCarousel({
                 // frame, which is exactly the kind of main-thread work that
                 // can stall mid-swipe on a real phone, even though it never
                 // shows up testing on an unloaded desktop browser.
+                //
+                // duration-150, not duration-300: visualActive now flips the
+                // instant scroll crosses the midpoint (live, no debounce),
+                // but the box still has to visually finish animating from
+                // 82%/30%-opacity up to 100%/100% after that — at 300ms, a
+                // swipe that only crosses the midpoint right at the end of
+                // its glide could still be visibly growing well after the
+                // scroll itself has already arrived, reading as "still
+                // settling" even though the position is already correct.
+                // Half the duration finishes that visual catch-up sooner.
                 className={cn(
-                  "flex origin-top items-start justify-center pt-0 pb-2 transition-[transform,opacity] duration-300 ease-out",
+                  "flex origin-top items-start justify-center pt-0 pb-2 transition-[transform,opacity] duration-150 ease-out",
                   isActive ? "scale-100 opacity-100" : "pointer-events-none scale-[0.82] opacity-30",
                 )}
               >
