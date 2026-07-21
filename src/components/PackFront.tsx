@@ -15,7 +15,7 @@ const PACK_BG =
  * which is a known source of cross-browser inconsistency — width-only sizing
  * has no such dependency and renders identically everywhere.
  */
-const TILE_WIDTH = "clamp(260px, 84vw, 460px)";
+export const TILE_WIDTH = "clamp(260px, 84vw, 460px)";
 
 /** Placeholder Box art (brown/vignette background + wordmark) until real art ships. */
 export default function PackFront({ packType, active = true }: { packType: PackType; active?: boolean }) {
