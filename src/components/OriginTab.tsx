@@ -7,7 +7,6 @@ import type { PackType, PullResult } from "@/lib/types";
 import { cn } from "@/lib/cn";
 import InventoryBar from "./InventoryBar";
 import PackCarousel from "./PackCarousel";
-import { TILE_WIDTH } from "./PackFront";
 import PackInfoModal from "./PackInfoModal";
 import RevealFlow from "./RevealFlow";
 import RevealDeck from "./RevealDeck";
@@ -106,17 +105,11 @@ export default function OriginTab({
             className="relative flex min-h-0 flex-1 flex-col overflow-hidden"
             style={{ top: "clamp(-28px, -2svh, -4px)" }}
           >
-            {/* Carousel region — the ONLY scrollable area on this screen. Height is
-                computed here and passed straight through as an explicit pixel value
-                (rather than relying on nested h-full percentage resolution, which
-                resolves inconsistently across browsers inside a scroll-snap
-                container) so it tightly matches the box's own width-driven size
-                and the buttons below sit right under the box. */}
-            <PackCarousel
-              active={activePack}
-              onSwitch={setActivePack}
-              height={`calc(${TILE_WIDTH} * 4000 / 2999 + 8px)`}
-            />
+            {/* Carousel region — the ONLY scrollable area on this screen. It
+                measures its own box height directly (see PackCarousel) so it
+                tightly matches the box's own width-driven size and the
+                buttons below sit right under the box. */}
+            <PackCarousel active={activePack} onSwitch={setActivePack} />
 
             {/* Purchase controls — sit directly beneath the box */}
             <div className="flex shrink-0 flex-col items-center gap-3 pb-7 pt-2">

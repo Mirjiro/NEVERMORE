@@ -1,25 +1,53 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { PackType } from "@/lib/types";
 import { cn } from "@/lib/cn";
 import PackFront from "./PackFront";
 
 const ORDER: PackType[] = ["Classic", "Elite"];
 
+// Fallback used only for the handful of frames before the ResizeObserver
+// below reports a real measurement (a single, non-nested clamp() — safe
+// across browsers since it isn't wrapped inside calc()).
+const FALLBACK_HEIGHT = "clamp(268px, 84vw, 468px)";
+
 export default function PackCarousel({
   active,
   onSwitch,
-  height,
 }: {
   active: PackType;
   onSwitch: (pack: PackType) => void;
-  height: string;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const slideRefs = useRef<Partial<Record<PackType, HTMLDivElement | null>>>({});
+  const measureRef = useRef<HTMLDivElement>(null);
   const isUserScrolling = useRef(false);
   const scrollEndTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Measure the Classic box's own rendered height directly in JS, rather than
+  // recomputing its width-driven aspect-ratio math a second time in a nested
+  // calc(clamp(...)) CSS expression — nested math functions inside calc()
+  // have a history of inconsistent support/resolution across browsers, so
+  // reading the real box height straight from layout sidesteps that class of
+  // bug entirely and guarantees the carousel region always matches exactly
+  // what got rendered, everywhere.
+  const [measuredHeight, setMeasuredHeight] = useState<number | null>(null);
+
+  useEffect(() => {
+    const el = measureRef.current;
+    if (!el) return;
+    // getBoundingClientRect (rather than contentRect) so the div's own
+    // pb-2 padding is included in the measurement, matching the box's full
+    // visual footprint.
+    const observer = new ResizeObserver(() => {
+      setMeasuredHeight(el.getBoundingClientRect().height);
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  const height = measuredHeight != null ? `${measuredHeight}px` : FALLBACK_HEIGHT;
 
   // Detect user-initiated scrolling so the programmatic snap (below) never
   // fights a swipe that's already in progress — native scroll-snap physics
@@ -91,13 +119,13 @@ export default function PackCarousel({
               style={{ height, scrollSnapAlign: "center", scrollSnapStop: "always" }}
             >
               <div
+                ref={pack === "Classic" ? measureRef : undefined}
                 className={cn(
                   "flex items-start justify-center pt-0 pb-2 transition-all duration-300 ease-out",
                   isActive
                     ? "scale-100 opacity-100 blur-none"
                     : "pointer-events-none scale-[0.82] opacity-30 blur-[3px] saturate-50",
                 )}
-                style={{ height }}
               >
                 <PackFront packType={pack} active={isActive} />
               </div>
