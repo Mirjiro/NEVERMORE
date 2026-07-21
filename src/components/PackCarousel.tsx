@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { PackType } from "@/lib/types";
 import { cn } from "@/lib/cn";
-import PackFront from "./PackFront";
+import PackFront, { TILE_WIDTH } from "./PackFront";
 
 const ORDER: PackType[] = ["Classic", "Elite"];
 
@@ -24,22 +24,30 @@ export default function PackCarousel({
   const measureRef = useRef<HTMLDivElement>(null);
   const isUserScrolling = useRef(false);
   const scrollEndTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hasScrolledOnce = useRef(false);
 
-  // Measure the Classic box's own rendered height directly in JS, rather than
+  // Measure the box's rendered height directly in JS, rather than
   // recomputing its width-driven aspect-ratio math a second time in a nested
   // calc(clamp(...)) CSS expression — nested math functions inside calc()
   // have a history of inconsistent support/resolution across browsers, so
   // reading the real box height straight from layout sidesteps that class of
   // bug entirely and guarantees the carousel region always matches exactly
   // what got rendered, everywhere.
+  //
+  // This reads a dedicated, always-full-scale, never-transitioning sizer
+  // element — not any of the actual carousel slides. Both Classic and Elite
+  // share the same aspect ratio, so any slide would numerically give the same
+  // answer, but the slides themselves toggle between scale-100 (active) and
+  // scale-[0.82] (inactive) with a 300ms CSS transition; measuring one of
+  // them directly is liable to catch it mid-transition — e.g. right after a
+  // reveal-flow round trip remounts this component — and lock in a too-small
+  // height for good, since nothing ever fires a follow-up resize once a pure
+  // transform transition (rather than a real layout change) finishes.
   const [measuredHeight, setMeasuredHeight] = useState<number | null>(null);
 
   useEffect(() => {
     const el = measureRef.current;
     if (!el) return;
-    // getBoundingClientRect (rather than contentRect) so the div's own
-    // pb-2 padding is included in the measurement, matching the box's full
-    // visual footprint.
     const observer = new ResizeObserver(() => {
       setMeasuredHeight(el.getBoundingClientRect().height);
     });
@@ -90,13 +98,36 @@ export default function PackCarousel({
 
   // External switches (dot tap) programmatically snap to the target slide.
   // Skipped while the user is mid-gesture so it never fights their swipe.
-  useEffect(() => {
+  //
+  // The very first run (on mount) jumps instantly rather than smoothly: a
+  // smooth scroll takes a couple hundred ms to reach its target, and the
+  // IntersectionObserver above fires its own initial report almost
+  // immediately after observing — well before an animated scroll would have
+  // moved anywhere. On a fresh mount with e.g. active="Elite", that race
+  // let the observer see Classic (the untouched, scrolled-to-0 default) as
+  // "centered" first and silently call onSwitch("Classic"), overriding the
+  // caller's actual selection right after a reveal-flow round trip. A
+  // useLayoutEffect + instant jump settles the correct scroll position
+  // before paint, before the observer ever gets a chance to look.
+  useLayoutEffect(() => {
     if (isUserScrolling.current) return;
-    slideRefs.current[active]?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    const behavior = hasScrolledOnce.current ? "smooth" : "auto";
+    hasScrolledOnce.current = true;
+    slideRefs.current[active]?.scrollIntoView({ behavior, block: "nearest" });
   }, [active]);
 
   return (
     <div className="relative w-full shrink-0 overflow-hidden" style={{ height }}>
+      {/* Dedicated, invisible sizing reference — see the comment above
+          measuredHeight for why this can't just read one of the slides below. */}
+      <div
+        aria-hidden
+        className="invisible absolute left-0 top-0"
+        style={{ width: TILE_WIDTH, aspectRatio: "2999 / 4000" }}
+      >
+        <div ref={measureRef} className="pt-0 pb-2" style={{ height: "100%" }} />
+      </div>
+
       <div
         ref={containerRef}
         className="no-scrollbar w-full overflow-y-auto overscroll-y-contain"
@@ -119,7 +150,6 @@ export default function PackCarousel({
               style={{ height, scrollSnapAlign: "center", scrollSnapStop: "always" }}
             >
               <div
-                ref={pack === "Classic" ? measureRef : undefined}
                 className={cn(
                   "flex items-start justify-center pt-0 pb-2 transition-all duration-300 ease-out",
                   isActive

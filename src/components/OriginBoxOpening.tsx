@@ -2,10 +2,12 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence, useReducedMotion, type Variants } from "framer-motion";
+import type { PackType } from "@/lib/types";
 import { BOX_IDLE_ANIMATE, BOX_IDLE_TRANSITION } from "@/lib/originBoxAssets";
 import { cn } from "@/lib/cn";
 
-export type ClassicOriginBoxOpeningProps = {
+export type OriginBoxOpeningProps = {
+  packType: PackType;
   lidSrc: string;
   baseSrc: string;
   onOpened?: () => void;
@@ -124,13 +126,14 @@ const interiorGlowVariants: Variants = {
   },
 };
 
-export default function ClassicOriginBoxOpening({
+export default function OriginBoxOpening({
+  packType,
   lidSrc,
   baseSrc,
   onOpened,
   disabled = false,
   className,
-}: ClassicOriginBoxOpeningProps) {
+}: OriginBoxOpeningProps) {
   const [state, setState] = useState<BoxState>("idle");
   const [imagesReady, setImagesReady] = useState(false);
   const openedFired = useRef(false);
@@ -241,7 +244,7 @@ export default function ClassicOriginBoxOpening({
         type="button"
         onClick={triggerOpen}
         disabled={disabled || !imagesReady || state !== "idle"}
-        aria-label="Open Classic Origin Box"
+        aria-label={`Open ${packType} Origin Box`}
         variants={wrapperVariants}
         animate={state}
         className="relative mx-auto block appearance-none border-0 bg-transparent p-0 disabled:cursor-default"
