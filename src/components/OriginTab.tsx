@@ -104,22 +104,21 @@ export default function OriginTab({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="relative flex min-h-0 flex-1 flex-col overflow-hidden"
-            style={{ top: "clamp(-28px, -2svh, -4px)" }}
+            style={{ top: "clamp(-28px, -2svh, -4px)", outline: "2px solid lime" }}
           >
-            {/* Carousel region — the ONLY scrollable area on this screen. Height is
-                computed here and passed straight through as an explicit pixel value
-                (rather than relying on nested h-full percentage resolution, which
-                resolves inconsistently across browsers inside a scroll-snap
-                container) so it tightly matches the box's own width-driven size
-                and the buttons below sit right under the box. */}
-            <PackCarousel
-              active={activePack}
-              onSwitch={setActivePack}
-              height={`calc(${TILE_WIDTH} * 4000 / 2999 + 8px)`}
-            />
+            {/* DIAGNOSTIC BUILD — temporary colored outlines to find where the
+                extra vertical space is coming from on a real device where it
+                doesn't match any of our test environments. Remove once found. */}
+            <div style={{ outline: "3px solid red" }}>
+              <PackCarousel
+                active={activePack}
+                onSwitch={setActivePack}
+                height={`calc(${TILE_WIDTH} * 4000 / 2999 + 8px)`}
+              />
+            </div>
 
             {/* Purchase controls — sit directly beneath the box */}
-            <div className="flex shrink-0 flex-col items-center gap-3 pb-7 pt-2">
+            <div className="flex shrink-0 flex-col items-center gap-3 pb-7 pt-2" style={{ outline: "3px solid blue" }}>
               <div className="flex items-center justify-center gap-4">
                 <button
                   onClick={() => openActivePack(1)}
@@ -185,7 +184,7 @@ export default function OriginTab({
 
             {/* Absorbs remaining vertical space below the buttons instead of
                 letting the carousel region stretch and push them down. */}
-            <div className="min-h-0 flex-1" />
+            <div className="min-h-0 flex-1" style={{ background: "rgba(255,255,0,0.25)" }} />
           </motion.div>
         )}
       </AnimatePresence>
