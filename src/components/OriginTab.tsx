@@ -4,13 +4,34 @@ import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { rollPull, rollOrigin, PACK_CONFIG } from "@/lib/odds";
 import type { PackType, PullResult } from "@/lib/types";
-import { cn } from "@/lib/cn";
 import InventoryBar from "./InventoryBar";
 import PackCarousel from "./PackCarousel";
 import PackInfoModal from "./PackInfoModal";
 import RevealFlow from "./RevealFlow";
 import RevealDeck from "./RevealDeck";
 import StoreModal from "./StoreModal";
+
+const PURCHASE_BUTTON_ASSETS: Record<
+  PackType,
+  { x1Src: string; x1Ratio: string; x10Src: string; x10Ratio: string; infoSrc: string; infoRatio: string }
+> = {
+  Classic: {
+    x1Src: "/assets/buttons/classic-open-x1.webp",
+    x1Ratio: "340 / 191",
+    x10Src: "/assets/buttons/classic-open-x10.webp",
+    x10Ratio: "340 / 195",
+    infoSrc: "/assets/buttons/info-icon.webp",
+    infoRatio: "130 / 148",
+  },
+  Elite: {
+    x1Src: "/assets/buttons/elite-open-x1.webp",
+    x1Ratio: "340 / 186",
+    x10Src: "/assets/buttons/elite-open-x10.webp",
+    x10Ratio: "340 / 192",
+    infoSrc: "/assets/buttons/elite-info-icon.webp",
+    infoRatio: "130 / 157",
+  },
+};
 
 export default function OriginTab({
   gold,
@@ -39,6 +60,7 @@ export default function OriginTab({
   const [storeOpen, setStoreOpen] = useState(false);
 
   const config = PACK_CONFIG[activePack];
+  const buttonAssets = PURCHASE_BUTTON_ASSETS[activePack];
   const balance = activePack === "Classic" ? gold : diamonds;
   const canAffordX1 = balance >= config.costX1;
   const canAffordX10 = balance >= config.costX10;
@@ -118,87 +140,49 @@ export default function OriginTab({
               className="relative z-20 flex shrink-0 flex-col items-center gap-3 pb-[6px] pt-2"
               style={{ transform: "translateY(-32px)" }}
             >
-              {activePack === "Classic" ? (
-                <div className="flex items-center justify-center gap-4">
-                  <button
-                    onClick={() => openActivePack(1)}
-                    disabled={!canAffordX1}
-                    aria-label={`Open X1 — ${config.costX1.toLocaleString()} ${config.currency}`}
-                    className="shrink-0 transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
-                  >
-                    <img
-                      src="/assets/buttons/classic-open-x1.webp"
-                      alt=""
-                      draggable={false}
-                      className="pointer-events-none select-none"
-                      style={{ height: 64, aspectRatio: "340 / 191" }}
-                    />
-                  </button>
-                  <button
-                    onClick={() => openActivePack(10)}
-                    disabled={!canAffordX10}
-                    aria-label={`Open X10 — ${config.costX10.toLocaleString()} ${config.currency}`}
-                    className="shrink-0 transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
-                  >
-                    <img
-                      src="/assets/buttons/classic-open-x10.webp"
-                      alt=""
-                      draggable={false}
-                      className="pointer-events-none select-none"
-                      style={{ height: 64, aspectRatio: "340 / 195" }}
-                    />
-                  </button>
-                  <button
-                    onClick={() => setInfoOpen(true)}
-                    aria-label={`${activePack} Origin Box rate info`}
-                    className="shrink-0 transition active:scale-95"
-                  >
-                    <img
-                      src="/assets/buttons/info-icon.webp"
-                      alt=""
-                      draggable={false}
-                      className="pointer-events-none select-none"
-                      style={{ height: 44, aspectRatio: "130 / 148" }}
-                    />
-                  </button>
-                </div>
-              ) : (
-                <div className="flex items-center justify-center gap-4">
-                  <button
-                    onClick={() => openActivePack(1)}
-                    disabled={!canAffordX1}
-                    className={cn(
-                      "flex min-w-[112px] flex-col items-center rounded-full px-5 py-3 leading-tight transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-40",
-                      "bg-gradient-to-b from-zinc-100 to-zinc-300 shadow-lg shadow-black/40",
-                    )}
-                  >
-                    <span className="text-base font-bold text-ink-dark">Open X1</span>
-                    <span className="text-xs font-medium text-ink-dark">
-                      {config.costX1.toLocaleString()} {config.currency}
-                    </span>
-                  </button>
-                  <button
-                    onClick={() => openActivePack(10)}
-                    disabled={!canAffordX10}
-                    className={cn(
-                      "flex min-w-[112px] flex-col items-center rounded-full px-5 py-3 leading-tight transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-40",
-                      "bg-gradient-to-b from-zinc-100 to-zinc-300 shadow-lg shadow-black/40",
-                    )}
-                  >
-                    <span className="text-base font-bold text-ink-dark">Open X10</span>
-                    <span className="text-xs font-medium text-ink-dark">
-                      {config.costX10.toLocaleString()} {config.currency}
-                    </span>
-                  </button>
-                  <button
-                    onClick={() => setInfoOpen(true)}
-                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-zinc-600 font-serif text-base italic text-ink-muted"
-                    aria-label={`${activePack} Origin Box rate info`}
-                  >
-                    i
-                  </button>
-                </div>
-              )}
+              <div className="flex items-center justify-center gap-4">
+                <button
+                  onClick={() => openActivePack(1)}
+                  disabled={!canAffordX1}
+                  aria-label={`Open X1 — ${config.costX1.toLocaleString()} ${config.currency}`}
+                  className="shrink-0 transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  <img
+                    src={buttonAssets.x1Src}
+                    alt=""
+                    draggable={false}
+                    className="pointer-events-none select-none"
+                    style={{ height: 64, aspectRatio: buttonAssets.x1Ratio }}
+                  />
+                </button>
+                <button
+                  onClick={() => openActivePack(10)}
+                  disabled={!canAffordX10}
+                  aria-label={`Open X10 — ${config.costX10.toLocaleString()} ${config.currency}`}
+                  className="shrink-0 transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  <img
+                    src={buttonAssets.x10Src}
+                    alt=""
+                    draggable={false}
+                    className="pointer-events-none select-none"
+                    style={{ height: 64, aspectRatio: buttonAssets.x10Ratio }}
+                  />
+                </button>
+                <button
+                  onClick={() => setInfoOpen(true)}
+                  aria-label={`${activePack} Origin Box rate info`}
+                  className="shrink-0 transition active:scale-95"
+                >
+                  <img
+                    src={buttonAssets.infoSrc}
+                    alt=""
+                    draggable={false}
+                    className="pointer-events-none select-none"
+                    style={{ height: 44, aspectRatio: buttonAssets.infoRatio }}
+                  />
+                </button>
+              </div>
 
               {!canAffordX1 && (
                 <div className="absolute left-0 right-0 top-full mt-2 flex items-center justify-center gap-2">
