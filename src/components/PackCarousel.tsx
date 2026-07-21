@@ -49,15 +49,11 @@ export default function PackCarousel({
   // bug entirely and guarantees the carousel region always matches exactly
   // what got rendered, everywhere.
   //
-  // This reads a dedicated, always-full-scale, never-transitioning sizer
-  // element — not any of the actual carousel slides. Both Classic and Elite
-  // share the same aspect ratio, so any slide would numerically give the same
-  // answer, but the slides themselves toggle between scale-100 (active) and
-  // scale-[0.82] (inactive) with a 300ms CSS transition; measuring one of
-  // them directly is liable to catch it mid-transition — e.g. right after a
-  // reveal-flow round trip remounts this component — and lock in a too-small
-  // height for good, since nothing ever fires a follow-up resize once a pure
-  // transform transition (rather than a real layout change) finishes.
+  // This reads a dedicated sizer element — not any of the actual carousel
+  // slides. Both Classic and Elite share the same aspect ratio, so any slide
+  // would numerically give the same answer, but keeping the measurement on
+  // its own always-mounted element avoids coupling it to whichever slide
+  // happens to be active at the moment ResizeObserver first fires.
   const [measuredHeight, setMeasuredHeight] = useState<number | null>(null);
 
   useEffect(() => {
@@ -215,27 +211,14 @@ export default function PackCarousel({
               style={{ height, scrollSnapAlign: "start", scrollSnapStop: "always" }}
             >
               <div
-                // transition-[transform,opacity] rather than transition-all:
-                // transform and opacity are the two properties the GPU
-                // compositor can animate independently of the main thread.
-                // blur()/saturate() filters (dropped below) don't have that
-                // path — animating them forces a full repaint on every
-                // frame, which is exactly the kind of main-thread work that
-                // can stall mid-swipe on a real phone, even though it never
-                // shows up testing on an unloaded desktop browser.
-                //
-                // duration-150, not duration-300: visualActive now flips the
-                // instant scroll crosses the midpoint (live, no debounce),
-                // but the box still has to visually finish animating from
-                // 82%/30%-opacity up to 100%/100% after that — at 300ms, a
-                // swipe that only crosses the midpoint right at the end of
-                // its glide could still be visibly growing well after the
-                // scroll itself has already arrived, reading as "still
-                // settling" even though the position is already correct.
-                // Half the duration finishes that visual catch-up sooner.
+                // No scale animation between slides — the box stays at its
+                // full/main size the whole time you're swiping, so there's
+                // no small-to-large pop to glitch. Opacity alone (a cheap,
+                // compositor-only property) still fades the inactive slide
+                // for a sense of focus, without ever changing its size.
                 className={cn(
-                  "flex origin-top items-start justify-center pt-0 pb-2 transition-[transform,opacity] duration-150 ease-out",
-                  isActive ? "scale-100 opacity-100" : "pointer-events-none scale-[0.82] opacity-30",
+                  "flex origin-top items-start justify-center pt-0 pb-2 transition-opacity duration-150 ease-out",
+                  isActive ? "opacity-100" : "pointer-events-none opacity-30",
                 )}
               >
                 <PackFront packType={pack} active={isActive} />
