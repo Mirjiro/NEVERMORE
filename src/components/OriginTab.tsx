@@ -118,41 +118,87 @@ export default function OriginTab({
               className="relative z-20 flex shrink-0 flex-col items-center gap-3 pb-[6px] pt-2"
               style={{ transform: "translateY(-32px)" }}
             >
-              <div className="flex items-center justify-center gap-4">
-                <button
-                  onClick={() => openActivePack(1)}
-                  disabled={!canAffordX1}
-                  className={cn(
-                    "flex min-w-[112px] flex-col items-center rounded-full px-5 py-3 leading-tight transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-40",
-                    "bg-gradient-to-b from-zinc-100 to-zinc-300 shadow-lg shadow-black/40",
-                  )}
-                >
-                  <span className="text-base font-bold text-ink-dark">Open X1</span>
-                  <span className="text-xs font-medium text-ink-dark">
-                    {config.costX1.toLocaleString()} {config.currency}
-                  </span>
-                </button>
-                <button
-                  onClick={() => openActivePack(10)}
-                  disabled={!canAffordX10}
-                  className={cn(
-                    "flex min-w-[112px] flex-col items-center rounded-full px-5 py-3 leading-tight transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-40",
-                    "bg-gradient-to-b from-zinc-100 to-zinc-300 shadow-lg shadow-black/40",
-                  )}
-                >
-                  <span className="text-base font-bold text-ink-dark">Open X10</span>
-                  <span className="text-xs font-medium text-ink-dark">
-                    {config.costX10.toLocaleString()} {config.currency}
-                  </span>
-                </button>
-                <button
-                  onClick={() => setInfoOpen(true)}
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-zinc-600 font-serif text-base italic text-ink-muted"
-                  aria-label={`${activePack} Origin Box rate info`}
-                >
-                  i
-                </button>
-              </div>
+              {activePack === "Classic" ? (
+                <div className="flex items-center justify-center gap-4">
+                  <button
+                    onClick={() => openActivePack(1)}
+                    disabled={!canAffordX1}
+                    aria-label={`Open X1 — ${config.costX1.toLocaleString()} ${config.currency}`}
+                    className="shrink-0 transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    <img
+                      src="/assets/buttons/classic-open-x1.webp"
+                      alt=""
+                      draggable={false}
+                      className="pointer-events-none select-none"
+                      style={{ width: 150, aspectRatio: "340 / 191" }}
+                    />
+                  </button>
+                  <button
+                    onClick={() => openActivePack(10)}
+                    disabled={!canAffordX10}
+                    aria-label={`Open X10 — ${config.costX10.toLocaleString()} ${config.currency}`}
+                    className="shrink-0 transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    <img
+                      src="/assets/buttons/classic-open-x10.webp"
+                      alt=""
+                      draggable={false}
+                      className="pointer-events-none select-none"
+                      style={{ width: 150, aspectRatio: "340 / 195" }}
+                    />
+                  </button>
+                  <button
+                    onClick={() => setInfoOpen(true)}
+                    aria-label={`${activePack} Origin Box rate info`}
+                    className="shrink-0 transition active:scale-95"
+                  >
+                    <img
+                      src="/assets/buttons/info-icon.webp"
+                      alt=""
+                      draggable={false}
+                      className="pointer-events-none select-none"
+                      style={{ width: 64, aspectRatio: "130 / 148" }}
+                    />
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center justify-center gap-4">
+                  <button
+                    onClick={() => openActivePack(1)}
+                    disabled={!canAffordX1}
+                    className={cn(
+                      "flex min-w-[112px] flex-col items-center rounded-full px-5 py-3 leading-tight transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-40",
+                      "bg-gradient-to-b from-zinc-100 to-zinc-300 shadow-lg shadow-black/40",
+                    )}
+                  >
+                    <span className="text-base font-bold text-ink-dark">Open X1</span>
+                    <span className="text-xs font-medium text-ink-dark">
+                      {config.costX1.toLocaleString()} {config.currency}
+                    </span>
+                  </button>
+                  <button
+                    onClick={() => openActivePack(10)}
+                    disabled={!canAffordX10}
+                    className={cn(
+                      "flex min-w-[112px] flex-col items-center rounded-full px-5 py-3 leading-tight transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-40",
+                      "bg-gradient-to-b from-zinc-100 to-zinc-300 shadow-lg shadow-black/40",
+                    )}
+                  >
+                    <span className="text-base font-bold text-ink-dark">Open X10</span>
+                    <span className="text-xs font-medium text-ink-dark">
+                      {config.costX10.toLocaleString()} {config.currency}
+                    </span>
+                  </button>
+                  <button
+                    onClick={() => setInfoOpen(true)}
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-zinc-600 font-serif text-base italic text-ink-muted"
+                    aria-label={`${activePack} Origin Box rate info`}
+                  >
+                    i
+                  </button>
+                </div>
+              )}
 
               {!canAffordX1 && (
                 <div className="absolute left-0 right-0 top-full mt-2 flex items-center justify-center gap-2">
