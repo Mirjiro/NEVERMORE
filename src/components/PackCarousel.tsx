@@ -84,7 +84,7 @@ export default function PackCarousel({
               ref={(el) => {
                 slideRefs.current[pack] = el;
               }}
-              className="flex h-full w-full shrink-0 items-center justify-center"
+              className="flex h-full w-full shrink-0 items-start justify-center"
               style={{ scrollSnapAlign: "center", scrollSnapStop: "always" }}
             >
               <div
