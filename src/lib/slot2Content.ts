@@ -1,6 +1,5 @@
 import type { Slot2Result } from "./types";
 import { RARITY_STYLES } from "./rarityStyles";
-import { ORIGIN_CARD_PACK_DISPLAY_NAME } from "./odds";
 
 export interface Slot2Content {
   icon: string;
@@ -39,13 +38,6 @@ export function getSlot2Content(slot2: Slot2Result): Slot2Content {
         subtitle: "added to balance",
         accent: "text-cyan-300",
       };
-    case "OriginCardPack":
-      return {
-        icon: "🎁",
-        title: `${ORIGIN_CARD_PACK_DISPLAY_NAME}!`,
-        subtitle: "+1 added to inventory",
-        accent: "text-yellow-300",
-      };
     case "Creature":
       return {
         icon: "🐾",
@@ -67,8 +59,6 @@ export function getBonusToastText(slot2: Slot2Result): string {
       return "+Gold";
     case "Diamonds":
       return "+Diamonds";
-    case "OriginCardPack":
-      return "+1 Origin Box";
     case "Creature":
       return "+Creature";
   }

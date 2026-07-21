@@ -17,24 +17,20 @@ export default function OriginTab({
   diamonds,
   totalSeeds,
   creatures,
-  freePacks,
   onSpendGold,
   onSpendDiamonds,
   onAddGold,
   onAddDiamonds,
-  onSpendFreePack,
   onApplyPull,
 }: {
   gold: number;
   diamonds: number;
   totalSeeds: number;
   creatures: number;
-  freePacks: number;
   onSpendGold: (amount: number) => void;
   onSpendDiamonds: (amount: number) => void;
   onAddGold: (amount: number) => void;
   onAddDiamonds: (amount: number) => void;
-  onSpendFreePack: () => void;
   onApplyPull: (pull: PullResult) => void;
 }) {
   const [activePack, setActivePack] = useState<PackType>("Classic");
@@ -59,14 +55,6 @@ export default function OriginTab({
       count === 1 ? [rollPull(activePack)] : Array.from({ length: count }, () => rollPull(activePack, batchOrigin));
     results.forEach(onApplyPull);
     setPulls(results);
-  };
-
-  const openFreePack = () => {
-    if (freePacks <= 0) return;
-    onSpendFreePack();
-    const result = rollPull("Classic");
-    onApplyPull(result);
-    setPulls([result]);
   };
 
   return (
@@ -177,17 +165,6 @@ export default function OriginTab({
                     aria-label="Buy Gold or Diamonds"
                   >
                     +
-                  </button>
-                </div>
-              )}
-
-              {freePacks > 0 && (
-                <div className="w-full">
-                  <button
-                    onClick={openFreePack}
-                    className="w-full rounded-full border border-yellow-400/60 bg-yellow-400/10 px-6 py-3 text-sm font-semibold text-yellow-200 transition active:scale-95"
-                  >
-                    Open Free Origin Box ({freePacks})
                   </button>
                 </div>
               )}

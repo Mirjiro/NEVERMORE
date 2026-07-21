@@ -1,5 +1,5 @@
 import type { PackType } from "./types";
-import { AMOUNT_RANGES, ORIGIN_CARD_PACK_DISPLAY_NAME } from "./odds";
+import { AMOUNT_RANGES } from "./odds";
 
 /**
  * Generic bonus-outcome labels for the probability legend shown in info
@@ -19,8 +19,6 @@ export function formatBonusLabel(outcome: string, packType: PackType): string {
       return `Diamonds · ${diamonds[0].toLocaleString()}–${diamonds[1].toLocaleString()}`;
     case "Creature":
       return "Creature";
-    case "OriginCardPack":
-      return ORIGIN_CARD_PACK_DISPLAY_NAME;
     default:
       return outcome;
   }

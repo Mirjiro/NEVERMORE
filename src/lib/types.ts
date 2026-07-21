@@ -31,7 +31,6 @@ export type Slot2Result =
   | { type: "Seed"; origin: Origin }
   | { type: "Gold"; amount: number }
   | { type: "Diamonds"; amount: number }
-  | { type: "OriginCardPack" }
   | { type: "Creature"; origin: Origin; rarity: CreatureRarity; name: string };
 
 export interface PullResult {
