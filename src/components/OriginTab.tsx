@@ -114,7 +114,7 @@ export default function OriginTab({
             {/* Purchase controls — sit directly beneath the box */}
             <div
               className="relative z-20 flex shrink-0 flex-col items-center gap-3 pb-[6px] pt-2"
-              style={{ transform: "translateY(-48px)" }}
+              style={{ transform: "translateY(-32px)" }}
             >
               <div className="flex items-center justify-center gap-4">
                 <button
