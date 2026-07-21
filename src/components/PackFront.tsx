@@ -19,8 +19,14 @@ export default function PackFront({ packType, active = true }: { packType: PackT
 
   return (
     <motion.div
-      animate={BOX_IDLE_ANIMATE}
-      transition={BOX_IDLE_TRANSITION}
+      // Only the active slide gets the idle bob — an inactive carousel slide
+      // (scaled down, blurred, mostly out of focus) has no reason to keep
+      // running an infinite Framer Motion animation, and having both slides
+      // animate at once doubles the continuous main-thread work for a
+      // second box nobody is looking at, right when the CSS scale/opacity
+      // transition between them needs the thread free to render smoothly.
+      animate={active ? BOX_IDLE_ANIMATE : { y: 0, rotate: 0 }}
+      transition={active ? BOX_IDLE_TRANSITION : { duration: 0 }}
       className={cn("relative", active && "drop-shadow-[0_0_28px_rgba(217,150,60,0.45)]")}
       style={{ width: TILE_WIDTH, aspectRatio: "2999 / 4000" }}
     >

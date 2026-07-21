@@ -25,6 +25,7 @@ export default function PackCarousel({
   const isUserScrolling = useRef(false);
   const settleFrame = useRef<number | null>(null);
   const hasScrolledOnce = useRef(false);
+  const lastSyncedPack = useRef<PackType | null>(null);
 
   // Measure the box's rendered height directly in JS, rather than
   // recomputing its width-driven aspect-ratio math a second time in a nested
@@ -82,7 +83,15 @@ export default function PackCarousel({
       if (!slideHeight) return;
       const idx = Math.min(Math.max(Math.round(container.scrollTop / slideHeight), 0), ORDER.length - 1);
       const pack = ORDER[idx];
-      if (pack) onSwitch(pack);
+      // Every 'scroll' event during a gesture can fire many times a second;
+      // skip the call entirely (not just rely on React bailing out of a
+      // same-value setState) when the slide hasn't actually changed, so a
+      // swipe doesn't spend any extra work re-announcing the same pack over
+      // and over while the main thread already has plenty to do.
+      if (pack && pack !== lastSyncedPack.current) {
+        lastSyncedPack.current = pack;
+        onSwitch(pack);
+      }
     };
 
     // Detect user-initiated scrolling so the programmatic snap (below) never
@@ -215,11 +224,17 @@ export default function PackCarousel({
               style={{ height, scrollSnapAlign: "center", scrollSnapStop: "always" }}
             >
               <div
+                // transition-[transform,opacity] rather than transition-all:
+                // transform and opacity are the two properties the GPU
+                // compositor can animate independently of the main thread.
+                // blur()/saturate() filters (dropped below) don't have that
+                // path — animating them forces a full repaint on every
+                // frame, which is exactly the kind of main-thread work that
+                // can stall mid-swipe on a real phone, even though it never
+                // shows up testing on an unloaded desktop browser.
                 className={cn(
-                  "flex origin-top items-start justify-center pt-0 pb-2 transition-all duration-300 ease-out",
-                  isActive
-                    ? "scale-100 opacity-100 blur-none"
-                    : "pointer-events-none scale-[0.82] opacity-30 blur-[3px] saturate-50",
+                  "flex origin-top items-start justify-center pt-0 pb-2 transition-[transform,opacity] duration-300 ease-out",
+                  isActive ? "scale-100 opacity-100" : "pointer-events-none scale-[0.82] opacity-30",
                 )}
               >
                 <PackFront packType={pack} active={isActive} />
