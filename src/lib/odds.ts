@@ -16,14 +16,6 @@ export const BOX_DESCRIPTIONS: Record<PackType, string> = {
   Elite: "Contains one random Origin Pack with cards/bonus ranging from Legendary through Forbidden.",
 };
 
-/**
- * The "OriginCardPack" bonus outcome grants a free Classic Origin Box. Its
- * display name is isolated here (rather than inlined at each call site) so
- * it can be renamed safely later without hunting through components — its
- * underlying type/logic is unchanged.
- */
-export const ORIGIN_CARD_PACK_DISPLAY_NAME = "Free Origin Box";
-
 function weightedPick<T extends string>(table: Record<T, number>): T {
   const entries = Object.entries(table) as [T, number][];
   const total = entries.reduce((sum, [, weight]) => sum + weight, 0);
@@ -74,19 +66,17 @@ export function getRarityOdds(packType: PackType): Record<Rarity, number> {
   return packType === "Elite" ? RARITY_ODDS_ELITE : RARITY_ODDS_CLASSIC;
 }
 
-type ClassicSlot2Outcome = "Card" | "Seed" | "Gold" | "Diamonds" | "OriginCardPack" | "Creature";
+type ClassicSlot2Outcome = "Card" | "Seed" | "Gold" | "Diamonds" | "Creature";
 type EliteSlot2Outcome = "Card" | "Seed" | "Gold" | "Diamonds" | "Creature";
 
 export const SLOT2_ODDS_CLASSIC: Record<ClassicSlot2Outcome, number> = {
   Card: 50,
   Seed: 30,
   Gold: 15,
-  Diamonds: 3,
-  OriginCardPack: 1.5,
+  Diamonds: 4.5,
   Creature: 0.5,
 };
 
-/** Elite Slot 2 has no Origin Card Pack outcome. */
 export const SLOT2_ODDS_ELITE: Record<EliteSlot2Outcome, number> = {
   Card: 50,
   Seed: 25,
@@ -129,8 +119,6 @@ function rollSlot2(origin: Origin, packType: PackType): Slot2Result {
       return { type: "Gold", amount: randInt(gold[0], gold[1]) };
     case "Diamonds":
       return { type: "Diamonds", amount: randInt(diamonds[0], diamonds[1]) };
-    case "OriginCardPack":
-      return { type: "OriginCardPack" };
     case "Creature": {
       const creatureRarity = weightedPick(CREATURE_RARITY_ODDS);
       return { type: "Creature", origin, rarity: creatureRarity, name: CREATURE_NAMES[origin][creatureRarity] };

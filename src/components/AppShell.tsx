@@ -25,7 +25,6 @@ export default function AppShell() {
   const [diamonds, setDiamonds] = useState(0);
   const [seedsByOrigin, setSeedsByOrigin] = useState<Record<Origin, number>>(zeroPerOrigin);
   const [creatures, setCreatures] = useState(0);
-  const [freePacks, setFreePacks] = useState(0);
 
   const applySlot2 = useCallback((pull: PullResult) => {
     const slot2 = pull.slot2;
@@ -41,9 +40,6 @@ export default function AppShell() {
         break;
       case "Creature":
         setCreatures((c) => c + 1);
-        break;
-      case "OriginCardPack":
-        setFreePacks((f) => f + 1);
         break;
       case "Card":
         break;
@@ -61,12 +57,10 @@ export default function AppShell() {
             diamonds={diamonds}
             totalSeeds={totalSeeds}
             creatures={creatures}
-            freePacks={freePacks}
             onSpendGold={(amount) => setGold((g) => g - amount)}
             onSpendDiamonds={(amount) => setDiamonds((d) => d - amount)}
             onAddGold={(amount) => setGold((g) => g + amount)}
             onAddDiamonds={(amount) => setDiamonds((d) => d + amount)}
-            onSpendFreePack={() => setFreePacks((f) => f - 1)}
             onApplyPull={applySlot2}
           />
         ) : (

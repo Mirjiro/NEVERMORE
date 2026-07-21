@@ -27,7 +27,7 @@ export default function OriginPackInfoModal({
     <AnimatePresence>
       {open && (
         <motion.div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 backdrop-blur-sm sm:items-center"
+          className="fixed inset-0 z-[60] flex items-end justify-center bg-black/70 backdrop-blur-sm sm:items-center"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -41,7 +41,7 @@ export default function OriginPackInfoModal({
             transition={{ duration: 0.25, ease: "easeOut" }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-start justify-between gap-3 border-b border-zinc-800 px-5 pb-3 pt-5">
+            <div className="flex shrink-0 items-start justify-between gap-3 border-b border-zinc-800 px-5 pb-3 pt-5">
               <div>
                 <h2 className={cn("text-base font-bold", theme.accent)}>{origin} Pack</h2>
                 <p className="mt-1 text-xs text-ink-faint">{packType} Origin Box</p>
@@ -55,7 +55,7 @@ export default function OriginPackInfoModal({
               </button>
             </div>
 
-            <div className="overflow-y-auto px-5 py-3">
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-3">
               <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-ink-faint">
                 Guaranteed Card
               </h3>

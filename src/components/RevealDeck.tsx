@@ -5,7 +5,6 @@ import { AnimatePresence, motion } from "framer-motion";
 import type { CreatureRarity, PackType, PullResult, Rarity } from "@/lib/types";
 import { RARITY_STYLES, RARITY_ORDER } from "@/lib/rarityStyles";
 import { getSlot2Content, getBonusToastText } from "@/lib/slot2Content";
-import { ORIGIN_CARD_PACK_DISPLAY_NAME } from "@/lib/odds";
 import { playRaritySound } from "@/lib/sound";
 import { ORIGIN_BOX_ASSETS } from "@/lib/originBoxAssets";
 import { cn } from "@/lib/cn";
@@ -228,8 +227,8 @@ type TotalRow = { key: string; accent: string; title: string; subtitle: string }
 
 /** Which aggregate categories show, and in what order, after the rarity groups — per pack type. */
 const SUMMARY_CATEGORY_ORDER: Record<PackType, string[]> = {
-  Classic: ["gold", "diamonds", "seeds", "creature", "freeBox"],
-  Elite: ["gold", "diamonds", "seeds", "freeBox", "creature"],
+  Classic: ["gold", "diamonds", "seeds", "creature"],
+  Elite: ["gold", "diamonds", "seeds", "creature"],
 };
 
 function DeckSummary({ pulls, onDismiss }: { pulls: PullResult[]; onDismiss: () => void }) {
@@ -247,7 +246,6 @@ function DeckSummary({ pulls, onDismiss }: { pulls: PullResult[]; onDismiss: () 
   let totalDiamonds = 0;
   let totalSeeds = 0;
   const creatureNames: string[] = [];
-  let totalFreeBoxes = 0;
 
   for (const pull of pulls) {
     addCard(pull.slot1.name, pull.slot1.rarity);
@@ -267,9 +265,6 @@ function DeckSummary({ pulls, onDismiss }: { pulls: PullResult[]; onDismiss: () 
         break;
       case "Creature":
         creatureNames.push(bonus.name);
-        break;
-      case "OriginCardPack":
-        totalFreeBoxes += 1;
         break;
     }
   }
@@ -312,15 +307,6 @@ function DeckSummary({ pulls, onDismiss }: { pulls: PullResult[]; onDismiss: () 
             key: "creature",
             accent: "text-pink-300",
             title: creatureNames.join(", "),
-            subtitle: "added to inventory",
-          }
-        : null,
-    freeBox: () =>
-      totalFreeBoxes > 0
-        ? {
-            key: "freeBox",
-            accent: getSlot2Content({ type: "OriginCardPack" }).accent,
-            title: totalFreeBoxes > 1 ? `${ORIGIN_CARD_PACK_DISPLAY_NAME} ×${totalFreeBoxes}` : `${ORIGIN_CARD_PACK_DISPLAY_NAME}!`,
             subtitle: "added to inventory",
           }
         : null,
