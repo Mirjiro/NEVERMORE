@@ -60,6 +60,18 @@ export default function PackCarousel({
   // Detect user-initiated scrolling so the programmatic snap (below) never
   // fights a swipe that's already in progress — native scroll-snap physics
   // owns the gesture entirely.
+  //
+  // iOS Safari's momentum scrolling can decay and stop just short of an
+  // actual snap point on a short/moderate swipe, instead of always gliding
+  // all the way there — `scroll-snap-type: mandatory` constrains where the
+  // scroll is allowed to *rest*, but doesn't guarantee the deceleration
+  // itself travels the full remaining distance. That leaves the carousel
+  // visibly parked between slides (the box still small/faded, since the
+  // IntersectionObserver below hasn't crossed its threshold yet) until the
+  // user gives it a second nudge. Once our own "user stopped scrolling"
+  // debounce fires, explicitly finish the snap to whichever of the two
+  // valid rest positions (0 or a full slide height) is nearest, so a single
+  // swipe always ends fully settled without needing that extra pull.
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
@@ -68,6 +80,12 @@ export default function PackCarousel({
       if (scrollEndTimer.current) clearTimeout(scrollEndTimer.current);
       scrollEndTimer.current = setTimeout(() => {
         isUserScrolling.current = false;
+        const slideHeight = container.clientHeight;
+        if (!slideHeight) return;
+        const nearest = Math.round(container.scrollTop / slideHeight) * slideHeight;
+        if (Math.abs(container.scrollTop - nearest) > 1) {
+          container.scrollTo({ top: nearest, behavior: "smooth" });
+        }
       }, 150);
     };
     container.addEventListener("scroll", handleScroll, { passive: true });
