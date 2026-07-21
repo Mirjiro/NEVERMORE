@@ -2,12 +2,7 @@
 
 import { motion } from "framer-motion";
 import type { PackType } from "@/lib/types";
-import {
-  CLASSIC_ORIGIN_BOX_ASSETS,
-  ELITE_ORIGIN_BOX_ASSETS,
-  BOX_IDLE_ANIMATE,
-  BOX_IDLE_TRANSITION,
-} from "@/lib/originBoxAssets";
+import { ORIGIN_BOX_ASSETS, BOX_IDLE_ANIMATE, BOX_IDLE_TRANSITION } from "@/lib/originBoxAssets";
 import { cn } from "@/lib/cn";
 
 /**
@@ -19,13 +14,8 @@ import { cn } from "@/lib/cn";
  */
 export const TILE_WIDTH = "clamp(260px, 84vw, 460px)";
 
-const BOX_ASSETS: Record<PackType, { lidSrc: string; baseSrc: string }> = {
-  Classic: CLASSIC_ORIGIN_BOX_ASSETS,
-  Elite: ELITE_ORIGIN_BOX_ASSETS,
-};
-
 export default function PackFront({ packType, active = true }: { packType: PackType; active?: boolean }) {
-  const assets = BOX_ASSETS[packType];
+  const assets = ORIGIN_BOX_ASSETS[packType];
 
   return (
     <motion.div
