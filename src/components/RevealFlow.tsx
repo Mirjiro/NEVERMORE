@@ -9,12 +9,13 @@ import { playRaritySound } from "@/lib/sound";
 import { ORIGIN_BOX_ASSETS } from "@/lib/originBoxAssets";
 import { cn } from "@/lib/cn";
 import OriginBoxOpening from "./OriginBoxOpening";
+import OriginPackCover from "./OriginPackCover";
 import CardFace from "./CardFace";
 import Slot2Card from "./Slot2Card";
 import CreatureCard from "./CreatureCard";
 import ScreenFlash, { FlashSignal } from "./ScreenFlash";
 
-type Stage = "origin" | "rewards";
+type Stage = "boxOpening" | "originCover" | "rewards";
 
 const SWIPE_THRESHOLD = 70;
 const REWARD_COUNT = 2; // Card, Bonus
@@ -22,7 +23,7 @@ const SUMMARY_POSITION = REWARD_COUNT; // 2
 const ADVANCE_LOCK_MS = 250;
 
 export default function RevealFlow({ pull, onDismiss }: { pull: PullResult; onDismiss: () => void }) {
-  const [stage, setStage] = useState<Stage>("origin");
+  const [stage, setStage] = useState<Stage>("boxOpening");
   const [position, setPosition] = useState(0);
   const [flashSignal, setFlashSignal] = useState<FlashSignal | null>(null);
   const locked = useRef(false);
@@ -65,7 +66,7 @@ export default function RevealFlow({ pull, onDismiss }: { pull: PullResult; onDi
     setFlashSignal({ key: Date.now(), type: "pink" });
   };
 
-  if (stage === "origin") {
+  if (stage === "boxOpening") {
     const assets = ORIGIN_BOX_ASSETS[pull.packType];
     return (
       <div className="flex w-full flex-col items-center justify-center gap-3 py-4">
@@ -73,7 +74,19 @@ export default function RevealFlow({ pull, onDismiss }: { pull: PullResult; onDi
           packType={pull.packType}
           lidSrc={assets.lidSrc}
           baseSrc={assets.baseSrc}
-          onOpened={() => setStage("rewards")}
+          onOpened={() => setStage("originCover")}
+        />
+      </div>
+    );
+  }
+
+  if (stage === "originCover") {
+    return (
+      <div className="flex w-full flex-col items-center justify-center gap-3 py-4">
+        <OriginPackCover
+          packType={pull.packType}
+          origin={pull.origin}
+          onTapToReveal={() => setStage("rewards")}
         />
       </div>
     );

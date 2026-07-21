@@ -13,25 +13,26 @@ import CardFace from "./CardFace";
 import Slot2Card from "./Slot2Card";
 import CreatureCard from "./CreatureCard";
 import OriginBoxOpening from "./OriginBoxOpening";
+import OriginPackCover from "./OriginPackCover";
 import ScreenFlash, { FlashSignal } from "./ScreenFlash";
 
 type DeckItem = { kind: "card" | "bonus"; pull: PullResult };
 type Toast = { key: number; text: string; leftPercent: number };
-type Stage = "cover" | "deck";
+type Stage = "boxOpening" | "originCover" | "deck";
 
 const SWIPE_THRESHOLD = 70;
 const ADVANCE_LOCK_MS = 250;
 const TOAST_DURATION_S = 1.6;
 
 /**
- * Sequential one-at-a-time reveal for a batch of pulls (x10 opens): an
- * Origin-themed cover (same as the x1 open), then the 10 guaranteed cards —
- * lowest rarity to highest — then the 10 bonuses. Unlike the single-pull
- * RevealFlow the deck itself is forward-only — a revealed item is discarded
- * on advance, not something you can swipe back to.
+ * Sequential one-at-a-time reveal for a batch of pulls (x10 opens): the box
+ * opens, then an Origin-themed cover (same as the x1 open), then the 10
+ * guaranteed cards — lowest rarity to highest — then the 10 bonuses. Unlike
+ * the single-pull RevealFlow the deck itself is forward-only — a revealed
+ * item is discarded on advance, not something you can swipe back to.
  */
 export default function RevealDeck({ pulls, onDismiss }: { pulls: PullResult[]; onDismiss: () => void }) {
-  const [stage, setStage] = useState<Stage>("cover");
+  const [stage, setStage] = useState<Stage>("boxOpening");
 
   const guaranteedCount = pulls.length;
   const sortedPulls = [...pulls].sort(
@@ -80,7 +81,7 @@ export default function RevealDeck({ pulls, onDismiss }: { pulls: PullResult[]; 
     }, ADVANCE_LOCK_MS);
   }
 
-  if (stage === "cover") {
+  if (stage === "boxOpening") {
     const first = pulls[0];
     const assets = ORIGIN_BOX_ASSETS[first.packType];
     return (
@@ -89,8 +90,17 @@ export default function RevealDeck({ pulls, onDismiss }: { pulls: PullResult[]; 
           packType={first.packType}
           lidSrc={assets.lidSrc}
           baseSrc={assets.baseSrc}
-          onOpened={() => setStage("deck")}
+          onOpened={() => setStage("originCover")}
         />
+      </div>
+    );
+  }
+
+  if (stage === "originCover") {
+    const first = pulls[0];
+    return (
+      <div className="flex w-full flex-1 flex-col items-center justify-center gap-3 py-4">
+        <OriginPackCover packType={first.packType} origin={first.origin} onTapToReveal={() => setStage("deck")} />
       </div>
     );
   }
