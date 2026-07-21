@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence, useReducedMotion, type Variants } from "framer-motion";
-import { CLASSIC_BOX_IDLE_ANIMATE, CLASSIC_BOX_IDLE_TRANSITION } from "@/lib/originBoxAssets";
+import { BOX_IDLE_ANIMATE, BOX_IDLE_TRANSITION } from "@/lib/originBoxAssets";
 import { cn } from "@/lib/cn";
 
 export type ClassicOriginBoxOpeningProps = {
@@ -67,8 +67,8 @@ const REDUCED_MOTION_MS = 260;
 const wrapperVariants: Variants = {
   idle: {
     // Shared with the PackFront carousel tile so both stay consistent.
-    ...CLASSIC_BOX_IDLE_ANIMATE,
-    transition: CLASSIC_BOX_IDLE_TRANSITION,
+    ...BOX_IDLE_ANIMATE,
+    transition: BOX_IDLE_TRANSITION,
   },
   pressing: {
     scale: [1, PRESS.downScale, PRESS.reboundScale],
