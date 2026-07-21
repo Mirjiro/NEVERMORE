@@ -102,7 +102,8 @@ export default function OriginTab({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="flex min-h-0 flex-1 flex-col overflow-hidden"
+            className="relative flex min-h-0 flex-1 flex-col overflow-hidden"
+            style={{ top: "clamp(-28px, -2svh, -4px)" }}
           >
             {/* Carousel region — the ONLY scrollable area on this screen */}
             <div className="min-h-0 flex-1 overflow-hidden">
