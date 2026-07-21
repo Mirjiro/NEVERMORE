@@ -23,22 +23,9 @@ export default function PackCarousel({
   const slideRefs = useRef<Partial<Record<PackType, HTMLDivElement | null>>>({});
   const measureRef = useRef<HTMLDivElement>(null);
   const activeRef = useRef(active);
-  const scrollEndTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Which slide LOOKS active (full scale/opacity) is tracked separately from
-  // `active` itself. `active` only updates ~160ms after scrolling settles —
-  // exactly the debounce that keeps it from changing mid-swipe and (in an
-  // earlier version of this component) triggering a second programmatic
-  // scroll. That's the right call for `active`, since it's the value the
-  // parent uses for pricing/dot state and nothing should update those
-  // mid-gesture. But gating the box's own grow/shrink animation on that same
-  // debounce meant the box sat small for ~160ms after the swipe had already
-  // physically arrived, then took its own 300ms transition on top of that —
-  // close to half a second of visible dead time after the finger stops,
-  // for a purely local rendering concern that was never part of what
-  // caused the earlier double-scroll bug. Tracking it separately, live,
-  // off the same scroll position, removes that lag without reintroducing
-  // any programmatic scrolling.
+  // Which slide LOOKS active (opacity) is tracked locally so the box's own
+  // visual state can update live, every scroll event, with no debounce.
   const [visualActive, setVisualActive] = useState(active);
 
   // Measure the box's rendered height directly in JS, rather than
@@ -98,10 +85,15 @@ export default function PackCarousel({
   // also walk up and scroll ancestor containers, not just this one.
   //
   // The fix: manual swipes are owned by native scroll-snap alone, with zero
-  // programmatic scrolling. `active` is only ever updated here — after
-  // scrolling has gone quiet for a beat — from whichever slide is nearest
-  // the container's resting scroll position. Nothing scrolls in response to
-  // that update; it only describes what already happened.
+  // programmatic scrolling. `active` used to only update here after a
+  // ~160ms debounce, on the theory that changing it mid-swipe was what
+  // caused the double-scroll — but the actual cause was the scrollIntoView
+  // effect above, which is gone entirely now. Nothing left reacts to
+  // `active` changing by scrolling, so debouncing it no longer protects
+  // against anything; it only meant the purchase buttons' pricing text
+  // visibly lagged behind the box's own (already-live) opacity. `active`
+  // and `visualActive` now update from the same calculation, at the same
+  // time, so the box and the buttons are never out of sync.
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
@@ -126,22 +118,12 @@ export default function PackCarousel({
     };
 
     const handleScroll = () => {
-      // Live, undebounced — purely local, drives only the box's own
-      // scale/opacity below. Never reaches the parent, so it can't feed
-      // back into any programmatic scroll.
-      setVisualActive(nearestPack());
-
-      if (scrollEndTimer.current) {
-        clearTimeout(scrollEndTimer.current);
+      const pack = nearestPack();
+      setVisualActive(pack);
+      if (pack !== activeRef.current) {
+        activeRef.current = pack;
+        onSwitch(pack);
       }
-
-      scrollEndTimer.current = setTimeout(() => {
-        const pack = nearestPack();
-        if (pack !== activeRef.current) {
-          activeRef.current = pack;
-          onSwitch(pack);
-        }
-      }, 160);
     };
 
     container.addEventListener("scroll", handleScroll, {
@@ -150,10 +132,6 @@ export default function PackCarousel({
 
     return () => {
       container.removeEventListener("scroll", handleScroll);
-
-      if (scrollEndTimer.current) {
-        clearTimeout(scrollEndTimer.current);
-      }
     };
   }, [onSwitch]);
 
