@@ -223,8 +223,18 @@ export default function PackCarousel({
                 // frame, which is exactly the kind of main-thread work that
                 // can stall mid-swipe on a real phone, even though it never
                 // shows up testing on an unloaded desktop browser.
+                //
+                // duration-150, not duration-300: visualActive now flips the
+                // instant scroll crosses the midpoint (live, no debounce),
+                // but the box still has to visually finish animating from
+                // 82%/30%-opacity up to 100%/100% after that — at 300ms, a
+                // swipe that only crosses the midpoint right at the end of
+                // its glide could still be visibly growing well after the
+                // scroll itself has already arrived, reading as "still
+                // settling" even though the position is already correct.
+                // Half the duration finishes that visual catch-up sooner.
                 className={cn(
-                  "flex origin-top items-start justify-center pt-0 pb-2 transition-[transform,opacity] duration-300 ease-out",
+                  "flex origin-top items-start justify-center pt-0 pb-2 transition-[transform,opacity] duration-150 ease-out",
                   isActive ? "scale-100 opacity-100" : "pointer-events-none scale-[0.82] opacity-30",
                 )}
               >
