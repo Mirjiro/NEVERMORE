@@ -23,7 +23,7 @@ export default function PackCarousel({
   const slideRefs = useRef<Partial<Record<PackType, HTMLDivElement | null>>>({});
   const measureRef = useRef<HTMLDivElement>(null);
   const isUserScrolling = useRef(false);
-  const scrollEndTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const settleFrame = useRef<number | null>(null);
   const hasScrolledOnce = useRef(false);
 
   // Measure the box's rendered height directly in JS, rather than
@@ -68,28 +68,80 @@ export default function PackCarousel({
   // itself travels the full remaining distance. That leaves the carousel
   // visibly parked between slides (the box still small/faded, since the
   // IntersectionObserver below hasn't crossed its threshold yet) until the
-  // user gives it a second nudge. Once our own "user stopped scrolling"
-  // debounce fires, explicitly finish the snap to whichever of the two
-  // valid rest positions (0 or a full slide height) is nearest, so a single
-  // swipe always ends fully settled without needing that extra pull.
+  // user gives it a second nudge.
+  //
+  // Fixing this needs to know when the scroll has actually stopped moving —
+  // not just when 'scroll' events stop firing. iOS's momentum deceleration
+  // can trail off with a long tail of sparse, barely-there scroll events, so
+  // a debounce keyed off event timing can keep getting reset and never see
+  // a clean gap, even though the position itself has visibly settled. A
+  // rAF loop that watches scrollTop directly sidesteps that: once the
+  // position hasn't moved for a handful of consecutive frames, it's settled,
+  // full stop — however many (or few) 'scroll' events did or didn't fire.
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
+
+    const STABLE_FRAMES_NEEDED = 6; // ~100ms at 60fps
+    const MAX_POLL_MS = 3000; // safety net against a runaway loop
+
+    const pollForSettle = () => {
+      let lastTop = container.scrollTop;
+      let stableFrames = 0;
+      const startedAt = performance.now();
+
+      const step = () => {
+        const top = container.scrollTop;
+        if (Math.abs(top - lastTop) < 0.5) {
+          stableFrames += 1;
+        } else {
+          stableFrames = 0;
+          lastTop = top;
+        }
+
+        if (stableFrames >= STABLE_FRAMES_NEEDED) {
+          isUserScrolling.current = false;
+          const slideHeight = container.clientHeight;
+          if (slideHeight) {
+            const nearest = Math.round(top / slideHeight) * slideHeight;
+            if (Math.abs(top - nearest) > 1) {
+              // Finishing the snap itself moves scrollTop, which the next
+              // 'scroll' event restarts this same poll for — so it keeps
+              // watching until *that* settles too, instead of assuming one
+              // correction is the end of it. Clearing the ref (rather than
+              // leaving it pointing at this now-finished frame) is what lets
+              // that next 'scroll' event actually start a fresh poll instead
+              // of assuming one is still running.
+              container.scrollTo({ top: nearest, behavior: "smooth" });
+              settleFrame.current = null;
+              return;
+            }
+          }
+          settleFrame.current = null;
+          return;
+        }
+
+        if (performance.now() - startedAt > MAX_POLL_MS) {
+          isUserScrolling.current = false;
+          settleFrame.current = null;
+          return;
+        }
+
+        settleFrame.current = requestAnimationFrame(step);
+      };
+
+      settleFrame.current = requestAnimationFrame(step);
+    };
+
     const handleScroll = () => {
       isUserScrolling.current = true;
-      if (scrollEndTimer.current) clearTimeout(scrollEndTimer.current);
-      scrollEndTimer.current = setTimeout(() => {
-        isUserScrolling.current = false;
-        const slideHeight = container.clientHeight;
-        if (!slideHeight) return;
-        const nearest = Math.round(container.scrollTop / slideHeight) * slideHeight;
-        if (Math.abs(container.scrollTop - nearest) > 1) {
-          container.scrollTo({ top: nearest, behavior: "smooth" });
-        }
-      }, 150);
+      if (settleFrame.current == null) pollForSettle();
     };
     container.addEventListener("scroll", handleScroll, { passive: true });
-    return () => container.removeEventListener("scroll", handleScroll);
+    return () => {
+      container.removeEventListener("scroll", handleScroll);
+      if (settleFrame.current != null) cancelAnimationFrame(settleFrame.current);
+    };
   }, []);
 
   // Selection state is derived from which slide is actually centered,
