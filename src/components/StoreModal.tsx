@@ -93,17 +93,17 @@ export default function StoreModal({
 
             <div className="flex-1 overflow-y-auto px-5 py-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
               <Section title="Buy Gold" icon="🪙" accent="text-amber-300">
-                <div className="flex flex-col gap-2">
+                <div className="grid grid-cols-3 gap-2">
                   {GOLD_PACKS.map((p) => (
-                    <PurchaseRow key={p.amountLabel} icon="🪙" amountLabel={p.amountLabel} price={p.price} />
+                    <PurchaseTile key={p.amountLabel} icon="🪙" amountLabel={p.amountLabel} price={p.price} />
                   ))}
                 </div>
               </Section>
 
               <Section title="Buy Diamonds" icon="💎" accent="text-cyan-300">
-                <div className="flex flex-col gap-2">
+                <div className="grid grid-cols-3 gap-2">
                   {DIAMOND_PACKS.map((p) => (
-                    <PurchaseRow key={p.amountLabel} icon="💎" amountLabel={p.amountLabel} price={p.price} />
+                    <PurchaseTile key={p.amountLabel} icon="💎" amountLabel={p.amountLabel} price={p.price} />
                   ))}
                 </div>
               </Section>
@@ -212,15 +212,14 @@ function Section({
   );
 }
 
-function PurchaseRow({ icon, amountLabel, price }: { icon: string; amountLabel: string; price: string }) {
+function PurchaseTile({ icon, amountLabel, price }: { icon: string; amountLabel: string; price: string }) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-lg border border-zinc-800 bg-zinc-900/60 px-3 py-2.5">
-      <span className="flex min-w-0 items-center gap-2 text-sm font-semibold text-ink">
-        <span className="text-lg">{icon}</span> {amountLabel}
-      </span>
+    <div className="flex flex-col items-center gap-1 rounded-lg border border-zinc-800 bg-zinc-900/60 px-2 py-3">
+      <span className="text-xl">{icon}</span>
+      <span className="text-sm font-semibold text-ink">{amountLabel}</span>
       <button
         disabled
-        className="shrink-0 cursor-not-allowed rounded-full bg-zinc-800 px-3 py-1.5 text-xs font-semibold text-ink-faint"
+        className="mt-1 w-full cursor-not-allowed rounded-full bg-zinc-800 px-2 py-1 text-[11px] font-semibold text-ink-faint"
       >
         {price}
       </button>

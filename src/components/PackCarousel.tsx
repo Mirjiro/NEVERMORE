@@ -151,7 +151,7 @@ export default function PackCarousel({
             >
               <div
                 className={cn(
-                  "flex items-start justify-center pt-0 pb-2 transition-all duration-300 ease-out",
+                  "flex origin-top items-start justify-center pt-0 pb-2 transition-all duration-300 ease-out",
                   isActive
                     ? "scale-100 opacity-100 blur-none"
                     : "pointer-events-none scale-[0.82] opacity-30 blur-[3px] saturate-50",
