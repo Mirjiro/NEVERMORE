@@ -3,8 +3,8 @@ import type { PackType } from "@/lib/types";
 
 /** Static paths for the Classic Origin Box's lid/base art (see /public/assets/origin-box). */
 export const CLASSIC_ORIGIN_BOX_ASSETS = {
-  lidSrc: "/assets/origin-box/classic-lid.png",
-  baseSrc: "/assets/origin-box/classic-base.png",
+  lidSrc: "/assets/origin-box/classic-lid.webp",
+  baseSrc: "/assets/origin-box/classic-base.webp",
 };
 
 /**
@@ -13,8 +13,8 @@ export const CLASSIC_ORIGIN_BOX_ASSETS = {
  * differs per Origin tier.
  */
 export const ELITE_ORIGIN_BOX_ASSETS = {
-  lidSrc: "/assets/origin-box/elite-lid.png",
-  baseSrc: "/assets/origin-box/classic-base.png",
+  lidSrc: "/assets/origin-box/elite-lid.webp",
+  baseSrc: "/assets/origin-box/classic-base.webp",
 };
 
 /** Single source of truth for which lid/base art belongs to which pack tier. */

@@ -110,13 +110,19 @@ export default function OriginTab({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="relative flex min-h-0 flex-1 flex-col overflow-hidden"
+            className="relative flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain"
             style={{ top: "clamp(-28px, -2svh, -4px)" }}
           >
-            {/* Carousel region — the ONLY scrollable area on this screen. It
-                measures its own box height directly (see PackCarousel) so it
-                tightly matches the box's own width-driven size and the
-                buttons below sit right under the box. */}
+            {/* This region normally never needs to scroll — the box, buttons,
+                and any optional content (insufficient-currency message, free
+                Origin Box button) all fit within the available space. But on
+                a short viewport with the free-box button present, the total
+                content can exceed the space between the currency row and the
+                dock; overflow-y-auto (rather than overflow-hidden) lets the
+                user scroll those last few pixels into view instead of the
+                free-box button silently ending up invisible behind the fixed
+                dock. PackCarousel's own internal scroll-snap (for switching
+                between Classic/Elite) still works independently within it. */}
             <PackCarousel active={activePack} onSwitch={setActivePack} />
 
             {/* Purchase controls — sit directly beneath the box */}
