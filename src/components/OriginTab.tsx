@@ -112,7 +112,10 @@ export default function OriginTab({
             <PackCarousel active={activePack} onSwitch={setActivePack} />
 
             {/* Purchase controls — sit directly beneath the box */}
-            <div className="flex shrink-0 flex-col items-center gap-3 pb-7 pt-2">
+            <div
+              className="relative z-20 flex shrink-0 flex-col items-center gap-3 pb-[6px] pt-2"
+              style={{ transform: "translateY(-48px)" }}
+            >
               <div className="flex items-center justify-center gap-4">
                 <button
                   onClick={() => openActivePack(1)}
