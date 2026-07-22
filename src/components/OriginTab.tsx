@@ -70,6 +70,14 @@ export default function OriginTab({
 
   const inReveal = pulls !== null;
 
+  // A ref (not state) because it must block a second `openActivePack` call
+  // that lands in the same tick as the first, before React has had a chance
+  // to re-render and unmount the Open X1/X10 buttons — a burst of rapid taps
+  // on a slow device previously fired the roll+spend logic once per tap,
+  // silently deducting currency multiple times while only the last roll's
+  // results ever reached the screen.
+  const openingLock = useRef(false);
+
   // Called synchronously alongside setPulls (never via a useEffect keyed on
   // `pulls`) so React batches this with OriginTab's own re-render into the
   // same commit — an effect fires on a later pass, which left the dock's
@@ -77,6 +85,7 @@ export default function OriginTab({
   const setRevealState = (results: PullResult[] | null) => {
     setPulls(results);
     onRevealChange?.(results !== null);
+    if (results === null) openingLock.current = false;
   };
 
   // Measures the top bar's own natural (uncollapsed) height so it can be
@@ -106,8 +115,10 @@ export default function OriginTab({
   const canAffordEliteX10 = diamonds >= PACK_CONFIG.Elite.costX10;
 
   const openActivePack = (count: 1 | 10) => {
+    if (openingLock.current) return;
     const cost = count === 1 ? config.costX1 : config.costX10;
     if (balance < cost) return;
+    openingLock.current = true;
     if (activePack === "Classic") onSpendGold(cost);
     else onSpendDiamonds(cost);
     // An x10 open is 10 pulls from a single Origin Pack — lock every card and
