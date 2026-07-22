@@ -56,7 +56,11 @@ function BackgroundLayer({ pack, active }: { pack: PackType; active: boolean }) 
  */
 export default function OriginBackground({ active }: { active: PackType }) {
   return (
-    <div className="pointer-events-none absolute inset-y-0 -left-4 -right-4 -z-10 overflow-hidden">
+    // `fixed` (not `absolute`) so this covers the full viewport height,
+    // independent of the padding OriginTab's parent reserves for the bottom
+    // dock — otherwise the scene stops short and the dock sits on a visibly
+    // separate flat backdrop instead of the same continuous background.
+    <div className="pointer-events-none fixed inset-0 -z-10 mx-auto w-full max-w-md overflow-hidden">
       <BackgroundLayer pack="Classic" active={active === "Classic"} />
       <BackgroundLayer pack="Elite" active={active === "Elite"} />
       <motion.div
