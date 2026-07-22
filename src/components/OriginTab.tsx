@@ -165,7 +165,7 @@ export default function OriginTab({
             />
             <h1 className="relative">
               <img
-                src="/assets/logo/nevermore-wordmark.png"
+                src="/assets/logo/nevermore-wordmark.webp"
                 alt="NEVERMORE"
                 draggable={false}
                 className="mx-auto h-auto select-none"

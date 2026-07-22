@@ -8,7 +8,7 @@ import { cn } from "@/lib/cn";
 /** Shared with the header's swipe-away collapse in OriginTab so both read as one motion. */
 const REVEAL_TRANSITION = { duration: 0.45, ease: [0.16, 0.84, 0.24, 1] as const };
 
-const DOCK_BAR_ASSET = "/assets/dock/dock-bar-cropped.png";
+const DOCK_BAR_ASSET = "/assets/dock/dock-bar-cropped.webp";
 const DOCK_BAR_ASPECT = "1161 / 163";
 
 /** Horizontal inset matching the artwork's ornate corner flourish, so icons sit inside the flat panel. */
