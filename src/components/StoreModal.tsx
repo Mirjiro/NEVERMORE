@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { cn } from "@/lib/cn";
 import {
@@ -62,7 +63,12 @@ export default function StoreModal({
     setCodeInput("");
   };
 
-  return (
+  // See PackInfoModal for why this is portaled to <body> rather than
+  // rendered in place (OriginTab's `isolate` traps in-place modals behind
+  // the bottom TabBar's z-50, invisibly).
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
     <AnimatePresence>
       {open && (
         <motion.div
@@ -187,7 +193,8 @@ export default function StoreModal({
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   );
 }
 

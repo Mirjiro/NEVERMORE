@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { TabName } from "@/lib/tabs";
 import type { Origin, PullResult } from "@/lib/types";
-import { collectionKey, loadSave, writeSave, type HistoryEntry } from "@/lib/storage";
+import { clearSave, collectionKey, loadSave, writeSave, type HistoryEntry } from "@/lib/storage";
 import { sellAllDuplicates, summarizeDuplicates } from "@/lib/duplicateValue";
 import TabBar from "./TabBar";
 import UnderConstruction from "./UnderConstruction";
@@ -111,6 +111,19 @@ export default function AppShell() {
     [collection],
   );
 
+  // Persistence means a refresh no longer doubles as "start over" — this is
+  // the deliberate replacement, gated behind a two-tap confirm in the UI
+  // itself so a single accidental tap can never wipe a real save.
+  const onResetProgress = useCallback(() => {
+    clearSave();
+    setGold(STARTING_GOLD);
+    setDiamonds(0);
+    setSeedsByOrigin(zeroPerOrigin());
+    setCreatures(0);
+    setCollection({});
+    setHistory([]);
+  }, []);
+
   const totalSeeds = Object.values(seedsByOrigin).reduce((a, b) => a + b, 0);
 
   return (
@@ -133,6 +146,7 @@ export default function AppShell() {
             onAddDiamonds={(amount) => setDiamonds((d) => d + amount)}
             onApplyPull={applyPull}
             onSellDuplicates={onSellDuplicates}
+            onResetProgress={onResetProgress}
             onRevealChange={setRevealActive}
           />
         ) : (

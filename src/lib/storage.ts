@@ -73,3 +73,12 @@ export function writeSave(data: SaveData): void {
     // for this write is fine; gameplay itself must never throw over it.
   }
 }
+
+export function clearSave(): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    // Storage unavailable — nothing to clear either way.
+  }
+}

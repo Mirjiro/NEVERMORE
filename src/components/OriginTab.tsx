@@ -53,6 +53,7 @@ export default function OriginTab({
   onAddDiamonds,
   onApplyPull,
   onSellDuplicates,
+  onResetProgress,
   onRevealChange,
 }: {
   gold: number;
@@ -67,6 +68,7 @@ export default function OriginTab({
   onAddDiamonds: (amount: number) => void;
   onApplyPull: (pull: PullResult) => void;
   onSellDuplicates: () => void;
+  onResetProgress: () => void;
   /** Fires whenever the reveal stage (X1/X10 opening) opens or closes, so the
    * bottom dock (owned by a sibling component) can hide/reappear in sync. */
   onRevealChange?: (active: boolean) => void;
@@ -385,6 +387,7 @@ export default function OriginTab({
         collection={collection}
         history={history}
         onSellDuplicates={onSellDuplicates}
+        onResetProgress={onResetProgress}
       />
     </div>
   );

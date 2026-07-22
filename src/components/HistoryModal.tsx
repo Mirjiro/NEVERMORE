@@ -1,5 +1,7 @@
 "use client";
 
+import { useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import type { Origin } from "@/lib/types";
 import type { HistoryEntry } from "@/lib/storage";
@@ -36,6 +38,7 @@ export default function HistoryModal({
   history,
   now,
   onSellDuplicates,
+  onResetProgress,
 }: {
   open: boolean;
   onClose: () => void;
@@ -48,11 +51,32 @@ export default function HistoryModal({
    * realistically left open. */
   now: number;
   onSellDuplicates: () => void;
+  onResetProgress: () => void;
 }) {
   const recent = history.length ? [...history].reverse().slice(0, RECENT_LIMIT) : [];
   const duplicates = summarizeDuplicates(collection);
 
-  return (
+  const [confirmingReset, setConfirmingReset] = useState(false);
+  const resetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function handleResetClick() {
+    if (!confirmingReset) {
+      setConfirmingReset(true);
+      resetTimeoutRef.current = setTimeout(() => setConfirmingReset(false), 4000);
+      return;
+    }
+    if (resetTimeoutRef.current) clearTimeout(resetTimeoutRef.current);
+    setConfirmingReset(false);
+    onResetProgress();
+    onClose();
+  }
+
+  // See PackInfoModal for why this is portaled to <body> rather than
+  // rendered in place (OriginTab's `isolate` traps in-place modals behind
+  // the bottom TabBar's z-50, invisibly).
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
     <AnimatePresence>
       {open && (
         <motion.div
@@ -171,10 +195,23 @@ export default function HistoryModal({
                   })}
                 </div>
               )}
+
+              <div className="mt-6 border-t border-zinc-900 pt-4 text-center">
+                <button
+                  onClick={handleResetClick}
+                  className={cn(
+                    "text-xs font-medium transition",
+                    confirmingReset ? "font-semibold text-red-400" : "text-ink-faint",
+                  )}
+                >
+                  {confirmingReset ? "Tap again to erase all progress — cannot be undone" : "Reset Progress"}
+                </button>
+              </div>
             </div>
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   );
 }
