@@ -4,6 +4,7 @@ import { useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { cn } from "@/lib/cn";
+import { CURRENCY_ICONS } from "@/lib/currencyIcons";
 import {
   GOLD_PACKS,
   DIAMOND_PACKS,
@@ -98,18 +99,18 @@ export default function StoreModal({
             </div>
 
             <div className="flex-1 overflow-y-auto px-5 py-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-              <Section title="Buy Gold" icon="🪙" accent="text-amber-300">
+              <Section title="Buy Gold" iconSrc={CURRENCY_ICONS.gold} accent="text-amber-300">
                 <div className="grid grid-cols-3 gap-2">
                   {GOLD_PACKS.map((p) => (
-                    <PurchaseTile key={p.amountLabel} icon="🪙" amountLabel={p.amountLabel} price={p.price} />
+                    <PurchaseTile key={p.amountLabel} iconSrc={CURRENCY_ICONS.gold} amountLabel={p.amountLabel} price={p.price} />
                   ))}
                 </div>
               </Section>
 
-              <Section title="Buy Diamonds" icon="💎" accent="text-cyan-300">
+              <Section title="Buy Diamonds" iconSrc={CURRENCY_ICONS.diamond} accent="text-cyan-300">
                 <div className="grid grid-cols-3 gap-2">
                   {DIAMOND_PACKS.map((p) => (
-                    <PurchaseTile key={p.amountLabel} icon="💎" amountLabel={p.amountLabel} price={p.price} />
+                    <PurchaseTile key={p.amountLabel} iconSrc={CURRENCY_ICONS.diamond} amountLabel={p.amountLabel} price={p.price} />
                   ))}
                 </div>
               </Section>
@@ -123,8 +124,11 @@ export default function StoreModal({
                     >
                       <div className="min-w-0">
                         <p className="text-sm font-semibold text-ink">{d.name}</p>
-                        <p className="truncate text-xs text-ink-muted">
-                          🪙 {d.goldLabel} · 💎 {d.diamondLabel}
+                        <p className="flex items-center gap-1 truncate text-xs text-ink-muted">
+                          <img src={CURRENCY_ICONS.gold} alt="" className="h-3.5 w-3.5 shrink-0 object-contain" />
+                          {d.goldLabel} ·
+                          <img src={CURRENCY_ICONS.diamond} alt="" className="h-3.5 w-3.5 shrink-0 object-contain" />
+                          {d.diamondLabel}
                         </p>
                       </div>
                       <button
@@ -201,28 +205,42 @@ export default function StoreModal({
 function Section({
   title,
   icon,
+  iconSrc,
   accent,
   children,
 }: {
   title: string;
-  icon: string;
+  /** A literal emoji character. Mutually exclusive with `iconSrc`. */
+  icon?: string;
+  /** Path to real icon art (gold/diamond), preferred over `icon` when set. */
+  iconSrc?: string;
   accent: string;
   children: React.ReactNode;
 }) {
   return (
     <div className="mb-6 last:mb-0">
       <h3 className={cn("mb-2 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider", accent)}>
-        <span>{icon}</span> {title}
+        {iconSrc ? <img src={iconSrc} alt="" className="h-4 w-4 object-contain" /> : <span>{icon}</span>} {title}
       </h3>
       {children}
     </div>
   );
 }
 
-function PurchaseTile({ icon, amountLabel, price }: { icon: string; amountLabel: string; price: string }) {
+function PurchaseTile({
+  icon,
+  iconSrc,
+  amountLabel,
+  price,
+}: {
+  icon?: string;
+  iconSrc?: string;
+  amountLabel: string;
+  price: string;
+}) {
   return (
     <div className="flex flex-col items-center gap-1 rounded-lg border border-zinc-800 bg-zinc-900/60 px-2 py-3">
-      <span className="text-xl">{icon}</span>
+      {iconSrc ? <img src={iconSrc} alt="" className="h-6 w-6 object-contain" /> : <span className="text-xl">{icon}</span>}
       <span className="text-sm font-semibold text-ink">{amountLabel}</span>
       <button
         disabled
