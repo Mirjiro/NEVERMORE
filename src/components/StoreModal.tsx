@@ -115,7 +115,7 @@ export default function StoreModal({
                 </div>
               </Section>
 
-              <Section title="Deals" icon="🎁" accent="text-yellow-300">
+              <Section title="Deals" iconSrc="/assets/icons/giftbox.webp" accent="text-yellow-300">
                 <div className="flex flex-col gap-2">
                   {DEALS.map((d) => (
                     <div
@@ -142,7 +142,7 @@ export default function StoreModal({
                 </div>
               </Section>
 
-              <Section title="Convert Gold/Diamonds" icon="🔄" accent="text-ink-muted">
+              <Section title="Convert Gold/Diamonds" iconSrc="/assets/icons/convert.webp" accent="text-ink-muted">
                 <ExchangeBox
                   title="Diamond Exchange"
                   colorClass="border-sky-300/40 bg-sky-400/10"
