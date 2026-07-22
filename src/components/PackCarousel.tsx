@@ -28,23 +28,6 @@ export default function PackCarousel({
   // visual state can update live, every scroll event, with no debounce.
   const [visualActive, setVisualActive] = useState(active);
 
-  // Purely cosmetic motion blur while a swipe is actively in progress — never
-  // an infinite/continuous filter animation (that class of bug was fixed
-  // elsewhere in this app), just a brief, gesture-bounded toggle so the
-  // transition between boxes reads as a deliberate blurred motion rather
-  // than two flat opacity layers crossing over each other.
-  //
-  // This is a fixed-length pulse, NOT a rolling timer reset on every scroll
-  // event — a real touch swipe's native momentum + scroll-snap settle can
-  // keep firing scroll events for 700ms+ after the finger lifts (confirmed
-  // via frame-by-frame video analysis of an actual device recording), which
-  // made a rolling reset ride that entire tail. A single short timer set once
-  // per gesture keeps the blur brief regardless of how long the underlying
-  // scroll takes to fully stop.
-  const [isSwiping, setIsSwiping] = useState(false);
-  const isSwipingRef = useRef(false);
-  const swipeClearTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
   // Measure the box's rendered height directly in JS, rather than
   // recomputing its width-driven aspect-ratio math a second time in a nested
   // calc(clamp(...)) CSS expression — nested math functions inside calc()
@@ -141,15 +124,6 @@ export default function PackCarousel({
         activeRef.current = pack;
         onSwitch(pack);
       }
-
-      if (!isSwipingRef.current) {
-        isSwipingRef.current = true;
-        setIsSwiping(true);
-        swipeClearTimer.current = setTimeout(() => {
-          isSwipingRef.current = false;
-          setIsSwiping(false);
-        }, 130);
-      }
     };
 
     container.addEventListener("scroll", handleScroll, {
@@ -158,7 +132,6 @@ export default function PackCarousel({
 
     return () => {
       container.removeEventListener("scroll", handleScroll);
-      if (swipeClearTimer.current) clearTimeout(swipeClearTimer.current);
     };
   }, [onSwitch]);
 
@@ -202,11 +175,6 @@ export default function PackCarousel({
           scrollSnapType: "y mandatory",
           touchAction: "pan-y",
           WebkitOverflowScrolling: "touch",
-          // Instant on (no ramp-up delay when a swipe starts — a transitioned
-          // blur-in reads as the effect lagging behind the gesture), but a
-          // quick fade back to clear once settled, rather than a hard cut.
-          filter: isSwiping ? "blur(2px)" : "blur(0px)",
-          transition: isSwiping ? "none" : "filter 100ms ease-out",
         }}
       >
         {ORDER.map((pack) => {
