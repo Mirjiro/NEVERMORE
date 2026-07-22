@@ -111,6 +111,7 @@ export default function OriginTab({
             // boundary against the background.
             maxWidth: "none",
             objectPosition: "bottom",
+            filter: "blur(10px)",
           }}
         />
         <h1 className="relative">
