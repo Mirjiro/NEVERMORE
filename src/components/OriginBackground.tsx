@@ -42,7 +42,7 @@ function BackgroundLayer({ pack, active }: { pack: PackType; active: boolean }) 
           alt=""
           draggable={false}
           className="h-full w-full select-none object-cover"
-          style={{ filter: "blur(1.5px) brightness(0.9)" }}
+          style={{ filter: "blur(0.8px) brightness(0.9)" }}
         />
       </motion.div>
     </div>
