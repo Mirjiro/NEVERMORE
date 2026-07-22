@@ -196,7 +196,13 @@ export default function OriginTab({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0 flex flex-col items-center justify-center overflow-y-auto"
+            // `fixed` (not `absolute`) so this centers against the full
+            // viewport, independent of this flex-1 region's own height —
+            // which is actively shrinking/growing as the header and dock
+            // collapse away (CHROME_TRANSITION, 450ms). Centering against
+            // the live-animating flex box made the box visibly keep
+            // resettling for ~150ms after it first appeared.
+            className="fixed inset-0 mx-auto flex w-full max-w-md flex-col items-center justify-center overflow-y-auto"
           >
             {pulls.length === 1 ? (
               <RevealFlow pull={pulls[0]} onDismiss={() => setRevealState(null)} />

@@ -23,6 +23,10 @@ const SWIPE_THRESHOLD = 70;
 const ADVANCE_LOCK_MS = 250;
 const TOAST_DURATION_S = 1.6;
 
+/** Shared with RevealFlow's identical boxOpening-stage entrance so an x1 and
+ * an x10 open read as the same motion. */
+const BOX_ENTER_TRANSITION = { duration: 0.32, ease: [0.16, 0.84, 0.24, 1] as const };
+
 /**
  * Sequential one-at-a-time reveal for a batch of pulls (x10 opens): the box
  * opens, then an Origin-themed cover (same as the x1 open), then the 10
@@ -84,14 +88,19 @@ export default function RevealDeck({ pulls, onDismiss }: { pulls: PullResult[]; 
     const first = pulls[0];
     const assets = ORIGIN_BOX_ASSETS[first.packType];
     return (
-      <div className="flex w-full flex-1 flex-col items-center justify-center gap-3 py-4">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.96, y: 10 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={BOX_ENTER_TRANSITION}
+        className="flex w-full flex-1 flex-col items-center justify-center gap-3 py-4"
+      >
         <OriginBoxOpening
           packType={first.packType}
           lidSrc={assets.lidSrc}
           baseSrc={assets.baseSrc}
           onOpened={() => setStage("originCover")}
         />
-      </div>
+      </motion.div>
     );
   }
 
