@@ -1,5 +1,6 @@
 "use client";
 
+import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import type { PackType } from "@/lib/types";
 import { ORIGIN_ODDS, PACK_CONFIG, BOX_DESCRIPTIONS } from "@/lib/odds";
@@ -16,7 +17,18 @@ export default function PackInfoModal({
   const config = PACK_CONFIG[packType];
   const originOdds = Object.entries(ORIGIN_ODDS);
 
-  return (
+  // Portaled straight to <body> rather than rendered in place: OriginTab's
+  // root establishes its own stacking context (`isolate`, needed so the
+  // Origin background's own -z-10 layer stays contained), which traps this
+  // modal's z-[60] inside it — the bottom TabBar (z-50 at the app-shell
+  // level, entirely outside that trap) then always wins hit-testing in the
+  // ~90px strip it occupies, invisibly, since both are dark. `document` is
+  // only ever undefined during SSR, and this component's actual content is
+  // always empty then anyway (`open` starts false and can only become true
+  // from a client-side click) — no effect/mount-gate needed to guard it.
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
     <AnimatePresence>
       {open && (
         <motion.div
@@ -67,6 +79,7 @@ export default function PackInfoModal({
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   );
 }

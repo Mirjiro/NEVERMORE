@@ -22,6 +22,16 @@ const REWARD_COUNT = 2; // Card, Bonus
 const SUMMARY_POSITION = REWARD_COUNT; // 2
 const ADVANCE_LOCK_MS = 250;
 
+/**
+ * The box's centering point necessarily differs from the carousel tile it
+ * replaces (this stage is centered in the full reclaimed viewport height, the
+ * tile followed the carousel's own layout) — a plain opacity crossfade left it
+ * reading as an instant teleport. Giving it its own small settle-in motion
+ * (matching the box's own "premium" ease) makes the reposition read as a
+ * deliberate arrival instead of a snap.
+ */
+const BOX_ENTER_TRANSITION = { duration: 0.32, ease: [0.16, 0.84, 0.24, 1] as const };
+
 export default function RevealFlow({ pull, onDismiss }: { pull: PullResult; onDismiss: () => void }) {
   const [stage, setStage] = useState<Stage>("boxOpening");
   const [position, setPosition] = useState(0);
@@ -69,14 +79,19 @@ export default function RevealFlow({ pull, onDismiss }: { pull: PullResult; onDi
   if (stage === "boxOpening") {
     const assets = ORIGIN_BOX_ASSETS[pull.packType];
     return (
-      <div className="flex w-full flex-col items-center justify-center gap-3 py-4">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.96, y: 10 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={BOX_ENTER_TRANSITION}
+        className="flex w-full flex-col items-center justify-center gap-3 py-4"
+      >
         <OriginBoxOpening
           packType={pull.packType}
           lidSrc={assets.lidSrc}
           baseSrc={assets.baseSrc}
           onOpened={() => setStage("originCover")}
         />
-      </div>
+      </motion.div>
     );
   }
 

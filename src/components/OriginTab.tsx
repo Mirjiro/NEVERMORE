@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { rollPull, rollOrigin, PACK_CONFIG } from "@/lib/odds";
 import type { PackType, PullResult } from "@/lib/types";
 import { cn } from "@/lib/cn";
+import type { HistoryEntry } from "@/lib/storage";
 import InventoryBar from "./InventoryBar";
 import OriginBackground from "./OriginBackground";
 import PackCarousel from "./PackCarousel";
@@ -12,6 +13,7 @@ import PackInfoModal from "./PackInfoModal";
 import RevealFlow from "./RevealFlow";
 import RevealDeck from "./RevealDeck";
 import StoreModal from "./StoreModal";
+import HistoryModal from "./HistoryModal";
 
 const PURCHASE_BUTTON_ASSETS: Record<
   PackType,
@@ -43,22 +45,30 @@ export default function OriginTab({
   diamonds,
   totalSeeds,
   creatures,
+  collection,
+  history,
   onSpendGold,
   onSpendDiamonds,
   onAddGold,
   onAddDiamonds,
   onApplyPull,
+  onSellDuplicates,
+  onResetProgress,
   onRevealChange,
 }: {
   gold: number;
   diamonds: number;
   totalSeeds: number;
   creatures: number;
+  collection: Record<string, number>;
+  history: HistoryEntry[];
   onSpendGold: (amount: number) => void;
   onSpendDiamonds: (amount: number) => void;
   onAddGold: (amount: number) => void;
   onAddDiamonds: (amount: number) => void;
   onApplyPull: (pull: PullResult) => void;
+  onSellDuplicates: () => void;
+  onResetProgress: () => void;
   /** Fires whenever the reveal stage (X1/X10 opening) opens or closes, so the
    * bottom dock (owned by a sibling component) can hide/reappear in sync. */
   onRevealChange?: (active: boolean) => void;
@@ -67,8 +77,18 @@ export default function OriginTab({
   const [pulls, setPulls] = useState<PullResult[] | null>(null);
   const [infoOpen, setInfoOpen] = useState(false);
   const [storeOpen, setStoreOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [historyOpenedAt, setHistoryOpenedAt] = useState(0);
 
   const inReveal = pulls !== null;
+
+  // A ref (not state) because it must block a second `openActivePack` call
+  // that lands in the same tick as the first, before React has had a chance
+  // to re-render and unmount the Open X1/X10 buttons — a burst of rapid taps
+  // on a slow device previously fired the roll+spend logic once per tap,
+  // silently deducting currency multiple times while only the last roll's
+  // results ever reached the screen.
+  const openingLock = useRef(false);
 
   // Called synchronously alongside setPulls (never via a useEffect keyed on
   // `pulls`) so React batches this with OriginTab's own re-render into the
@@ -77,6 +97,7 @@ export default function OriginTab({
   const setRevealState = (results: PullResult[] | null) => {
     setPulls(results);
     onRevealChange?.(results !== null);
+    if (results === null) openingLock.current = false;
   };
 
   // Measures the top bar's own natural (uncollapsed) height so it can be
@@ -106,8 +127,10 @@ export default function OriginTab({
   const canAffordEliteX10 = diamonds >= PACK_CONFIG.Elite.costX10;
 
   const openActivePack = (count: 1 | 10) => {
+    if (openingLock.current) return;
     const cost = count === 1 ? config.costX1 : config.costX10;
     if (balance < cost) return;
+    openingLock.current = true;
     if (activePack === "Classic") onSpendGold(cost);
     else onSpendDiamonds(cost);
     // An x10 open is 10 pulls from a single Origin Pack — lock every card and
@@ -165,13 +188,24 @@ export default function OriginTab({
             />
             <h1 className="relative">
               <img
-                src="/assets/logo/nevermore-wordmark.png"
+                src="/assets/logo/nevermore-wordmark.webp"
                 alt="NEVERMORE"
                 draggable={false}
                 className="mx-auto h-auto select-none"
                 style={{ width: "clamp(220px, 62vw, 300px)" }}
               />
             </h1>
+
+            <button
+              onClick={() => {
+                setHistoryOpenedAt(Date.now());
+                setHistoryOpen(true);
+              }}
+              aria-label="View duplicates and recent pulls"
+              className="absolute right-0 top-4 flex h-8 w-8 items-center justify-center rounded-full border border-zinc-700/70 bg-black/30 text-sm leading-none transition active:scale-95"
+            >
+              📜
+            </button>
           </header>
 
           {/* Currency row — fixed within the layout, never scrolls */}
@@ -196,7 +230,13 @@ export default function OriginTab({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0 flex flex-col items-center justify-center overflow-y-auto"
+            // `fixed` (not `absolute`) so this centers against the full
+            // viewport, independent of this flex-1 region's own height —
+            // which is actively shrinking/growing as the header and dock
+            // collapse away (CHROME_TRANSITION, 450ms). Centering against
+            // the live-animating flex box made the box visibly keep
+            // resettling for ~150ms after it first appeared.
+            className="fixed inset-0 mx-auto flex w-full max-w-md flex-col items-center justify-center overflow-y-auto"
           >
             {pulls.length === 1 ? (
               <RevealFlow pull={pulls[0]} onDismiss={() => setRevealState(null)} />
@@ -339,6 +379,15 @@ export default function OriginTab({
         onSpendDiamonds={onSpendDiamonds}
         onAddGold={onAddGold}
         onAddDiamonds={onAddDiamonds}
+      />
+      <HistoryModal
+        open={historyOpen}
+        onClose={() => setHistoryOpen(false)}
+        now={historyOpenedAt}
+        collection={collection}
+        history={history}
+        onSellDuplicates={onSellDuplicates}
+        onResetProgress={onResetProgress}
       />
     </div>
   );
