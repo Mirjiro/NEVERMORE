@@ -92,8 +92,15 @@ export default function OriginTab({
       <OriginBackground active={activePack} />
 
       {/* Header — fixed within the layout, never scrolls */}
-      <header className="shrink-0 pt-4 text-center">
-        <h1>
+      <header className="relative shrink-0 pt-4 text-center">
+        <img
+          src="/assets/header/logo-glow.webp"
+          alt=""
+          draggable={false}
+          className="pointer-events-none absolute -left-4 -right-4 -top-6 h-[calc(100%+24px)] w-[calc(100%+32px)] select-none object-cover"
+          style={{ objectPosition: "bottom" }}
+        />
+        <h1 className="relative">
           <img
             src="/assets/logo/nevermore-wordmark.png"
             alt="NEVERMORE"
