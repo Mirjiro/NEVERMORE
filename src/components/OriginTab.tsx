@@ -97,8 +97,21 @@ export default function OriginTab({
           src="/assets/header/logo-glow.webp"
           alt=""
           draggable={false}
-          className="pointer-events-none absolute -left-4 -right-4 -top-6 h-[calc(100%+24px)] w-[calc(100%+32px)] select-none object-cover"
-          style={{ objectPosition: "bottom" }}
+          className="pointer-events-none absolute select-none object-cover"
+          style={{
+            left: -16,
+            right: -16,
+            top: -24,
+            height: "calc(100% + 24px)",
+            width: "calc(100% + 32px)",
+            // Tailwind's Preflight sets `img { max-width: 100% }` globally,
+            // which silently clamps the explicit width above back down to
+            // exactly the header's own width — discarding the overscan meant
+            // to keep this image's hard edges from landing at a visible
+            // boundary against the background.
+            maxWidth: "none",
+            objectPosition: "bottom",
+          }}
         />
         <h1 className="relative">
           <img
