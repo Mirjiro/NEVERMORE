@@ -53,14 +53,22 @@ function BackgroundLayer({ pack, active }: { pack: PackType; active: boolean }) 
  * Full-bleed, cinematic backdrop for the Origin tab — one persistent layer per
  * pack, crossfaded via opacity rather than mounted/unmounted, so the drift
  * animation underneath never restarts when the active pack switches.
+ *
+ * `visible` fades the whole thing out to reveal the page's own flat backdrop
+ * underneath (used during the reveal-stage "big push" presentation) without
+ * unmounting it — so the drift animation keeps running underneath and picks
+ * back up instantly, with no restart, once it fades back in.
  */
-export default function OriginBackground({ active }: { active: PackType }) {
+export default function OriginBackground({ active, visible = true }: { active: PackType; visible?: boolean }) {
   return (
     // `fixed` (not `absolute`) so this covers the full viewport height,
     // independent of the padding OriginTab's parent reserves for the bottom
     // dock — otherwise the scene stops short and the dock sits on a visibly
     // separate flat backdrop instead of the same continuous background.
-    <div className="pointer-events-none fixed inset-0 -z-10 mx-auto w-full max-w-md overflow-hidden">
+    <div
+      className="pointer-events-none fixed inset-0 -z-10 mx-auto w-full max-w-md overflow-hidden transition-opacity ease-out"
+      style={{ opacity: visible ? 1 : 0, transitionDuration: "600ms" }}
+    >
       <BackgroundLayer pack="Classic" active={active === "Classic"} />
       <BackgroundLayer pack="Elite" active={active === "Elite"} />
       <motion.div
