@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { TabName } from "@/lib/tabs";
 import type { Origin, PullResult } from "@/lib/types";
 import { collectionKey, loadSave, writeSave, type HistoryEntry } from "@/lib/storage";
+import { sellAllDuplicates, summarizeDuplicates } from "@/lib/duplicateValue";
 import TabBar from "./TabBar";
 import UnderConstruction from "./UnderConstruction";
 import OriginTab from "./OriginTab";
@@ -100,6 +101,16 @@ export default function AppShell() {
     [recordCard],
   );
 
+  const onSellDuplicates = useCallback(
+    () => {
+      const { totalGold } = summarizeDuplicates(collection);
+      if (totalGold <= 0) return;
+      setGold((g) => g + totalGold);
+      setCollection((prev) => sellAllDuplicates(prev));
+    },
+    [collection],
+  );
+
   const totalSeeds = Object.values(seedsByOrigin).reduce((a, b) => a + b, 0);
 
   return (
@@ -121,6 +132,7 @@ export default function AppShell() {
             onAddGold={(amount) => setGold((g) => g + amount)}
             onAddDiamonds={(amount) => setDiamonds((d) => d + amount)}
             onApplyPull={applyPull}
+            onSellDuplicates={onSellDuplicates}
             onRevealChange={setRevealActive}
           />
         ) : (

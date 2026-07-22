@@ -8,6 +8,7 @@ import { CARD_POOL } from "@/lib/cardPool";
 import { ORIGIN_THEME } from "@/lib/originTheme";
 import { RARITY_STYLES, RARITY_ORDER } from "@/lib/rarityStyles";
 import { getSlot2Content } from "@/lib/slot2Content";
+import { summarizeDuplicates } from "@/lib/duplicateValue";
 import { cn } from "@/lib/cn";
 
 const ORIGINS: Origin[] = ["Vampire", "Fae", "Demon", "Angel", "Mage", "Werewolf", "Royal"];
@@ -34,6 +35,7 @@ export default function HistoryModal({
   collection,
   history,
   now,
+  onSellDuplicates,
 }: {
   open: boolean;
   onClose: () => void;
@@ -45,8 +47,10 @@ export default function HistoryModal({
    * one timestamp per open reads correctly for as long as the sheet is
    * realistically left open. */
   now: number;
+  onSellDuplicates: () => void;
 }) {
   const recent = history.length ? [...history].reverse().slice(0, RECENT_LIMIT) : [];
+  const duplicates = summarizeDuplicates(collection);
 
   return (
     <AnimatePresence>
@@ -111,6 +115,30 @@ export default function HistoryModal({
                   );
                 })}
               </div>
+
+              {duplicates.totalCards > 0 && (
+                <>
+                  <h3 className="mb-2 mt-5 text-xs font-semibold uppercase tracking-wider text-ink-faint">
+                    Duplicates
+                  </h3>
+                  <div className="flex items-center justify-between gap-3 rounded-lg border border-zinc-800 bg-zinc-900/60 px-3 py-2.5">
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-ink">
+                        {duplicates.totalCards} duplicate {duplicates.totalCards === 1 ? "card" : "cards"}
+                      </p>
+                      <p className="text-xs text-ink-faint">
+                        Worth 🪙 {duplicates.totalGold.toLocaleString()} Gold · one copy of each card is always kept
+                      </p>
+                    </div>
+                    <button
+                      onClick={onSellDuplicates}
+                      className="shrink-0 rounded-full bg-amber-500/90 px-3 py-1.5 text-xs font-semibold text-ink-dark transition active:scale-95"
+                    >
+                      Sell All
+                    </button>
+                  </div>
+                </>
+              )}
 
               <h3 className="mb-2 mt-5 text-xs font-semibold uppercase tracking-wider text-ink-faint">
                 Recent Pulls
