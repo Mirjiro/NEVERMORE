@@ -201,7 +201,7 @@ export default function OriginTab({
                 setHistoryOpenedAt(Date.now());
                 setHistoryOpen(true);
               }}
-              aria-label="View collection and recent pulls"
+              aria-label="View duplicates and recent pulls"
               className="absolute right-0 top-4 flex h-8 w-8 items-center justify-center rounded-full border border-zinc-700/70 bg-black/30 text-sm leading-none transition active:scale-95"
             >
               📜

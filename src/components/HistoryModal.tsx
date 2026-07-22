@@ -3,20 +3,11 @@
 import { useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import type { Origin } from "@/lib/types";
 import type { HistoryEntry } from "@/lib/storage";
-import { collectionKey } from "@/lib/storage";
-import { CARD_POOL } from "@/lib/cardPool";
-import { ORIGIN_THEME } from "@/lib/originTheme";
-import { RARITY_STYLES, RARITY_ORDER } from "@/lib/rarityStyles";
+import { RARITY_STYLES } from "@/lib/rarityStyles";
 import { getSlot2Content } from "@/lib/slot2Content";
 import { summarizeDuplicates } from "@/lib/duplicateValue";
 import { cn } from "@/lib/cn";
-
-const ORIGINS: Origin[] = ["Vampire", "Fae", "Demon", "Angel", "Mage", "Werewolf", "Royal"];
-
-/** 6 rarities x 2 named cards each, fixed by the card pool's own shape. */
-const CARDS_PER_ORIGIN = RARITY_ORDER.length * 2;
 
 const RECENT_LIMIT = 40;
 
@@ -96,8 +87,8 @@ export default function HistoryModal({
           >
             <div className="flex shrink-0 items-start justify-between gap-3 border-b border-zinc-800 px-5 pb-3 pt-5">
               <div>
-                <h2 className="text-base font-bold text-ink">Collection</h2>
-                <p className="mt-1 text-xs text-ink-faint">Cards discovered &amp; recent pulls</p>
+                <h2 className="text-base font-bold text-ink">History</h2>
+                <p className="mt-1 text-xs text-ink-faint">Duplicates &amp; recent pulls</p>
               </div>
               <button
                 onClick={onClose}
@@ -109,42 +100,9 @@ export default function HistoryModal({
             </div>
 
             <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-3">
-              <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-ink-faint">
-                Collection Progress
-              </h3>
-              <div className="flex flex-col gap-3">
-                {ORIGINS.map((origin) => {
-                  const theme = ORIGIN_THEME[origin];
-                  const ownedCount = RARITY_ORDER.reduce((sum, rarity) => {
-                    const [nameA, nameB] = CARD_POOL[origin][rarity];
-                    const owned = [nameA, nameB].filter((name) => collection[collectionKey(origin, name)] > 0);
-                    return sum + owned.length;
-                  }, 0);
-                  const pct = Math.round((ownedCount / CARDS_PER_ORIGIN) * 100);
-                  return (
-                    <div key={origin}>
-                      <div className="flex items-center justify-between text-sm">
-                        <span className={cn("font-semibold", theme.accent)}>{origin}</span>
-                        <span className="font-mono text-xs text-ink-faint">
-                          {ownedCount}/{CARDS_PER_ORIGIN}
-                        </span>
-                      </div>
-                      <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-zinc-900">
-                        <div
-                          className={cn("h-full rounded-full transition-[width] duration-500 ease-out", theme.bar)}
-                          style={{ width: `${pct}%` }}
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
               {duplicates.totalCards > 0 && (
                 <>
-                  <h3 className="mb-2 mt-5 text-xs font-semibold uppercase tracking-wider text-ink-faint">
-                    Duplicates
-                  </h3>
+                  <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-ink-faint">Duplicates</h3>
                   <div className="flex items-center justify-between gap-3 rounded-lg border border-zinc-800 bg-zinc-900/60 px-3 py-2.5">
                     <div className="min-w-0">
                       <p className="text-sm font-semibold text-ink">
@@ -164,7 +122,12 @@ export default function HistoryModal({
                 </>
               )}
 
-              <h3 className="mb-2 mt-5 text-xs font-semibold uppercase tracking-wider text-ink-faint">
+              <h3
+                className={cn(
+                  "mb-2 text-xs font-semibold uppercase tracking-wider text-ink-faint",
+                  duplicates.totalCards > 0 && "mt-5",
+                )}
+              >
                 Recent Pulls
               </h3>
               {recent.length === 0 ? (
