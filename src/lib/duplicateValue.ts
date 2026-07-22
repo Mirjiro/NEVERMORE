@@ -6,10 +6,14 @@ import { collectionKey } from "./storage";
 /** Gold value per duplicate copy of a card, scaled by rarity — roughly a
  * tenth of that rarity's rough "worth" relative to a Classic Origin Box
  * (2,000 Gold), so selling duplicates meaningfully helps but never comes
- * close to funding pulls on its own. */
+ * close to funding pulls on its own. Common/Rare are deliberately low
+ * relative to Epic+: those two tiers make up 90% of Classic's rarity table
+ * and only 12 unique cards exist per Origin, so duplicates of them arrive
+ * constantly — at higher per-copy values that volume alone becomes a
+ * steady passive Gold income, not an occasional bonus. */
 export const DUPLICATE_SELL_VALUE: Record<Rarity, number> = {
-  Common: 50,
-  Rare: 150,
+  Common: 25,
+  Rare: 75,
   Epic: 400,
   Legendary: 1000,
   Mythic: 3000,
