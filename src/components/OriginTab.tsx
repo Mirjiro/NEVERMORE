@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { rollPull, rollOrigin, PACK_CONFIG } from "@/lib/odds";
 import type { PackType, PullResult } from "@/lib/types";
 import { cn } from "@/lib/cn";
+import type { HistoryEntry } from "@/lib/storage";
 import InventoryBar from "./InventoryBar";
 import OriginBackground from "./OriginBackground";
 import PackCarousel from "./PackCarousel";
@@ -12,6 +13,7 @@ import PackInfoModal from "./PackInfoModal";
 import RevealFlow from "./RevealFlow";
 import RevealDeck from "./RevealDeck";
 import StoreModal from "./StoreModal";
+import HistoryModal from "./HistoryModal";
 
 const PURCHASE_BUTTON_ASSETS: Record<
   PackType,
@@ -43,6 +45,8 @@ export default function OriginTab({
   diamonds,
   totalSeeds,
   creatures,
+  collection,
+  history,
   onSpendGold,
   onSpendDiamonds,
   onAddGold,
@@ -54,6 +58,8 @@ export default function OriginTab({
   diamonds: number;
   totalSeeds: number;
   creatures: number;
+  collection: Record<string, number>;
+  history: HistoryEntry[];
   onSpendGold: (amount: number) => void;
   onSpendDiamonds: (amount: number) => void;
   onAddGold: (amount: number) => void;
@@ -67,6 +73,8 @@ export default function OriginTab({
   const [pulls, setPulls] = useState<PullResult[] | null>(null);
   const [infoOpen, setInfoOpen] = useState(false);
   const [storeOpen, setStoreOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [historyOpenedAt, setHistoryOpenedAt] = useState(0);
 
   const inReveal = pulls !== null;
 
@@ -183,6 +191,17 @@ export default function OriginTab({
                 style={{ width: "clamp(220px, 62vw, 300px)" }}
               />
             </h1>
+
+            <button
+              onClick={() => {
+                setHistoryOpenedAt(Date.now());
+                setHistoryOpen(true);
+              }}
+              aria-label="View collection and recent pulls"
+              className="absolute right-0 top-4 flex h-8 w-8 items-center justify-center rounded-full border border-zinc-700/70 bg-black/30 text-sm leading-none transition active:scale-95"
+            >
+              📜
+            </button>
           </header>
 
           {/* Currency row — fixed within the layout, never scrolls */}
@@ -356,6 +375,13 @@ export default function OriginTab({
         onSpendDiamonds={onSpendDiamonds}
         onAddGold={onAddGold}
         onAddDiamonds={onAddDiamonds}
+      />
+      <HistoryModal
+        open={historyOpen}
+        onClose={() => setHistoryOpen(false)}
+        now={historyOpenedAt}
+        collection={collection}
+        history={history}
       />
     </div>
   );
