@@ -28,6 +28,14 @@ export default function PackCarousel({
   // visual state can update live, every scroll event, with no debounce.
   const [visualActive, setVisualActive] = useState(active);
 
+  // Purely cosmetic motion blur while a swipe is actively in progress — never
+  // an infinite/continuous filter animation (that class of bug was fixed
+  // elsewhere in this app), just a brief, gesture-bounded toggle so the
+  // transition between boxes reads as a deliberate blurred motion rather
+  // than two flat opacity layers crossing over each other.
+  const [isSwiping, setIsSwiping] = useState(false);
+  const swipeSettleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // Measure the box's rendered height directly in JS, rather than
   // recomputing its width-driven aspect-ratio math a second time in a nested
   // calc(clamp(...)) CSS expression — nested math functions inside calc()
@@ -124,6 +132,10 @@ export default function PackCarousel({
         activeRef.current = pack;
         onSwitch(pack);
       }
+
+      setIsSwiping(true);
+      if (swipeSettleTimer.current) clearTimeout(swipeSettleTimer.current);
+      swipeSettleTimer.current = setTimeout(() => setIsSwiping(false), 160);
     };
 
     container.addEventListener("scroll", handleScroll, {
@@ -132,6 +144,7 @@ export default function PackCarousel({
 
     return () => {
       container.removeEventListener("scroll", handleScroll);
+      if (swipeSettleTimer.current) clearTimeout(swipeSettleTimer.current);
     };
   }, [onSwitch]);
 
@@ -175,6 +188,8 @@ export default function PackCarousel({
           scrollSnapType: "y mandatory",
           touchAction: "pan-y",
           WebkitOverflowScrolling: "touch",
+          filter: isSwiping ? "blur(5px)" : "blur(0px)",
+          transition: "filter 200ms ease-out",
         }}
       >
         {ORDER.map((pack) => {

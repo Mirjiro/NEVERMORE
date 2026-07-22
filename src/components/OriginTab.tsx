@@ -4,6 +4,7 @@ import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { rollPull, rollOrigin, PACK_CONFIG } from "@/lib/odds";
 import type { PackType, PullResult } from "@/lib/types";
+import { cn } from "@/lib/cn";
 import InventoryBar from "./InventoryBar";
 import OriginBackground from "./OriginBackground";
 import PackCarousel from "./PackCarousel";
@@ -61,10 +62,16 @@ export default function OriginTab({
   const [storeOpen, setStoreOpen] = useState(false);
 
   const config = PACK_CONFIG[activePack];
-  const buttonAssets = PURCHASE_BUTTON_ASSETS[activePack];
   const balance = activePack === "Classic" ? gold : diamonds;
   const canAffordX1 = balance >= config.costX1;
-  const canAffordX10 = balance >= config.costX10;
+
+  // Both packs' afford states are computed regardless of which is active —
+  // the button rows below stay permanently mounted (see comment there), so
+  // both need their own disabled state at all times, not just the active one.
+  const canAffordClassicX1 = gold >= PACK_CONFIG.Classic.costX1;
+  const canAffordClassicX10 = gold >= PACK_CONFIG.Classic.costX10;
+  const canAffordEliteX1 = diamonds >= PACK_CONFIG.Elite.costX1;
+  const canAffordEliteX10 = diamonds >= PACK_CONFIG.Elite.costX10;
 
   const openActivePack = (count: 1 | 10) => {
     const cost = count === 1 ? config.costX1 : config.costX10;
@@ -143,48 +150,70 @@ export default function OriginTab({
               className="relative z-20 flex shrink-0 flex-col items-center gap-3 pb-[6px] pt-2"
               style={{ transform: "translateY(-32px)" }}
             >
-              <div className="flex items-center justify-center gap-4">
-                <button
-                  onClick={() => openActivePack(1)}
-                  disabled={!canAffordX1}
-                  aria-label={`Open X1 — ${config.costX1.toLocaleString()} ${config.currency}`}
-                  className="shrink-0 transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  <img
-                    src={buttonAssets.x1Src}
-                    alt=""
-                    draggable={false}
-                    className="pointer-events-none select-none"
-                    style={{ height: 64, aspectRatio: buttonAssets.x1Ratio }}
-                  />
-                </button>
-                <button
-                  onClick={() => openActivePack(10)}
-                  disabled={!canAffordX10}
-                  aria-label={`Open X10 — ${config.costX10.toLocaleString()} ${config.currency}`}
-                  className="shrink-0 transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  <img
-                    src={buttonAssets.x10Src}
-                    alt=""
-                    draggable={false}
-                    className="pointer-events-none select-none"
-                    style={{ height: 64, aspectRatio: buttonAssets.x10Ratio }}
-                  />
-                </button>
-                <button
-                  onClick={() => setInfoOpen(true)}
-                  aria-label={`${activePack} Origin Box rate info`}
-                  className="shrink-0 transition active:scale-95"
-                >
-                  <img
-                    src={buttonAssets.infoSrc}
-                    alt=""
-                    draggable={false}
-                    className="pointer-events-none select-none"
-                    style={{ height: 44, aspectRatio: buttonAssets.infoRatio }}
-                  />
-                </button>
+              {/* Both packs' button rows stay permanently mounted (crossfaded via
+                  opacity, never conditionally rendered) so their image assets are
+                  fetched and decoded well before the user ever switches to them —
+                  otherwise the first switch to a pack shows its old <img> src still
+                  on screen for as long as the new one takes to load over the network. */}
+              <div className="relative flex items-center justify-center" style={{ height: 64 }}>
+                {(["Classic", "Elite"] as const).map((pack) => {
+                  const assets = PURCHASE_BUTTON_ASSETS[pack];
+                  const rowConfig = PACK_CONFIG[pack];
+                  const rowCanAffordX1 = pack === "Classic" ? canAffordClassicX1 : canAffordEliteX1;
+                  const rowCanAffordX10 = pack === "Classic" ? canAffordClassicX10 : canAffordEliteX10;
+                  const isRowActive = activePack === pack;
+                  return (
+                    <div
+                      key={pack}
+                      className={cn(
+                        "absolute inset-0 flex items-center justify-center gap-4 transition-opacity duration-150",
+                        isRowActive ? "opacity-100" : "pointer-events-none opacity-0",
+                      )}
+                    >
+                      <button
+                        onClick={() => openActivePack(1)}
+                        disabled={!rowCanAffordX1}
+                        aria-label={`Open X1 — ${rowConfig.costX1.toLocaleString()} ${rowConfig.currency}`}
+                        className="shrink-0 transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        <img
+                          src={assets.x1Src}
+                          alt=""
+                          draggable={false}
+                          className="pointer-events-none select-none"
+                          style={{ height: 64, aspectRatio: assets.x1Ratio }}
+                        />
+                      </button>
+                      <button
+                        onClick={() => openActivePack(10)}
+                        disabled={!rowCanAffordX10}
+                        aria-label={`Open X10 — ${rowConfig.costX10.toLocaleString()} ${rowConfig.currency}`}
+                        className="shrink-0 transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        <img
+                          src={assets.x10Src}
+                          alt=""
+                          draggable={false}
+                          className="pointer-events-none select-none"
+                          style={{ height: 64, aspectRatio: assets.x10Ratio }}
+                        />
+                      </button>
+                      <button
+                        onClick={() => setInfoOpen(true)}
+                        aria-label={`${pack} Origin Box rate info`}
+                        className="shrink-0 transition active:scale-95"
+                      >
+                        <img
+                          src={assets.infoSrc}
+                          alt=""
+                          draggable={false}
+                          className="pointer-events-none select-none"
+                          style={{ height: 44, aspectRatio: assets.infoRatio }}
+                        />
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
 
               {!canAffordX1 && (

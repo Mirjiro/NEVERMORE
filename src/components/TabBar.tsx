@@ -42,10 +42,14 @@ export default function TabBar({
   return (
     <nav
       ref={navRef}
-      className="fixed inset-x-0 bottom-0 z-50 mx-auto flex w-full max-w-md flex-col bg-zinc-950"
+      className="fixed inset-x-0 bottom-0 z-50 mx-auto flex w-full max-w-md flex-col"
       style={{
         gap: "3px",
         padding: `0 20px calc(env(safe-area-inset-bottom) + 12px)`,
+        // Fades up into whatever's behind it (the Origin tab's background now
+        // extends the full viewport height) instead of a flat opaque panel
+        // that reads as a separate rectangle sitting on top of the scene.
+        background: "linear-gradient(to bottom, transparent, rgba(9,9,11,0.72) 38%, rgba(9,9,11,0.95) 100%)",
       }}
     >
       {/* Icon row — icons sit inside the custom dock bar artwork */}
