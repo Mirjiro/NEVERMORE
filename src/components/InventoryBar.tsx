@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment } from "react";
+import { CURRENCY_ICONS } from "@/lib/currencyIcons";
 
 export default function InventoryBar({
   gold,
@@ -14,10 +15,10 @@ export default function InventoryBar({
   creatures: number;
 }) {
   const items = [
-    { icon: "🪙", value: gold.toLocaleString() },
-    { icon: "💎", value: diamonds.toLocaleString() },
-    { icon: "🌱", value: seeds.toLocaleString() },
-    { icon: "🐾", value: creatures.toLocaleString() },
+    { icon: CURRENCY_ICONS.gold, value: gold.toLocaleString() },
+    { icon: CURRENCY_ICONS.diamond, value: diamonds.toLocaleString() },
+    { icon: CURRENCY_ICONS.seed, value: seeds.toLocaleString() },
+    { icon: CURRENCY_ICONS.creature, value: creatures.toLocaleString() },
   ];
 
   return (
@@ -26,7 +27,7 @@ export default function InventoryBar({
         <Fragment key={i}>
           {i > 0 && <span className="text-ink-faint">·</span>}
           <span className="flex items-center gap-1">
-            <span className="text-sm leading-none">{item.icon}</span>
+            <img src={item.icon} alt="" draggable={false} className="h-4 w-4 select-none object-contain" />
             <span className="font-semibold tabular-nums">{item.value}</span>
           </span>
         </Fragment>

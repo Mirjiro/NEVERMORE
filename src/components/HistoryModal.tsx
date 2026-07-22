@@ -7,6 +7,7 @@ import type { HistoryEntry } from "@/lib/storage";
 import { RARITY_STYLES } from "@/lib/rarityStyles";
 import { getSlot2Content } from "@/lib/slot2Content";
 import { summarizeDuplicates } from "@/lib/duplicateValue";
+import { CURRENCY_ICONS } from "@/lib/currencyIcons";
 import { cn } from "@/lib/cn";
 
 const RECENT_LIMIT = 40;
@@ -108,8 +109,10 @@ export default function HistoryModal({
                       <p className="text-sm font-semibold text-ink">
                         {duplicates.totalCards} duplicate {duplicates.totalCards === 1 ? "card" : "cards"}
                       </p>
-                      <p className="text-xs text-ink-faint">
-                        Worth 🪙 {duplicates.totalGold.toLocaleString()} Gold · one copy of each card is always kept
+                      <p className="flex items-center gap-1 text-xs text-ink-faint">
+                        Worth
+                        <img src={CURRENCY_ICONS.gold} alt="" className="h-3.5 w-3.5 shrink-0 object-contain" />
+                        {duplicates.totalGold.toLocaleString()} Gold · one copy of each card is always kept
                       </p>
                     </div>
                     <button
