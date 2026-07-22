@@ -40,6 +40,9 @@ const PURCHASE_BUTTON_ASSETS: Record<
 /** Shared with TabBar's own hide animation so both read as one cohesive motion. */
 const CHROME_TRANSITION = { duration: 0.45, ease: [0.16, 0.84, 0.24, 1] as const };
 
+const HISTORY_ICON = "/assets/icons/scroll.webp";
+const ADD_FUNDS_ICON = "/assets/icons/plus.webp";
+
 export default function OriginTab({
   gold,
   diamonds,
@@ -224,9 +227,9 @@ export default function OriginTab({
                 setHistoryOpen(true);
               }}
               aria-label="View duplicates and recent pulls"
-              className="absolute right-0 top-4 flex h-8 w-8 items-center justify-center rounded-full border border-zinc-700/70 bg-black/30 text-sm leading-none transition active:scale-95"
+              className="absolute right-0 top-8 flex h-9 w-9 items-center justify-center transition active:scale-95"
             >
-              📜
+              <img src={HISTORY_ICON} alt="" draggable={false} className="h-full w-full select-none object-contain" />
             </button>
           </header>
 
@@ -374,10 +377,10 @@ export default function OriginTab({
                   <button
                     type="button"
                     onClick={() => setStoreOpen(true)}
-                    className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-zinc-500 text-xs font-bold leading-none text-ink-muted"
+                    className="flex h-6 w-6 shrink-0 items-center justify-center transition active:scale-95"
                     aria-label="Buy Gold or Diamonds"
                   >
-                    +
+                    <img src={ADD_FUNDS_ICON} alt="" draggable={false} className="h-full w-full select-none object-contain" />
                   </button>
                 </div>
               )}
