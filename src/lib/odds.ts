@@ -78,11 +78,11 @@ export const SLOT2_ODDS_CLASSIC: Record<ClassicSlot2Outcome, number> = {
 };
 
 export const SLOT2_ODDS_ELITE: Record<EliteSlot2Outcome, number> = {
-  Card: 50,
+  Card: 15,
   Seed: 25,
-  Gold: 10,
-  Diamonds: 10,
-  Creature: 5,
+  Gold: 45,
+  Diamonds: 5,
+  Creature: 10,
 };
 
 export function getSlot2Odds(packType: PackType): Record<string, number> {
@@ -92,7 +92,7 @@ export function getSlot2Odds(packType: PackType): Record<string, number> {
 /** Gold/Diamonds drop amount ranges, inclusive, per pack type. */
 export const AMOUNT_RANGES: Record<PackType, { gold: [number, number]; diamonds: [number, number] }> = {
   Classic: { gold: [100, 5_000], diamonds: [1, 50] },
-  Elite: { gold: [10_000, 50_000], diamonds: [500, 1_000] },
+  Elite: { gold: [20_000, 60_000], diamonds: [50, 200] },
 };
 
 export function rollOrigin(): Origin {
