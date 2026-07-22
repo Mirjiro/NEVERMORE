@@ -33,8 +33,17 @@ export default function PackCarousel({
   // elsewhere in this app), just a brief, gesture-bounded toggle so the
   // transition between boxes reads as a deliberate blurred motion rather
   // than two flat opacity layers crossing over each other.
+  //
+  // This is a fixed-length pulse, NOT a rolling timer reset on every scroll
+  // event — a real touch swipe's native momentum + scroll-snap settle can
+  // keep firing scroll events for 700ms+ after the finger lifts (confirmed
+  // via frame-by-frame video analysis of an actual device recording), which
+  // made a rolling reset ride that entire tail. A single short timer set once
+  // per gesture keeps the blur brief regardless of how long the underlying
+  // scroll takes to fully stop.
   const [isSwiping, setIsSwiping] = useState(false);
-  const swipeSettleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isSwipingRef = useRef(false);
+  const swipeClearTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Measure the box's rendered height directly in JS, rather than
   // recomputing its width-driven aspect-ratio math a second time in a nested
@@ -133,9 +142,14 @@ export default function PackCarousel({
         onSwitch(pack);
       }
 
-      setIsSwiping(true);
-      if (swipeSettleTimer.current) clearTimeout(swipeSettleTimer.current);
-      swipeSettleTimer.current = setTimeout(() => setIsSwiping(false), 90);
+      if (!isSwipingRef.current) {
+        isSwipingRef.current = true;
+        setIsSwiping(true);
+        swipeClearTimer.current = setTimeout(() => {
+          isSwipingRef.current = false;
+          setIsSwiping(false);
+        }, 130);
+      }
     };
 
     container.addEventListener("scroll", handleScroll, {
@@ -144,7 +158,7 @@ export default function PackCarousel({
 
     return () => {
       container.removeEventListener("scroll", handleScroll);
-      if (swipeSettleTimer.current) clearTimeout(swipeSettleTimer.current);
+      if (swipeClearTimer.current) clearTimeout(swipeClearTimer.current);
     };
   }, [onSwitch]);
 
@@ -191,7 +205,7 @@ export default function PackCarousel({
           // Instant on (no ramp-up delay when a swipe starts — a transitioned
           // blur-in reads as the effect lagging behind the gesture), but a
           // quick fade back to clear once settled, rather than a hard cut.
-          filter: isSwiping ? "blur(5px)" : "blur(0px)",
+          filter: isSwiping ? "blur(2px)" : "blur(0px)",
           transition: isSwiping ? "none" : "filter 100ms ease-out",
         }}
       >
