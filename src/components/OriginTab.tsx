@@ -227,7 +227,7 @@ export default function OriginTab({
                 setHistoryOpen(true);
               }}
               aria-label="View duplicates and recent pulls"
-              className="absolute right-0 top-4 flex h-9 w-9 items-center justify-center transition active:scale-95"
+              className="absolute right-0 top-8 flex h-9 w-9 items-center justify-center transition active:scale-95"
             >
               <img src={HISTORY_ICON} alt="" draggable={false} className="h-full w-full select-none object-contain" />
             </button>
