@@ -1,6 +1,6 @@
 "use client";
 
-import { useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { rollPull, rollOrigin, PACK_CONFIG } from "@/lib/odds";
 import type { PackType, PullResult } from "@/lib/types";
@@ -100,6 +100,28 @@ export default function OriginTab({
     if (results === null) openingLock.current = false;
   };
 
+  // Guards handleCollect so it only ever takes effect once per reveal, even
+  // though RevealFlow can call it more than once if the player swipes back
+  // to a reward and forward again past the Collected screen.
+  const collectedRef = useRef(false);
+
+  // Cost and rewards are deliberately NOT applied when the box is opened —
+  // only once the player actually reaches the Collected screen, so the top
+  // bar (hidden throughout the reveal anyway, but this keeps the underlying
+  // state honest) never reflects a pull the player hasn't seen yet. `pulls`
+  // itself carries everything needed to know what to charge/grant: its
+  // length distinguishes an x1 open from an x10, and its packType says
+  // which currency the cost came out of.
+  const handleCollect = useCallback(() => {
+    if (collectedRef.current || !pulls) return;
+    collectedRef.current = true;
+    const packType = pulls[0].packType;
+    const cost = pulls.length === 1 ? PACK_CONFIG[packType].costX1 : PACK_CONFIG[packType].costX10;
+    if (packType === "Classic") onSpendGold(cost);
+    else onSpendDiamonds(cost);
+    pulls.forEach(onApplyPull);
+  }, [pulls, onSpendGold, onSpendDiamonds, onApplyPull]);
+
   // Measures the top bar's own natural (uncollapsed) height so it can be
   // animated down to 0 and back — a real pixel value, never "auto", which
   // Framer Motion can't tween directly.
@@ -131,14 +153,14 @@ export default function OriginTab({
     const cost = count === 1 ? config.costX1 : config.costX10;
     if (balance < cost) return;
     openingLock.current = true;
-    if (activePack === "Classic") onSpendGold(cost);
-    else onSpendDiamonds(cost);
-    // An x10 open is 10 pulls from a single Origin Pack — lock every card and
-    // bonus in the batch to one shared Origin, same as a single x1 open does.
+    // Cost isn't spent and rewards aren't applied here — only once the
+    // player reaches the Collected screen, via handleCollect. Affordability
+    // is still checked now (nothing else can change the balance mid-reveal,
+    // since the purchase controls are hidden for the whole reveal).
     const batchOrigin = rollOrigin();
     const results =
       count === 1 ? [rollPull(activePack)] : Array.from({ length: count }, () => rollPull(activePack, batchOrigin));
-    results.forEach(onApplyPull);
+    collectedRef.current = false;
     setRevealState(results);
   };
 
@@ -239,9 +261,9 @@ export default function OriginTab({
             className="fixed inset-0 mx-auto flex w-full max-w-md flex-col items-center justify-center overflow-y-auto"
           >
             {pulls.length === 1 ? (
-              <RevealFlow pull={pulls[0]} onDismiss={() => setRevealState(null)} />
+              <RevealFlow pull={pulls[0]} onCollect={handleCollect} onDismiss={() => setRevealState(null)} />
             ) : (
-              <RevealDeck pulls={pulls} onDismiss={() => setRevealState(null)} />
+              <RevealDeck pulls={pulls} onCollect={handleCollect} onDismiss={() => setRevealState(null)} />
             )}
           </motion.div>
         ) : (

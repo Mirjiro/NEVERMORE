@@ -32,11 +32,24 @@ const ADVANCE_LOCK_MS = 250;
  */
 const BOX_ENTER_TRANSITION = { duration: 0.32, ease: [0.16, 0.84, 0.24, 1] as const };
 
-export default function RevealFlow({ pull, onDismiss }: { pull: PullResult; onDismiss: () => void }) {
+export default function RevealFlow({
+  pull,
+  onCollect,
+  onDismiss,
+}: {
+  pull: PullResult;
+  /** Fires exactly once, the moment the player first reaches the Collected
+   * screen — not on open, so cost/rewards land only once they've actually
+   * seen what they got. Guarded locally too (not just by the caller) since
+   * the Collected screen can be swiped away from and back to. */
+  onCollect: () => void;
+  onDismiss: () => void;
+}) {
   const [stage, setStage] = useState<Stage>("boxOpening");
   const [position, setPosition] = useState(0);
   const [flashSignal, setFlashSignal] = useState<FlashSignal | null>(null);
   const locked = useRef(false);
+  const hasCollectedRef = useRef(false);
 
   const goTo = useCallback((next: number) => {
     if (locked.current) return;
@@ -55,8 +68,13 @@ export default function RevealFlow({ pull, onDismiss }: { pull: PullResult; onDi
       onDismiss();
       return;
     }
-    goTo(position + 1);
-  }, [position, goTo, onDismiss]);
+    const next = position + 1;
+    if (next === SUMMARY_POSITION && !hasCollectedRef.current) {
+      hasCollectedRef.current = true;
+      onCollect();
+    }
+    goTo(next);
+  }, [position, goTo, onDismiss, onCollect]);
 
   const goBack = useCallback(() => {
     if (position <= 0) return;

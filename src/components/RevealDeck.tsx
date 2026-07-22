@@ -34,7 +34,20 @@ const BOX_ENTER_TRANSITION = { duration: 0.32, ease: [0.16, 0.84, 0.24, 1] as co
  * the single-pull RevealFlow the deck itself is forward-only — a revealed
  * item is discarded on advance, not something you can swipe back to.
  */
-export default function RevealDeck({ pulls, onDismiss }: { pulls: PullResult[]; onDismiss: () => void }) {
+export default function RevealDeck({
+  pulls,
+  onCollect,
+  onDismiss,
+}: {
+  pulls: PullResult[];
+  /** Fires exactly once, the moment the player reaches the deck's Collected
+   * summary (via advance() reaching the end, or Skip) — not on open, so
+   * cost/rewards land only once they've actually seen what they got. The
+   * deck is forward-only, so unlike RevealFlow there's no risk of a second
+   * fire from swiping back and forth. */
+  onCollect: () => void;
+  onDismiss: () => void;
+}) {
   const [stage, setStage] = useState<Stage>("boxOpening");
 
   const guaranteedCount = pulls.length;
@@ -77,6 +90,7 @@ export default function RevealDeck({ pulls, onDismiss }: { pulls: PullResult[]; 
       const upcoming = items[next];
       setToast({ key: next, text: getBonusToastText(upcoming.pull.slot2), leftPercent: 20 + Math.random() * 60 });
     }
+    if (next >= total) onCollect();
     setCurrent(next);
 
     setTimeout(() => {
@@ -153,6 +167,7 @@ export default function RevealDeck({ pulls, onDismiss }: { pulls: PullResult[]; 
         type="button"
         onClick={(e) => {
           e.stopPropagation();
+          onCollect();
           setCurrent(total);
         }}
         className="absolute right-3 top-1 z-20 rounded-full border border-zinc-700 bg-zinc-900/80 px-3 py-1 text-xs font-medium text-ink-muted"
