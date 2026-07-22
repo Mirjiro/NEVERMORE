@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { rollPull, rollOrigin, PACK_CONFIG } from "@/lib/odds";
 import type { PackType, PullResult } from "@/lib/types";
@@ -70,9 +70,14 @@ export default function OriginTab({
 
   const inReveal = pulls !== null;
 
-  useEffect(() => {
-    onRevealChange?.(inReveal);
-  }, [inReveal, onRevealChange]);
+  // Called synchronously alongside setPulls (never via a useEffect keyed on
+  // `pulls`) so React batches this with OriginTab's own re-render into the
+  // same commit — an effect fires on a later pass, which left the dock's
+  // hide animation starting a beat behind the header's own.
+  const setRevealState = (results: PullResult[] | null) => {
+    setPulls(results);
+    onRevealChange?.(results !== null);
+  };
 
   // Measures the top bar's own natural (uncollapsed) height so it can be
   // animated down to 0 and back — a real pixel value, never "auto", which
@@ -111,7 +116,7 @@ export default function OriginTab({
     const results =
       count === 1 ? [rollPull(activePack)] : Array.from({ length: count }, () => rollPull(activePack, batchOrigin));
     results.forEach(onApplyPull);
-    setPulls(results);
+    setRevealState(results);
   };
 
   return (
@@ -176,19 +181,27 @@ export default function OriginTab({
         </motion.div>
       </motion.div>
 
-      <AnimatePresence mode="wait">
+      {/* `relative` + `flex-1` on this wrapper (not the individual branches)
+          so "reveal" and "tiles" can crossfade as absolutely-positioned
+          overlays without splitting the available flex space between them
+          mid-transition — letting AnimatePresence run its default
+          simultaneous exit/enter (no `mode="wait"`) instead of a strictly
+          sequential one, which previously left a ~400ms dead gap with
+          neither view visible while the header/dock were already retracting. */}
+      <div className="relative min-h-0 flex-1">
+        <AnimatePresence>
         {pulls ? (
           <motion.div
             key="reveal"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="flex min-h-0 flex-1 flex-col items-center justify-center overflow-y-auto"
+            className="absolute inset-0 flex flex-col items-center justify-center overflow-y-auto"
           >
             {pulls.length === 1 ? (
-              <RevealFlow pull={pulls[0]} onDismiss={() => setPulls(null)} />
+              <RevealFlow pull={pulls[0]} onDismiss={() => setRevealState(null)} />
             ) : (
-              <RevealDeck pulls={pulls} onDismiss={() => setPulls(null)} />
+              <RevealDeck pulls={pulls} onDismiss={() => setRevealState(null)} />
             )}
           </motion.div>
         ) : (
@@ -196,8 +209,15 @@ export default function OriginTab({
             key="tiles"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="relative flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain"
+            // Deliberately quicker than "reveal"'s own fade-in (the Framer
+            // Motion default, ~0.3s) — the two views sit at different
+            // positions/sizes (this one's box follows the carousel's own
+            // layout, the reveal stage's is centered in the full reclaimed
+            // height), so a long crossfade briefly shows two overlapping
+            // box illustrations. Clearing this one away fast keeps that
+            // window brief instead of a lingering double-image.
+            exit={{ opacity: 0, transition: { duration: 0.12 } }}
+            className="absolute inset-0 flex flex-col overflow-y-auto overscroll-contain"
             style={{ top: "clamp(-28px, -2svh, -4px)" }}
           >
             {/* This region normally never needs to scroll — the box, buttons,
@@ -306,7 +326,8 @@ export default function OriginTab({
             <div className="min-h-0 flex-1" />
           </motion.div>
         )}
-      </AnimatePresence>
+        </AnimatePresence>
+      </div>
 
       <PackInfoModal open={infoOpen} packType={activePack} onClose={() => setInfoOpen(false)} />
       <StoreModal
