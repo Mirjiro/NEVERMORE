@@ -206,14 +206,6 @@ export default function PackCarousel({
         })}
       </div>
 
-      {/* Soften the scrollable container's clipped top/bottom edges so a
-          mid-swipe box doesn't show a hard cut. Translucent black (not an
-          opaque color) so it darkens whatever's behind — box art or the
-          atmospheric background — rather than fading to a flat color that
-          only matched the page's old solid backdrop. */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-16 bg-gradient-to-b from-black/45 to-transparent" />
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-16 bg-gradient-to-t from-black/45 to-transparent" />
-
       {/* Vertical two-position indicator, beside the carousel */}
       <div className="absolute right-1 top-1/2 flex -translate-y-1/2 flex-col items-center gap-2">
         {ORDER.map((pack) => (
