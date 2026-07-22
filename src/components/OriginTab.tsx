@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { rollPull, rollOrigin, PACK_CONFIG } from "@/lib/odds";
 import type { PackType, PullResult } from "@/lib/types";
 import InventoryBar from "./InventoryBar";
+import OriginBackground from "./OriginBackground";
 import PackCarousel from "./PackCarousel";
 import PackInfoModal from "./PackInfoModal";
 import RevealFlow from "./RevealFlow";
@@ -80,7 +81,9 @@ export default function OriginTab({
   };
 
   return (
-    <div className="mx-auto flex min-h-0 w-full max-w-md flex-1 flex-col overflow-hidden px-4">
+    <div className="relative isolate mx-auto flex min-h-0 w-full max-w-md flex-1 flex-col overflow-hidden px-4">
+      <OriginBackground active={activePack} />
+
       {/* Header — fixed within the layout, never scrolls */}
       <header className="shrink-0 pt-4 text-center">
         <h1>
