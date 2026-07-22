@@ -1,8 +1,12 @@
 "use client";
 
 import { useLayoutEffect, useRef } from "react";
+import { motion } from "framer-motion";
 import { TABS, TabName } from "@/lib/tabs";
 import { cn } from "@/lib/cn";
+
+/** Shared with the header's swipe-away collapse in OriginTab so both read as one motion. */
+const REVEAL_TRANSITION = { duration: 0.45, ease: [0.16, 0.84, 0.24, 1] as const };
 
 const DOCK_BAR_ASSET = "/assets/dock/dock-bar-cropped.png";
 const DOCK_BAR_ASPECT = "1161 / 163";
@@ -22,10 +26,13 @@ export default function TabBar({
   active,
   onChange,
   onHeightChange,
+  hidden = false,
 }: {
   active: TabName;
   onChange: (tab: TabName) => void;
   onHeightChange?: (height: number) => void;
+  /** Swipes the whole dock down and out for the reveal-stage presentation. */
+  hidden?: boolean;
 }) {
   const navRef = useRef<HTMLElement>(null);
 
@@ -40,9 +47,11 @@ export default function TabBar({
   }, [onHeightChange]);
 
   return (
-    <nav
+    <motion.nav
       ref={navRef}
       className="fixed inset-x-0 bottom-0 z-50 mx-auto flex w-full max-w-md flex-col"
+      animate={{ y: hidden ? 120 : 0, opacity: hidden ? 0 : 1 }}
+      transition={REVEAL_TRANSITION}
       style={{
         gap: "3px",
         padding: `0 20px calc(env(safe-area-inset-bottom) + 12px)`,
@@ -50,6 +59,7 @@ export default function TabBar({
         // extends the full viewport height) instead of a flat opaque panel
         // that reads as a separate rectangle sitting on top of the scene.
         background: "linear-gradient(to bottom, transparent, rgba(9,9,11,0.72) 38%, rgba(9,9,11,0.95) 100%)",
+        pointerEvents: hidden ? "none" : "auto",
       }}
     >
       {/* Icon row — icons sit inside the custom dock bar artwork */}
@@ -109,6 +119,6 @@ export default function TabBar({
           );
         })}
       </div>
-    </nav>
+    </motion.nav>
   );
 }

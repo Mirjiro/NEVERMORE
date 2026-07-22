@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { rollPull, rollOrigin, PACK_CONFIG } from "@/lib/odds";
 import type { PackType, PullResult } from "@/lib/types";
@@ -35,6 +35,9 @@ const PURCHASE_BUTTON_ASSETS: Record<
   },
 };
 
+/** Shared with TabBar's own hide animation so both read as one cohesive motion. */
+const CHROME_TRANSITION = { duration: 0.45, ease: [0.16, 0.84, 0.24, 1] as const };
+
 export default function OriginTab({
   gold,
   diamonds,
@@ -45,6 +48,7 @@ export default function OriginTab({
   onAddGold,
   onAddDiamonds,
   onApplyPull,
+  onRevealChange,
 }: {
   gold: number;
   diamonds: number;
@@ -55,11 +59,34 @@ export default function OriginTab({
   onAddGold: (amount: number) => void;
   onAddDiamonds: (amount: number) => void;
   onApplyPull: (pull: PullResult) => void;
+  /** Fires whenever the reveal stage (X1/X10 opening) opens or closes, so the
+   * bottom dock (owned by a sibling component) can hide/reappear in sync. */
+  onRevealChange?: (active: boolean) => void;
 }) {
   const [activePack, setActivePack] = useState<PackType>("Classic");
   const [pulls, setPulls] = useState<PullResult[] | null>(null);
   const [infoOpen, setInfoOpen] = useState(false);
   const [storeOpen, setStoreOpen] = useState(false);
+
+  const inReveal = pulls !== null;
+
+  useEffect(() => {
+    onRevealChange?.(inReveal);
+  }, [inReveal, onRevealChange]);
+
+  // Measures the top bar's own natural (uncollapsed) height so it can be
+  // animated down to 0 and back — a real pixel value, never "auto", which
+  // Framer Motion can't tween directly.
+  const topBarRef = useRef<HTMLDivElement>(null);
+  const [topBarHeight, setTopBarHeight] = useState<number | null>(null);
+
+  useLayoutEffect(() => {
+    const el = topBarRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver(() => setTopBarHeight(el.getBoundingClientRect().height));
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   const config = PACK_CONFIG[activePack];
   const balance = activePack === "Classic" ? gold : diamonds;
@@ -89,46 +116,65 @@ export default function OriginTab({
 
   return (
     <div className="relative isolate mx-auto flex min-h-0 w-full max-w-md flex-1 flex-col overflow-hidden px-4">
-      <OriginBackground active={activePack} />
+      <OriginBackground active={activePack} visible={!inReveal} />
 
-      {/* Header — fixed within the layout, never scrolls */}
-      <header className="relative shrink-0 pt-4 text-center">
-        <img
-          src="/assets/header/logo-glow.webp"
-          alt=""
-          draggable={false}
-          className="pointer-events-none absolute select-none object-cover"
-          style={{
-            left: -16,
-            right: -16,
-            top: -24,
-            height: "calc(100% + 24px)",
-            width: "calc(100% + 32px)",
-            // Tailwind's Preflight sets `img { max-width: 100% }` globally,
-            // which silently clamps the explicit width above back down to
-            // exactly the header's own width — discarding the overscan meant
-            // to keep this image's hard edges from landing at a visible
-            // boundary against the background.
-            maxWidth: "none",
-            objectPosition: "bottom",
-            filter: "blur(10px)",
-          }}
-        />
-        <h1 className="relative">
-          <img
-            src="/assets/logo/nevermore-wordmark.png"
-            alt="NEVERMORE"
-            draggable={false}
-            className="mx-auto h-auto select-none"
-            style={{ width: "clamp(220px, 62vw, 300px)" }}
-          />
-        </h1>
-      </header>
+      {/* Header + currency row collapse away together for the reveal-stage
+          presentation — a real measured pixel height (never "auto", which
+          Framer Motion can't tween) animating down to 0 reclaims the space
+          for the reveal stage below, while the inner wrapper's own opacity/y
+          gives the "swipe up and away" motion. */}
+      <motion.div
+        className="shrink-0 overflow-hidden"
+        initial={false}
+        animate={{ height: inReveal ? 0 : (topBarHeight ?? "auto") }}
+        transition={CHROME_TRANSITION}
+      >
+        <motion.div
+          ref={topBarRef}
+          initial={false}
+          animate={{ opacity: inReveal ? 0 : 1, y: inReveal ? -28 : 0 }}
+          transition={CHROME_TRANSITION}
+        >
+          {/* Header — fixed within the layout, never scrolls */}
+          <header className="relative shrink-0 pt-4 text-center">
+            <img
+              src="/assets/header/logo-glow.webp"
+              alt=""
+              draggable={false}
+              className="pointer-events-none absolute select-none object-cover"
+              style={{
+                left: -16,
+                right: -16,
+                top: -24,
+                height: "calc(100% + 24px)",
+                width: "calc(100% + 32px)",
+                // Tailwind's Preflight sets `img { max-width: 100% }` globally,
+                // which silently clamps the explicit width above back down to
+                // exactly the header's own width — discarding the overscan meant
+                // to keep this image's hard edges from landing at a visible
+                // boundary against the background.
+                maxWidth: "none",
+                objectPosition: "bottom",
+                filter: "blur(10px)",
+              }}
+            />
+            <h1 className="relative">
+              <img
+                src="/assets/logo/nevermore-wordmark.png"
+                alt="NEVERMORE"
+                draggable={false}
+                className="mx-auto h-auto select-none"
+                style={{ width: "clamp(220px, 62vw, 300px)" }}
+              />
+            </h1>
+          </header>
 
-      {/* Currency row — fixed within the layout, never scrolls */}
-      <div className="shrink-0 py-3">
-        <InventoryBar gold={gold} diamonds={diamonds} seeds={totalSeeds} creatures={creatures} />
-      </div>
+          {/* Currency row — fixed within the layout, never scrolls */}
+          <div className="shrink-0 py-3">
+            <InventoryBar gold={gold} diamonds={diamonds} seeds={totalSeeds} creatures={creatures} />
+          </div>
+        </motion.div>
+      </motion.div>
 
       <AnimatePresence mode="wait">
         {pulls ? (
