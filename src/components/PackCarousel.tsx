@@ -135,7 +135,7 @@ export default function PackCarousel({
 
       setIsSwiping(true);
       if (swipeSettleTimer.current) clearTimeout(swipeSettleTimer.current);
-      swipeSettleTimer.current = setTimeout(() => setIsSwiping(false), 160);
+      swipeSettleTimer.current = setTimeout(() => setIsSwiping(false), 90);
     };
 
     container.addEventListener("scroll", handleScroll, {
@@ -188,8 +188,11 @@ export default function PackCarousel({
           scrollSnapType: "y mandatory",
           touchAction: "pan-y",
           WebkitOverflowScrolling: "touch",
+          // Instant on (no ramp-up delay when a swipe starts — a transitioned
+          // blur-in reads as the effect lagging behind the gesture), but a
+          // quick fade back to clear once settled, rather than a hard cut.
           filter: isSwiping ? "blur(5px)" : "blur(0px)",
-          transition: "filter 200ms ease-out",
+          transition: isSwiping ? "none" : "filter 100ms ease-out",
         }}
       >
         {ORDER.map((pack) => {
