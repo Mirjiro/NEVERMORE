@@ -277,10 +277,19 @@ export default function OriginTab({
                 controls' z-20). */}
             <div
               aria-hidden
-              className="pointer-events-none absolute inset-x-0 bottom-0 z-10"
+              className="pointer-events-none absolute bottom-0 z-10"
               style={{
-                height: "42%",
-                background: "linear-gradient(to top, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.45) 45%, rgba(0,0,0,0) 100%)",
+                // `left/right: -1rem` (not inset-x-0) — this sits inside
+                // OriginTab's own px-4, so inset-x-0 would stop 16px short of
+                // the true screen edge on each side while OriginBackground
+                // (unconstrained by that padding) kept showing through,
+                // leaving a lit, un-faded margin right where the eye reads
+                // the cost text.
+                left: "-1rem",
+                right: "-1rem",
+                height: "44%",
+                background:
+                  "linear-gradient(to top, rgba(0,0,0,0.96) 0%, rgba(0,0,0,0.88) 32%, rgba(0,0,0,0.55) 65%, rgba(0,0,0,0) 100%)",
               }}
             />
 
@@ -340,7 +349,7 @@ export default function OriginTab({
                       prompt below it so the two read as one family of text. */}
                   <p
                     className="text-3xl font-extrabold tracking-wide text-ink-faint"
-                    style={{ textShadow: "0 3px 8px rgba(0,0,0,0.8)" }}
+                    style={{ textShadow: "0 2px 4px rgba(0,0,0,1), 0 4px 14px rgba(0,0,0,0.9)" }}
                   >
                     {cost.toLocaleString()} {config.currency}
                   </p>
