@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import type { TabName } from "@/lib/tabs";
 import { cn } from "@/lib/cn";
 import { CURRENCY_ICONS } from "@/lib/currencyIcons";
 import { computeIdleGold } from "@/lib/idleRewards";
@@ -37,17 +36,15 @@ const PET_REACTIONS = [
 export default function RealmTab({
   lastIdleCollectAt,
   onCollectIdleGold,
-  onNavigate,
 }: {
   lastIdleCollectAt: number | null;
   onCollectIdleGold: () => void;
-  onNavigate: (tab: TabName) => void;
 }) {
   // RealmTab only ever mounts client-side (activeTab starts as "Origin", so
   // this is never part of the initial SSR/hydration pass) — a lazy Date.now()
   // initializer is safe here, unlike AppShell's gold/diamonds defaults.
   const [now, setNow] = useState(() => Date.now());
-  const [caveOpen, setCaveOpen] = useState(false);
+  const [openStub, setOpenStub] = useState<StubDestination | null>(null);
   const [petLine, setPetLine] = useState<string | null>(null);
   const [reactionId, setReactionId] = useState(0);
 
@@ -145,20 +142,38 @@ export default function RealmTab({
           <div className="h-2.5 w-16 rounded-full bg-black/50 blur-md" />
         </div>
 
-        {/* Bottom zone: quick-access as floating glass chips, not a bordered
-            dashboard grid. */}
+        {/* Bottom zone: home-specific actions as floating glass chips — the
+            bottom TabBar below already handles navigation between the
+            game's major sections, so this row never duplicates it. */}
         <div className="mb-2 flex shrink-0 justify-center gap-6">
-          <DockChip label="Cave" onClick={() => setCaveOpen(true)} />
-          <DockChip label="Farm" icon="/assets/tab-icons/farm.png" onClick={() => onNavigate("Farm")} />
-          <DockChip label="Market" icon="/assets/tab-icons/market.png" onClick={() => onNavigate("Market")} />
-          <DockChip label="Origin" icon="/assets/tab-icons/origin.png" onClick={() => onNavigate("Origin")} />
+          <DockChip label="Pet" icon={CURRENCY_ICONS.creature} onClick={petTap} />
+          <DockChip label="Home" onClick={() => setOpenStub("Home")} />
+          <DockChip label="Cave" onClick={() => setOpenStub("Cave")} />
+          <DockChip label="Inventory" onClick={() => setOpenStub("Inventory")} />
         </div>
       </div>
 
-      <CaveOverlay open={caveOpen} onClose={() => setCaveOpen(false)} />
+      <RealmStubOverlay destination={openStub} onClose={() => setOpenStub(null)} />
     </div>
   );
 }
+
+type StubDestination = "Home" | "Cave" | "Inventory";
+
+const STUB_CONTENT: Record<StubDestination, { title: string; description: string }> = {
+  Home: {
+    title: "Home",
+    description: "Step inside? Not built yet — the Realm's interior is still being furnished.",
+  },
+  Cave: {
+    title: "The Cave",
+    description: "Something stirs in the dark below the Realm — not ready to be faced yet.",
+  },
+  Inventory: {
+    title: "Inventory",
+    description: "Your hoard isn't ready to be sorted through yet — check back soon.",
+  },
+};
 
 function DockChip({
   label,
@@ -166,7 +181,7 @@ function DockChip({
   onClick,
 }: {
   label: string;
-  /** Omitted for destinations without art yet (Cave) — renders a flat placeholder glyph. */
+  /** Omitted for destinations without art yet — renders a flat placeholder glyph. */
   icon?: string;
   onClick: () => void;
 }) {
@@ -194,13 +209,15 @@ function DockChip({
 
 // Portaled to <body> for the same reason as every other OriginTab modal (see
 // StoreModal) — an in-place overlay here would sit trapped behind the bottom
-// TabBar's z-50 stacking context.
-function CaveOverlay({ open, onClose }: { open: boolean; onClose: () => void }) {
+// TabBar's z-50 stacking context. Shared by every not-yet-built Realm
+// destination (Home/Cave/Inventory) rather than one overlay per destination.
+function RealmStubOverlay({ destination, onClose }: { destination: StubDestination | null; onClose: () => void }) {
   if (typeof document === "undefined") return null;
+  const content = destination ? STUB_CONTENT[destination] : null;
 
   return createPortal(
     <AnimatePresence>
-      {open && (
+      {content && (
         <motion.div
           className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
           initial={{ opacity: 0 }}
@@ -216,10 +233,8 @@ function CaveOverlay({ open, onClose }: { open: boolean; onClose: () => void }) 
             transition={{ duration: 0.2, ease: "easeOut" }}
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 className="text-xl font-bold text-ink">The Cave</h2>
-            <p className="text-sm text-ink-faint">
-              Something stirs in the dark below the Realm — not ready to be faced yet.
-            </p>
+            <h2 className="text-xl font-bold text-ink">{content.title}</h2>
+            <p className="text-sm text-ink-faint">{content.description}</p>
             <button
               onClick={onClose}
               className="mt-2 rounded-full border border-zinc-700 px-4 py-1.5 text-xs font-semibold text-ink-muted transition active:scale-95"
