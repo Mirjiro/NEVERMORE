@@ -168,11 +168,7 @@ export default function AppShell() {
             onRevealChange={setRevealActive}
           />
         ) : activeTab === "Realm" ? (
-          <RealmTab
-            lastIdleCollectAt={lastIdleCollectAt}
-            onCollectIdleGold={onCollectIdleGold}
-            onNavigate={setActiveTab}
-          />
+          <RealmTab lastIdleCollectAt={lastIdleCollectAt} onCollectIdleGold={onCollectIdleGold} />
         ) : (
           <UnderConstruction tab={activeTab} />
         )}
