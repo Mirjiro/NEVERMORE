@@ -6,7 +6,16 @@ import { AnimatePresence, motion } from "framer-motion";
 import type { TabName } from "@/lib/tabs";
 import { cn } from "@/lib/cn";
 import { CURRENCY_ICONS } from "@/lib/currencyIcons";
-import { computeIdleGold, IDLE_CAP_HOURS } from "@/lib/idleRewards";
+import { computeIdleGold } from "@/lib/idleRewards";
+import {
+  REALM_DOCK_CHIP_SIZE_PX,
+  REALM_EDGE_INSET_PX,
+  REALM_PET_SIZE_PX,
+  REALM_TEXT_SHADOW_LG,
+  REALM_TEXT_SHADOW_SM,
+  REALM_TOP_GAP_PX,
+} from "@/lib/realmLayout";
+import RealmBackground from "./RealmBackground";
 
 const PET_REACTIONS = [
   "Mrrn?",
@@ -19,11 +28,11 @@ const PET_REACTIONS = [
 
 /**
  * Home hub — infrastructure only for now. The illustrated Mortal Realm
- * background/pet art is still being made; this ships the layout, idle-Gold
- * mechanic, pet-tap interaction, and Cave/Farm/Market/Origin navigation
- * against a flat placeholder backdrop, structured the same way
- * OriginBackground is (one full-bleed layer) so the real art is a drop-in
- * swap later rather than a rebuild.
+ * background/pet art is still being made; every element here is a floating
+ * overlay (text with a drop-shadow, glass chips) rather than a boxed panel,
+ * so the eventual artwork reads as the hero of the screen and the UI reads
+ * as sitting on top of the world instead of a dashboard laid over it. See
+ * RealmBackground for how the real scene drops in later.
  */
 export default function RealmTab({
   lastIdleCollectAt,
@@ -56,45 +65,72 @@ export default function RealmTab({
 
   return (
     <div className="relative flex min-h-0 w-full flex-1 flex-col overflow-hidden">
-      {/* TEMP flat placeholder backdrop — swap for the illustrated Mortal Realm
-          scene here once that art exists; nothing else about this layout changes. */}
-      <div className="absolute inset-0 -z-10 bg-gradient-to-b from-zinc-900 via-zinc-950 to-black" />
+      <RealmBackground />
 
-      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-5 pb-4 pt-6">
-        <div className="mb-6 shrink-0">
-          <p className="text-xs uppercase tracking-widest text-ink-faint">Welcome back to</p>
-          <h1 className="text-2xl font-bold text-ink">The Mortal Realm</h1>
-        </div>
+      <div
+        className="relative flex min-h-0 flex-1 flex-col"
+        style={{ paddingLeft: REALM_EDGE_INSET_PX, paddingRight: REALM_EDGE_INSET_PX, paddingTop: REALM_TOP_GAP_PX }}
+      >
+        {/* Top zone: identity + idle reward. Text sits directly on the scene
+            (drop-shadow for legibility, no card behind it); the idle chip is
+            the one piece of real UI here, kept small and glassy. */}
+        <div className="shrink-0">
+          <p
+            className="text-xs uppercase tracking-[0.2em] text-ink-faint"
+            style={{ textShadow: REALM_TEXT_SHADOW_SM }}
+          >
+            Welcome back to
+          </p>
+          <h1
+            className="text-[26px] font-bold leading-tight text-ink"
+            style={{ textShadow: REALM_TEXT_SHADOW_LG }}
+          >
+            The Mortal Realm
+          </h1>
 
-        <button
-          onClick={onCollectIdleGold}
-          disabled={accruedGold <= 0}
-          className="mb-6 flex shrink-0 items-center justify-between rounded-2xl border border-zinc-800 bg-zinc-900/70 px-4 py-3.5 text-left transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">Idle Gold</p>
-            <p className="mt-0.5 flex items-center gap-1.5 text-lg font-bold text-ink">
-              <img src={CURRENCY_ICONS.gold} alt="" className="h-5 w-5 object-contain" />
-              {accruedGold > 0 ? `+${accruedGold.toLocaleString()}` : "Fully collected"}
-            </p>
-          </div>
-          <span
+          <button
+            onClick={onCollectIdleGold}
+            disabled={accruedGold <= 0}
             className={cn(
-              "shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold",
-              accruedGold > 0 ? "bg-amber-500/90 text-ink-dark" : "bg-zinc-800 text-ink-faint",
+              "mt-4 flex items-center gap-2 rounded-full border px-3.5 py-2 backdrop-blur-md transition active:scale-95 disabled:active:scale-100",
+              accruedGold > 0
+                ? "border-amber-400/40 bg-amber-950/40 shadow-[0_0_18px_rgba(245,158,11,0.25)]"
+                : "border-white/10 bg-black/25",
             )}
           >
-            {accruedGold > 0 ? "Collect" : `Caps at ${IDLE_CAP_HOURS}h`}
-          </span>
-        </button>
+            <img src={CURRENCY_ICONS.gold} alt="" className="h-4 w-4 shrink-0 object-contain" />
+            <span className={cn("text-sm font-semibold", accruedGold > 0 ? "text-amber-200" : "text-ink-faint")}>
+              {accruedGold > 0 ? `+${accruedGold.toLocaleString()} Gold ready` : "Idle Gold collected"}
+            </span>
+          </button>
+        </div>
 
-        <div className="flex flex-1 flex-col items-center justify-center gap-3">
+        {/* Hero zone: the pet stands low in the open space, leaving the sky
+            clear above it for the eventual illustrated scene — reads as a
+            character standing in the world rather than centered UI chrome. */}
+        <div className="flex flex-1 flex-col items-center justify-end gap-2 pb-10">
+          <AnimatePresence mode="wait">
+            {petLine && (
+              <motion.p
+                key={reactionId}
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                className="text-sm italic text-ink-muted"
+                style={{ textShadow: REALM_TEXT_SHADOW_SM }}
+              >
+                {petLine}
+              </motion.p>
+            )}
+          </AnimatePresence>
+
           <motion.button
             onClick={petTap}
             whileTap={{ scale: 0.88 }}
             animate={{ y: [0, -6, 0] }}
             transition={{ duration: 3.4, repeat: Infinity, ease: "easeInOut" }}
-            className="flex h-20 w-20 items-center justify-center"
+            className="relative flex items-center justify-center drop-shadow-[0_8px_10px_rgba(0,0,0,0.5)]"
+            style={{ height: REALM_PET_SIZE_PX, width: REALM_PET_SIZE_PX }}
             aria-label="Your pet"
           >
             <img
@@ -104,26 +140,18 @@ export default function RealmTab({
               className="h-full w-full select-none object-contain"
             />
           </motion.button>
-          <AnimatePresence mode="wait">
-            {petLine && (
-              <motion.p
-                key={reactionId}
-                initial={{ opacity: 0, y: 4 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                className="text-sm italic text-ink-muted"
-              >
-                {petLine}
-              </motion.p>
-            )}
-          </AnimatePresence>
+          {/* Contact shadow — grounds the pet against whatever's behind it,
+              independent of what the eventual background art looks like. */}
+          <div className="h-2.5 w-16 rounded-full bg-black/50 blur-md" />
         </div>
 
-        <div className="mt-4 grid shrink-0 grid-cols-4 gap-2">
-          <QuickAccessButton label="Cave" onClick={() => setCaveOpen(true)} />
-          <QuickAccessButton label="Farm" icon="/assets/tab-icons/farm.png" onClick={() => onNavigate("Farm")} />
-          <QuickAccessButton label="Market" icon="/assets/tab-icons/market.png" onClick={() => onNavigate("Market")} />
-          <QuickAccessButton label="Origin" icon="/assets/tab-icons/origin.png" onClick={() => onNavigate("Origin")} />
+        {/* Bottom zone: quick-access as floating glass chips, not a bordered
+            dashboard grid. */}
+        <div className="mb-2 flex shrink-0 justify-center gap-6">
+          <DockChip label="Cave" onClick={() => setCaveOpen(true)} />
+          <DockChip label="Farm" icon="/assets/tab-icons/farm.png" onClick={() => onNavigate("Farm")} />
+          <DockChip label="Market" icon="/assets/tab-icons/market.png" onClick={() => onNavigate("Market")} />
+          <DockChip label="Origin" icon="/assets/tab-icons/origin.png" onClick={() => onNavigate("Origin")} />
         </div>
       </div>
 
@@ -132,7 +160,7 @@ export default function RealmTab({
   );
 }
 
-function QuickAccessButton({
+function DockChip({
   label,
   icon,
   onClick,
@@ -143,18 +171,23 @@ function QuickAccessButton({
   onClick: () => void;
 }) {
   return (
-    <button
-      onClick={onClick}
-      className="flex flex-col items-center gap-1.5 rounded-xl border border-zinc-800 bg-zinc-900/70 py-3 transition active:scale-95"
-    >
-      {icon ? (
-        <img src={icon} alt="" draggable={false} className="h-7 w-7 select-none object-contain" />
-      ) : (
-        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-zinc-800 text-xs font-bold text-ink-faint">
-          ?
-        </span>
-      )}
-      <span className="text-[10px] font-semibold uppercase tracking-wide text-ink-muted">{label}</span>
+    <button onClick={onClick} className="flex flex-col items-center gap-1.5">
+      <span
+        className="flex items-center justify-center rounded-full border border-white/10 bg-black/35 backdrop-blur-md transition active:scale-90"
+        style={{ height: REALM_DOCK_CHIP_SIZE_PX, width: REALM_DOCK_CHIP_SIZE_PX }}
+      >
+        {icon ? (
+          <img src={icon} alt="" draggable={false} className="h-7 w-7 select-none object-contain" />
+        ) : (
+          <span className="text-xs font-bold text-ink-faint">?</span>
+        )}
+      </span>
+      <span
+        className="text-[9px] font-semibold uppercase tracking-wide text-ink-muted"
+        style={{ textShadow: REALM_TEXT_SHADOW_SM }}
+      >
+        {label}
+      </span>
     </button>
   );
 }
