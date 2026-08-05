@@ -320,12 +320,11 @@ export default function OriginTab({
                       Open button itself carries its visual weight from the
                       illustrated art, not typography), and recomputes from
                       `quantity` on every render so switching tiers updates it
-                      instantly. */}
+                      instantly. Same ink-faint color as the "Not enough"
+                      prompt below it so the two read as one family of text. */}
                   <p
-                    className={cn(
-                      "text-xl font-extrabold tracking-wide",
-                      !canAfford ? "text-red-400" : activePack === "Classic" ? "text-amber-300" : "text-cyan-200",
-                    )}
+                    className="text-3xl font-extrabold tracking-wide text-ink-faint"
+                    style={{ textShadow: "0 3px 8px rgba(0,0,0,0.8)" }}
                   >
                     {cost.toLocaleString()} {config.currency}
                   </p>
