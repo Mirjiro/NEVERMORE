@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { rollPull, rollOrigin, PACK_CONFIG } from "@/lib/odds";
+import { rollPull, rollOrigin, PACK_CONFIG, QUANTITY_TIERS, costForQuantity, type Quantity } from "@/lib/odds";
 import type { PackType, PullResult } from "@/lib/types";
 import { cn } from "@/lib/cn";
 import type { HistoryEntry } from "@/lib/storage";
@@ -15,26 +15,9 @@ import RevealDeck from "./RevealDeck";
 import StoreModal from "./StoreModal";
 import HistoryModal from "./HistoryModal";
 
-const PURCHASE_BUTTON_ASSETS: Record<
-  PackType,
-  { x1Src: string; x1Ratio: string; x10Src: string; x10Ratio: string; infoSrc: string; infoRatio: string }
-> = {
-  Classic: {
-    x1Src: "/assets/buttons/classic-open-x1.webp",
-    x1Ratio: "340 / 191",
-    x10Src: "/assets/buttons/classic-open-x10.webp",
-    x10Ratio: "340 / 195",
-    infoSrc: "/assets/buttons/info-icon.webp",
-    infoRatio: "130 / 148",
-  },
-  Elite: {
-    x1Src: "/assets/buttons/elite-open-x1.webp",
-    x1Ratio: "340 / 186",
-    x10Src: "/assets/buttons/elite-open-x10.webp",
-    x10Ratio: "340 / 192",
-    infoSrc: "/assets/buttons/elite-info-icon.webp",
-    infoRatio: "130 / 157",
-  },
+const INFO_BUTTON_ASSETS: Record<PackType, { infoSrc: string; infoRatio: string }> = {
+  Classic: { infoSrc: "/assets/buttons/info-icon.webp", infoRatio: "130 / 148" },
+  Elite: { infoSrc: "/assets/buttons/elite-info-icon.webp", infoRatio: "130 / 157" },
 };
 
 /** Shared with TabBar's own hide animation so both read as one cohesive motion. */
@@ -77,6 +60,7 @@ export default function OriginTab({
   onRevealChange?: (active: boolean) => void;
 }) {
   const [activePack, setActivePack] = useState<PackType>("Classic");
+  const [quantity, setQuantity] = useState<Quantity>(1);
   const [pulls, setPulls] = useState<PullResult[] | null>(null);
   const [infoOpen, setInfoOpen] = useState(false);
   const [storeOpen, setStoreOpen] = useState(false);
@@ -113,13 +97,14 @@ export default function OriginTab({
   // bar (hidden throughout the reveal anyway, but this keeps the underlying
   // state honest) never reflects a pull the player hasn't seen yet. `pulls`
   // itself carries everything needed to know what to charge/grant: its
-  // length distinguishes an x1 open from an x10, and its packType says
-  // which currency the cost came out of.
+  // length is always one of the QUANTITY_TIERS (openActivePack only ever
+  // passes one of those), and its packType says which currency the cost
+  // came out of.
   const handleCollect = useCallback(() => {
     if (collectedRef.current || !pulls) return;
     collectedRef.current = true;
     const packType = pulls[0].packType;
-    const cost = pulls.length === 1 ? PACK_CONFIG[packType].costX1 : PACK_CONFIG[packType].costX10;
+    const cost = costForQuantity(packType, pulls.length as Quantity);
     if (packType === "Classic") onSpendGold(cost);
     else onSpendDiamonds(cost);
     pulls.forEach(onApplyPull);
@@ -141,20 +126,13 @@ export default function OriginTab({
 
   const config = PACK_CONFIG[activePack];
   const balance = activePack === "Classic" ? gold : diamonds;
-  const canAffordX1 = balance >= config.costX1;
+  const cost = costForQuantity(activePack, quantity);
+  const canAfford = balance >= cost;
 
-  // Both packs' afford states are computed regardless of which is active —
-  // the button rows below stay permanently mounted (see comment there), so
-  // both need their own disabled state at all times, not just the active one.
-  const canAffordClassicX1 = gold >= PACK_CONFIG.Classic.costX1;
-  const canAffordClassicX10 = gold >= PACK_CONFIG.Classic.costX10;
-  const canAffordEliteX1 = diamonds >= PACK_CONFIG.Elite.costX1;
-  const canAffordEliteX10 = diamonds >= PACK_CONFIG.Elite.costX10;
-
-  const openActivePack = (count: 1 | 10) => {
+  const openActivePack = (count: Quantity) => {
     if (openingLock.current) return;
-    const cost = count === 1 ? config.costX1 : config.costX10;
-    if (balance < cost) return;
+    const openCost = costForQuantity(activePack, count);
+    if (balance < openCost) return;
     openingLock.current = true;
     // Cost isn't spent and rewards aren't applied here — only once the
     // player reaches the Collected screen, via handleCollect. Affordability
@@ -299,91 +277,77 @@ export default function OriginTab({
 
             {/* Purchase controls — sit directly beneath the box */}
             <div
-              className="relative z-20 flex shrink-0 flex-col items-center gap-3 pb-[6px] pt-2"
+              className="relative z-20 flex shrink-0 flex-col items-center gap-2 pb-[6px] pt-2"
               style={{ transform: "translateY(-32px)" }}
             >
-              {/* Both packs' button rows stay permanently mounted (crossfaded via
-                  opacity, never conditionally rendered) so their image assets are
-                  fetched and decoded well before the user ever switches to them —
-                  otherwise the first switch to a pack shows its old <img> src still
-                  on screen for as long as the new one takes to load over the network. */}
-              <div className="relative flex items-center justify-center" style={{ height: 64 }}>
-                {(["Classic", "Elite"] as const).map((pack) => {
-                  const assets = PURCHASE_BUTTON_ASSETS[pack];
-                  const rowConfig = PACK_CONFIG[pack];
-                  const rowCanAffordX1 = pack === "Classic" ? canAffordClassicX1 : canAffordEliteX1;
-                  const rowCanAffordX10 = pack === "Classic" ? canAffordClassicX10 : canAffordEliteX10;
-                  const isRowActive = activePack === pack;
-                  return (
-                    <div
-                      key={pack}
+              {/* Crossfades on pack switch (cost/currency/color all change) —
+                  quick and low-amplitude on purpose, matching the carousel's
+                  own "confident, not flashy" motion language. */}
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={activePack}
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.16, ease: "easeOut" }}
+                  className="flex flex-col items-center gap-2"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <QuantitySelector packType={activePack} quantity={quantity} onChange={setQuantity} />
+
+                    <button
+                      onClick={() => openActivePack(quantity)}
+                      disabled={!canAfford}
                       className={cn(
-                        "absolute inset-0 flex items-center justify-center gap-4 transition-opacity duration-150",
-                        isRowActive ? "opacity-100" : "pointer-events-none opacity-0",
+                        "rounded-full px-9 py-3 text-sm font-bold uppercase tracking-[0.08em] transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-40",
+                        activePack === "Classic"
+                          ? "bg-gradient-to-b from-amber-300 to-amber-600 text-zinc-950 shadow-[0_4px_14px_rgba(217,150,60,0.35)]"
+                          : "bg-gradient-to-b from-cyan-300 to-violet-500 text-zinc-950 shadow-[0_4px_14px_rgba(139,92,246,0.35)]",
                       )}
                     >
-                      <button
-                        onClick={() => openActivePack(1)}
-                        disabled={!rowCanAffordX1}
-                        aria-label={`Open X1 — ${rowConfig.costX1.toLocaleString()} ${rowConfig.currency}`}
-                        className="shrink-0 transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
-                      >
-                        <img
-                          src={assets.x1Src}
-                          alt=""
-                          draggable={false}
-                          className="pointer-events-none select-none"
-                          style={{ height: 64, aspectRatio: assets.x1Ratio }}
-                        />
-                      </button>
-                      <button
-                        onClick={() => openActivePack(10)}
-                        disabled={!rowCanAffordX10}
-                        aria-label={`Open X10 — ${rowConfig.costX10.toLocaleString()} ${rowConfig.currency}`}
-                        className="shrink-0 transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
-                      >
-                        <img
-                          src={assets.x10Src}
-                          alt=""
-                          draggable={false}
-                          className="pointer-events-none select-none"
-                          style={{ height: 64, aspectRatio: assets.x10Ratio }}
-                        />
-                      </button>
-                      <button
-                        onClick={() => setInfoOpen(true)}
-                        aria-label={`${pack} Origin Box rate info`}
-                        className="shrink-0 transition active:scale-95"
-                      >
-                        <img
-                          src={assets.infoSrc}
-                          alt=""
-                          draggable={false}
-                          className="pointer-events-none select-none"
-                          style={{ height: 44, aspectRatio: assets.infoRatio }}
-                        />
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
+                      Open
+                    </button>
+                  </div>
 
-              {!canAffordX1 && (
-                <div className="absolute left-0 right-0 top-full mt-2 flex items-center justify-center gap-2">
-                  <p className="whitespace-nowrap text-center text-xs text-ink-faint">
-                    Not enough {config.currency} for {activePack === "Elite" ? "an" : "a"} {activePack} Origin Box.
+                  <p className={cn("text-xs font-semibold", canAfford ? "text-ink-muted" : "text-red-400")}>
+                    {cost.toLocaleString()} {config.currency}
                   </p>
 
-                  <button
-                    type="button"
-                    onClick={() => setStoreOpen(true)}
-                    className="flex h-6 w-6 shrink-0 items-center justify-center transition active:scale-95"
-                    aria-label="Buy Gold or Diamonds"
-                  >
-                    <img src={ADD_FUNDS_ICON} alt="" draggable={false} className="h-full w-full select-none object-contain" />
-                  </button>
-                </div>
-              )}
+                  <div className="flex items-center gap-2">
+                    {!canAfford && (
+                      <>
+                        <p className="whitespace-nowrap text-xs text-ink-faint">Not enough {config.currency}</p>
+                        <button
+                          type="button"
+                          onClick={() => setStoreOpen(true)}
+                          className="flex h-5 w-5 shrink-0 items-center justify-center transition active:scale-95"
+                          aria-label="Buy Gold or Diamonds"
+                        >
+                          <img
+                            src={ADD_FUNDS_ICON}
+                            alt=""
+                            draggable={false}
+                            className="h-full w-full select-none object-contain"
+                          />
+                        </button>
+                      </>
+                    )}
+                    <button
+                      onClick={() => setInfoOpen(true)}
+                      aria-label={`${activePack} Origin Box rate info`}
+                      className="shrink-0 transition active:scale-95"
+                    >
+                      <img
+                        src={INFO_BUTTON_ASSETS[activePack].infoSrc}
+                        alt=""
+                        draggable={false}
+                        className="pointer-events-none select-none"
+                        style={{ height: 30, aspectRatio: INFO_BUTTON_ASSETS[activePack].infoRatio }}
+                      />
+                    </button>
+                  </div>
+                </motion.div>
+              </AnimatePresence>
             </div>
 
             {/* Absorbs remaining vertical space below the buttons instead of
@@ -414,6 +378,87 @@ export default function OriginTab({
         onSellDuplicates={onSellDuplicates}
         onResetProgress={onResetProgress}
       />
+    </div>
+  );
+}
+
+/**
+ * `[ x1 ▼ ]` — tap to open a short menu of every supported quantity
+ * (1/10/20/50/100), each showing its own total cost so switching tiers is a
+ * single direct tap rather than stepping through them one at a time. Opens
+ * upward: this control sits low in the layout, close to the bottom dock.
+ */
+function QuantitySelector({
+  packType,
+  quantity,
+  onChange,
+}: {
+  packType: PackType;
+  quantity: Quantity;
+  onChange: (quantity: Quantity) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handlePointerDown = (e: PointerEvent) => {
+      if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [open]);
+
+  return (
+    <div ref={rootRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-label="Select quantity"
+        aria-expanded={open}
+        className="flex items-center gap-1.5 rounded-full border border-zinc-700 bg-zinc-900/80 px-4 py-3 text-sm font-bold text-ink transition active:scale-95"
+      >
+        x{quantity}
+        <svg
+          width="10"
+          height="10"
+          viewBox="0 0 10 10"
+          fill="none"
+          className={cn("transition-transform", open && "rotate-180")}
+        >
+          <path d="M1.5 3.5L5 7L8.5 3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: -6, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -6, scale: 0.96 }}
+            transition={{ duration: 0.15, ease: "easeOut" }}
+            className="absolute bottom-full left-1/2 z-30 mb-2 w-44 -translate-x-1/2 overflow-hidden rounded-xl border border-zinc-700 bg-zinc-900 shadow-xl"
+          >
+            {QUANTITY_TIERS.map((tier) => (
+              <button
+                key={tier}
+                type="button"
+                onClick={() => {
+                  onChange(tier);
+                  setOpen(false);
+                }}
+                className={cn(
+                  "flex w-full items-center justify-between px-3.5 py-2.5 text-left text-sm transition",
+                  tier === quantity ? "bg-zinc-800 text-ink" : "text-ink-muted hover:bg-zinc-800/60",
+                )}
+              >
+                <span className="font-semibold">x{tier}</span>
+                <span className="text-xs text-ink-faint">{costForQuantity(packType, tier).toLocaleString()}</span>
+              </button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

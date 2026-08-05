@@ -4,11 +4,61 @@ import type { Origin, PackType, PullResult, Rarity, Slot2Result } from "./types"
 
 export const PACK_CONFIG: Record<
   PackType,
-  { label: string; costX1: number; costX10: number; currency: "Gold" | "Diamonds"; available: boolean }
+  {
+    label: string;
+    costX1: number;
+    costX10: number;
+    costX20: number;
+    costX50: number;
+    costX100: number;
+    currency: "Gold" | "Diamonds";
+    available: boolean;
+  }
 > = {
-  Classic: { label: "Classic", costX1: 2_000, costX10: 18_000, currency: "Gold", available: true },
-  Elite: { label: "Elite", costX1: 100, costX10: 800, currency: "Diamonds", available: true },
+  Classic: {
+    label: "Classic",
+    costX1: 2_000,
+    costX10: 18_000,
+    costX20: 34_000,
+    costX50: 80_000,
+    costX100: 150_000,
+    currency: "Gold",
+    available: true,
+  },
+  Elite: {
+    label: "Elite",
+    costX1: 100,
+    costX10: 800,
+    costX20: 1_500,
+    costX50: 3_500,
+    costX100: 6_500,
+    currency: "Diamonds",
+    available: true,
+  },
 };
+
+/** Every quantity the Open control supports, in ascending order. */
+export const QUANTITY_TIERS = [1, 10, 20, 50, 100] as const;
+export type Quantity = (typeof QUANTITY_TIERS)[number];
+
+/** Total cost for opening `quantity` copies of `packType` at once — reads the
+ * matching bulk-discount tier from PACK_CONFIG rather than naively
+ * multiplying the x1 price, since every tier above x1 is discounted. */
+export function costForQuantity(packType: PackType, quantity: Quantity): number {
+  const config = PACK_CONFIG[packType];
+  switch (quantity) {
+    case 1:
+      return config.costX1;
+    case 10:
+      return config.costX10;
+    case 20:
+      return config.costX20;
+    case 50:
+      return config.costX50;
+    case 100:
+      return config.costX100;
+  }
+}
 
 /** Concise product description shown in the Box-level info modal. */
 export const BOX_DESCRIPTIONS: Record<PackType, string> = {
