@@ -22,6 +22,8 @@ export interface SaveData {
    * collide even if a card name were ever reused. */
   collection: Record<string, number>;
   history: HistoryEntry[];
+  /** Epoch ms the player last collected idle Gold from the Realm tab. */
+  lastIdleCollectAt: number;
 }
 
 export function collectionKey(origin: Origin, name: string): string {
@@ -52,7 +54,11 @@ export function loadSave(): SaveData | null {
     ) {
       return null;
     }
-    return parsed as SaveData;
+    // Added after the v1 shape shipped — old saves won't have it, so default
+    // to "now" (starts earning fresh) instead of invalidating the whole save.
+    const lastIdleCollectAt =
+      typeof parsed.lastIdleCollectAt === "number" ? parsed.lastIdleCollectAt : Date.now();
+    return { ...parsed, lastIdleCollectAt } as SaveData;
   } catch {
     // Corrupted JSON, or localStorage unavailable (private-browsing quirks,
     // storage disabled) — treat exactly like a fresh save rather than crash.

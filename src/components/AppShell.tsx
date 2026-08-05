@@ -5,9 +5,11 @@ import type { TabName } from "@/lib/tabs";
 import type { Origin, PullResult } from "@/lib/types";
 import { clearSave, collectionKey, loadSave, writeSave, type HistoryEntry } from "@/lib/storage";
 import { sellAllDuplicates, summarizeDuplicates } from "@/lib/duplicateValue";
+import { computeIdleGold } from "@/lib/idleRewards";
 import TabBar from "./TabBar";
 import UnderConstruction from "./UnderConstruction";
 import OriginTab from "./OriginTab";
+import RealmTab from "./RealmTab";
 
 const ORIGINS: Origin[] = ["Vampire", "Fae", "Demon", "Angel", "Mage", "Werewolf", "Royal"];
 
@@ -34,6 +36,10 @@ export default function AppShell() {
   const [creatures, setCreatures] = useState(0);
   const [collection, setCollection] = useState<Record<string, number>>({});
   const [history, setHistory] = useState<HistoryEntry[]>([]);
+  // null until the load effect resolves it (real save value, or Date.now()
+  // for a fresh game) — RealmTab treats null as "still loading" and shows no
+  // accrual rather than flashing a huge number computed against an epoch-0 default.
+  const [lastIdleCollectAt, setLastIdleCollectAt] = useState<number | null>(null);
 
   // Gates the save-effect below until the load-effect has had its one
   // chance to run — otherwise the very first render's fresh-game defaults
@@ -57,15 +63,18 @@ export default function AppShell() {
       setCreatures(saved.creatures);
       setCollection(saved.collection);
       setHistory(saved.history);
+      setLastIdleCollectAt(saved.lastIdleCollectAt);
+    } else {
+      setLastIdleCollectAt(Date.now());
     }
     /* eslint-enable react-hooks/set-state-in-effect */
     hasLoaded.current = true;
   }, []);
 
   useEffect(() => {
-    if (!hasLoaded.current) return;
-    writeSave({ gold, diamonds, seedsByOrigin, creatures, collection, history });
-  }, [gold, diamonds, seedsByOrigin, creatures, collection, history]);
+    if (!hasLoaded.current || lastIdleCollectAt === null) return;
+    writeSave({ gold, diamonds, seedsByOrigin, creatures, collection, history, lastIdleCollectAt });
+  }, [gold, diamonds, seedsByOrigin, creatures, collection, history, lastIdleCollectAt]);
 
   const recordCard = useCallback((origin: Origin, name: string) => {
     setCollection((prev) => {
@@ -111,6 +120,14 @@ export default function AppShell() {
     [collection],
   );
 
+  const onCollectIdleGold = useCallback(() => {
+    if (lastIdleCollectAt === null) return;
+    const accrued = computeIdleGold(lastIdleCollectAt, Date.now());
+    if (accrued <= 0) return;
+    setGold((g) => g + accrued);
+    setLastIdleCollectAt(Date.now());
+  }, [lastIdleCollectAt]);
+
   // Persistence means a refresh no longer doubles as "start over" — this is
   // the deliberate replacement, gated behind a two-tap confirm in the UI
   // itself so a single accidental tap can never wipe a real save.
@@ -122,6 +139,7 @@ export default function AppShell() {
     setCreatures(0);
     setCollection({});
     setHistory([]);
+    setLastIdleCollectAt(Date.now());
   }, []);
 
   const totalSeeds = Object.values(seedsByOrigin).reduce((a, b) => a + b, 0);
@@ -148,6 +166,12 @@ export default function AppShell() {
             onSellDuplicates={onSellDuplicates}
             onResetProgress={onResetProgress}
             onRevealChange={setRevealActive}
+          />
+        ) : activeTab === "Realm" ? (
+          <RealmTab
+            lastIdleCollectAt={lastIdleCollectAt}
+            onCollectIdleGold={onCollectIdleGold}
+            onNavigate={setActiveTab}
           />
         ) : (
           <UnderConstruction tab={activeTab} />
