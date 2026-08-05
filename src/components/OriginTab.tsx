@@ -268,6 +268,22 @@ export default function OriginTab({
             className="absolute inset-0 flex flex-col overflow-y-auto overscroll-contain"
             style={{ top: "clamp(-28px, -2svh, -4px)" }}
           >
+            {/* Bottom fade — the purchase controls (Open button art, cost
+                text) sit directly on the Origin background/box artwork with
+                no panel behind them, so busy background regions could make
+                them hard to read. This darkens just the bottom band they
+                live in, above the box/background but below the controls
+                themselves (z-10, between the carousel's implicit z-0 and the
+                controls' z-20). */}
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-x-0 bottom-0 z-10"
+              style={{
+                height: "42%",
+                background: "linear-gradient(to top, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.45) 45%, rgba(0,0,0,0) 100%)",
+              }}
+            />
+
             {/* This region normally never needs to scroll — the box, buttons,
                 and any optional content (insufficient-currency message, free
                 Origin Box button) all fit within the available space. But on
