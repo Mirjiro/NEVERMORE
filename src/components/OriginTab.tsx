@@ -20,6 +20,11 @@ const INFO_BUTTON_ASSETS: Record<PackType, { infoSrc: string; infoRatio: string 
   Elite: { infoSrc: "/assets/buttons/elite-info-icon.webp", infoRatio: "130 / 157" },
 };
 
+const OPEN_BUTTON_ASSETS: Record<PackType, { src: string; ratio: string }> = {
+  Classic: { src: "/assets/buttons/classic-open.webp", ratio: "1744 / 584" },
+  Elite: { src: "/assets/buttons/elite-open.webp", ratio: "1692 / 518" },
+};
+
 /** Shared with TabBar's own hide animation so both read as one cohesive motion. */
 const CHROME_TRANSITION = { duration: 0.45, ease: [0.16, 0.84, 0.24, 1] as const };
 
@@ -298,18 +303,30 @@ export default function OriginTab({
                     <button
                       onClick={() => openActivePack(quantity)}
                       disabled={!canAfford}
-                      className={cn(
-                        "rounded-full px-9 py-3 text-sm font-bold uppercase tracking-[0.08em] transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-40",
-                        activePack === "Classic"
-                          ? "bg-gradient-to-b from-amber-300 to-amber-600 text-zinc-950 shadow-[0_4px_14px_rgba(217,150,60,0.35)]"
-                          : "bg-gradient-to-b from-cyan-300 to-violet-500 text-zinc-950 shadow-[0_4px_14px_rgba(139,92,246,0.35)]",
-                      )}
+                      aria-label={`Open x${quantity} — ${cost.toLocaleString()} ${config.currency}`}
+                      className="shrink-0 transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
                     >
-                      Open
+                      <img
+                        src={OPEN_BUTTON_ASSETS[activePack].src}
+                        alt=""
+                        draggable={false}
+                        className="pointer-events-none select-none"
+                        style={{ height: 56, aspectRatio: OPEN_BUTTON_ASSETS[activePack].ratio }}
+                      />
                     </button>
                   </div>
 
-                  <p className={cn("text-xs font-semibold", canAfford ? "text-ink-muted" : "text-red-400")}>
+                  {/* Cost — deliberately the loudest text in this cluster (the
+                      Open button itself carries its visual weight from the
+                      illustrated art, not typography), and recomputes from
+                      `quantity` on every render so switching tiers updates it
+                      instantly. */}
+                  <p
+                    className={cn(
+                      "text-xl font-extrabold tracking-wide",
+                      !canAfford ? "text-red-400" : activePack === "Classic" ? "text-amber-300" : "text-cyan-200",
+                    )}
+                  >
                     {cost.toLocaleString()} {config.currency}
                   </p>
 
