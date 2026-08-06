@@ -20,8 +20,8 @@ const FALLBACK_HEIGHT = "clamp(268px, 84vw, 468px)";
 // How far the inactive box peeks in from its side, as a percentage of its
 // own width (so it scales with TILE_WIDTH's own clamp rather than needing a
 // second breakpoint-aware constant).
-const PEEK_PERCENT = 48;
-const INACTIVE_SCALE = 0.88;
+const PEEK_PERCENT = 60;
+const INACTIVE_SCALE = 0.7;
 const INACTIVE_BLUR = "1.5px";
 
 const SWIPE_OFFSET_THRESHOLD = 60;
@@ -96,28 +96,44 @@ export default function PackCarousel({
         const isActive = pack === active;
         const target = targetFor(pack, active);
         return (
-          <motion.div
+          // Static positioning wrapper (no transform of its own) — spans the
+          // full carousel width so the box sits centered by default. The
+          // animated `x` below lives on the *inner* motion.div instead,
+          // which is sized to the box itself (not this wrapper), so a
+          // percentage x offset resolves against the box's own width rather
+          // than this much-wider container.
+          <div
             key={pack}
-            drag={isActive ? "x" : false}
-            dragConstraints={{ left: 0, right: 0 }}
-            dragElastic={0.7}
-            dragMomentum={false}
-            onDragEnd={(_, info) => handleDragEnd(pack, info)}
-            onClick={() => {
-              if (!isActive) onSwitch(pack);
-            }}
-            animate={{ x: target.x, scale: target.scale, filter: `blur(${target.blur})` }}
-            transition={CAROUSEL_SPRING}
-            className={cn("absolute inset-0 flex items-start justify-center pt-0 pb-2", !isActive && "cursor-pointer")}
-            style={{ zIndex: isActive ? 2 : 1, touchAction: "pan-y" }}
+            className="absolute inset-0 flex items-start justify-center pt-0 pb-2"
+            style={{ zIndex: isActive ? 2 : 1 }}
           >
-            <PackFront packType={pack} active={isActive} />
-          </motion.div>
+            <motion.div
+              drag={isActive ? "x" : false}
+              dragConstraints={{ left: 0, right: 0 }}
+              dragElastic={0.7}
+              dragMomentum={false}
+              onDragEnd={(_, info) => handleDragEnd(pack, info)}
+              onClick={() => {
+                if (!isActive) onSwitch(pack);
+              }}
+              animate={{ x: target.x, scale: target.scale, filter: `blur(${target.blur})` }}
+              transition={CAROUSEL_SPRING}
+              className={cn(!isActive && "cursor-pointer")}
+              style={{ touchAction: "pan-y" }}
+            >
+              <PackFront packType={pack} active={isActive} />
+            </motion.div>
+          </div>
         );
       })}
 
-      {/* Vertical two-position indicator, beside the carousel */}
-      <div className="absolute right-1 top-1/2 z-20 flex -translate-y-1/2 flex-col items-center gap-2">
+      {/* Horizontal two-position indicator, matching the carousel's own
+          left-right swipe direction, at the bottom of the box's own region.
+          `bottom-9` (not bottom-1) — OriginTab pulls its purchase controls
+          up by 32px to sit tight against the box, so anything closer to the
+          true bottom edge here would sit underneath that (z-20) row and
+          never receive taps. */}
+      <div className="absolute bottom-9 left-1/2 z-20 flex -translate-x-1/2 flex-row items-center gap-2">
         {PACKS.map((pack) => (
           <button
             key={pack}
@@ -125,8 +141,8 @@ export default function PackCarousel({
             onClick={() => onSwitch(pack)}
             aria-label={`Show ${pack} Origin Box`}
             className={cn(
-              "w-1.5 rounded-full transition-all",
-              pack === active ? "h-5 bg-zinc-200" : "h-1.5 bg-zinc-700",
+              "h-1.5 rounded-full transition-all",
+              pack === active ? "w-5 bg-zinc-200" : "w-1.5 bg-zinc-700",
             )}
           />
         ))}

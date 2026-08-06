@@ -20,6 +20,11 @@ const INFO_BUTTON_ASSETS: Record<PackType, { infoSrc: string; infoRatio: string 
   Elite: { infoSrc: "/assets/buttons/elite-info-icon.webp", infoRatio: "130 / 157" },
 };
 
+const OPEN_BUTTON_ASSETS: Record<PackType, { src: string; ratio: string }> = {
+  Classic: { src: "/assets/buttons/classic-open.webp", ratio: "1744 / 584" },
+  Elite: { src: "/assets/buttons/elite-open.webp", ratio: "1692 / 518" },
+};
+
 /** Shared with TabBar's own hide animation so both read as one cohesive motion. */
 const CHROME_TRANSITION = { duration: 0.45, ease: [0.16, 0.84, 0.24, 1] as const };
 
@@ -263,6 +268,31 @@ export default function OriginTab({
             className="absolute inset-0 flex flex-col overflow-y-auto overscroll-contain"
             style={{ top: "clamp(-28px, -2svh, -4px)" }}
           >
+            {/* Bottom fade — the purchase controls (Open button art, cost
+                text) sit directly on the Origin background/box artwork with
+                no panel behind them, so busy background regions could make
+                them hard to read. This darkens just the bottom band they
+                live in, above the box/background but below the controls
+                themselves (z-10, between the carousel's implicit z-0 and the
+                controls' z-20). */}
+            <div
+              aria-hidden
+              className="pointer-events-none absolute bottom-0 z-10"
+              style={{
+                // `left/right: -1rem` (not inset-x-0) — this sits inside
+                // OriginTab's own px-4, so inset-x-0 would stop 16px short of
+                // the true screen edge on each side while OriginBackground
+                // (unconstrained by that padding) kept showing through,
+                // leaving a lit, un-faded margin right where the eye reads
+                // the cost text.
+                left: "-1rem",
+                right: "-1rem",
+                height: "44%",
+                background:
+                  "linear-gradient(to top, rgba(0,0,0,0.96) 0%, rgba(0,0,0,0.88) 32%, rgba(0,0,0,0.55) 65%, rgba(0,0,0,0) 100%)",
+              }}
+            />
+
             {/* This region normally never needs to scroll — the box, buttons,
                 and any optional content (insufficient-currency message, free
                 Origin Box button) all fit within the available space. But on
@@ -298,18 +328,29 @@ export default function OriginTab({
                     <button
                       onClick={() => openActivePack(quantity)}
                       disabled={!canAfford}
-                      className={cn(
-                        "rounded-full px-9 py-3 text-sm font-bold uppercase tracking-[0.08em] transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-40",
-                        activePack === "Classic"
-                          ? "bg-gradient-to-b from-amber-300 to-amber-600 text-zinc-950 shadow-[0_4px_14px_rgba(217,150,60,0.35)]"
-                          : "bg-gradient-to-b from-cyan-300 to-violet-500 text-zinc-950 shadow-[0_4px_14px_rgba(139,92,246,0.35)]",
-                      )}
+                      aria-label={`Open x${quantity} — ${cost.toLocaleString()} ${config.currency}`}
+                      className="shrink-0 transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
                     >
-                      Open
+                      <img
+                        src={OPEN_BUTTON_ASSETS[activePack].src}
+                        alt=""
+                        draggable={false}
+                        className="pointer-events-none select-none"
+                        style={{ height: 56, aspectRatio: OPEN_BUTTON_ASSETS[activePack].ratio }}
+                      />
                     </button>
                   </div>
 
-                  <p className={cn("text-xs font-semibold", canAfford ? "text-ink-muted" : "text-red-400")}>
+                  {/* Cost — deliberately the loudest text in this cluster (the
+                      Open button itself carries its visual weight from the
+                      illustrated art, not typography), and recomputes from
+                      `quantity` on every render so switching tiers updates it
+                      instantly. Same ink-faint color as the "Not enough"
+                      prompt below it so the two read as one family of text. */}
+                  <p
+                    className="text-3xl font-extrabold tracking-wide text-ink-faint"
+                    style={{ textShadow: "0 2px 4px rgba(0,0,0,1), 0 4px 14px rgba(0,0,0,0.9)" }}
+                  >
                     {cost.toLocaleString()} {config.currency}
                   </p>
 
