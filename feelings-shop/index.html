@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#fde9f1">
+  <title>Feelings Shop</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+    <!-- Top bar -->
+    <header class="topbar">
+      <div class="brand">
+        <div class="shop-name">💊 <span id="shopName">Feelings Shop</span></div>
+        <div class="rank" id="rankTitle">Corner Counter</div>
+      </div>
+      <div class="stats">
+        <div class="level-wrap">
+          <span class="lv" id="levelLabel">Lv 1</span>
+          <div class="xpbar" aria-label="Experience"><div class="xpfill" id="xpFill"></div></div>
+          <span class="xptext" id="xpText">0 / 50</span>
+        </div>
+        <div class="coins" id="coins"><span class="coin-icon">🪙</span><span id="coinCount">20</span></div>
+        <button class="icon-btn" id="muteBtn" aria-label="Toggle sound">🔊</button>
+        <button class="icon-btn" id="settingsBtn" aria-label="Settings">⚙️</button>
+      </div>
+    </header>
+
+    <!-- Customer line -->
+    <section class="line-section">
+      <div class="line-head">
+        <h2>Customers</h2>
+        <span class="in-shop" id="inShop">In shop: 0</span>
+      </div>
+      <div class="line" id="line"></div>
+    </section>
+
+    <!-- Mixer -->
+    <section class="mixer-section">
+      <div class="mixer">
+        <button class="slot" id="slot0" aria-label="Mixer slot 1"></button>
+        <span class="plus">+</span>
+        <button class="slot" id="slot1" aria-label="Mixer slot 2"></button>
+        <button class="mix-btn" id="mixBtn">Mix!</button>
+      </div>
+      <div class="mix-hint" id="mixHint">Tap two pills on the shelf.</div>
+      <div class="tray-wrap">
+        <div class="tray-label">Result tray <span class="tray-sub">(tap to pick, then tap a customer)</span></div>
+        <div class="tray" id="tray"></div>
+      </div>
+    </section>
+
+    <!-- Shelf -->
+    <section class="shelf-section">
+      <h2>Shelf</h2>
+      <div class="shelf" id="shelf"></div>
+    </section>
+
+    <nav class="bottom-buttons">
+      <button class="big-btn" id="bookBtn">📖 Feelings Book</button>
+      <button class="big-btn" id="upgradesBtn">⭐ Upgrades</button>
+    </nav>
+  </div>
+
+  <!-- Modals -->
+  <div class="modal-backdrop hidden" id="modal">
+    <div class="modal" role="dialog" aria-modal="true">
+      <button class="modal-close" id="modalClose" aria-label="Close">✕</button>
+      <div id="modalBody"></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+  <div id="fx"></div>
+
+  <script src="data.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>
