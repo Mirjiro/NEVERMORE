@@ -14,6 +14,8 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // Standalone vanilla-JS game (not part of the Next.js app):
     "feelings-shop/**",
+    // Standalone Vite + React game with its own toolchain:
+    "odd-dose/**",
   ]),
 ]);
 
