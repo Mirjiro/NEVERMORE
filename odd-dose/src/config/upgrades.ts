@@ -10,6 +10,7 @@ export interface UpgradeDef {
   id: string;
   name: string;
   group: "Lab" | "Copier" | "Business" | "Access";
+  /** Short, friendly benefit line shown on the equipment card. */
   desc: string;
   tiers: UpgradeTier[];
 }
@@ -17,15 +18,15 @@ export interface UpgradeDef {
 export const UPGRADES: UpgradeDef[] = [
   {
     id: "machines", name: "Additional Machine", group: "Lab",
-    desc: "Install another Lab Machine. Each Machine works independently.",
+    desc: "Run another mix while your first Machine is busy.",
     tiers: [
       { cost: 1500, level: 2, label: "2nd Machine" },
       { cost: 6000, level: 4, label: "3rd Machine" },
     ],
   },
   {
-    id: "incubation", name: "Incubator Tuning", group: "Lab",
-    desc: "Machines incubate 15% faster per tier.",
+    id: "incubation", name: "Quick Incubators", group: "Lab",
+    desc: "Pills incubate faster.",
     tiers: [
       { cost: 800, level: 2, label: "−15% time" },
       { cost: 2500, level: 4, label: "−30% time" },
@@ -34,12 +35,12 @@ export const UPGRADES: UpgradeDef[] = [
   },
   {
     id: "scanner", name: "Scanner", group: "Access",
-    desc: "Unlocks the Lab Scanner for identifying ? specimens.",
+    desc: "Discover what's inside mysterious pills.",
     tiers: [{ cost: 300, level: 1, label: "Install Scanner" }],
   },
   {
-    id: "copierSpeed", name: "Copier Motor", group: "Copier",
-    desc: "Copier batches finish 20% faster per tier.",
+    id: "copierSpeed", name: "Faster Copier", group: "Copier",
+    desc: "Copies come out faster.",
     tiers: [
       { cost: 400, level: 1, label: "−20% time" },
       { cost: 1500, level: 3, label: "−40% time" },
@@ -47,8 +48,8 @@ export const UPGRADES: UpgradeDef[] = [
     ],
   },
   {
-    id: "copierBatch", name: "Copier Tray", group: "Copier",
-    desc: "Raise the maximum batch quantity.",
+    id: "copierBatch", name: "Bigger Batches", group: "Copier",
+    desc: "Make bigger batches.",
     tiers: [
       { cost: 600, level: 2, label: "Max batch 22" },
       { cost: 2400, level: 4, label: "Max batch 44" },
@@ -56,7 +57,7 @@ export const UPGRADES: UpgradeDef[] = [
   },
   {
     id: "sales", name: "Sales Team", group: "Business",
-    desc: "Order payouts +10% per tier.",
+    desc: "Clients pay more for every order.",
     tiers: [
       { cost: 1000, level: 2, label: "+10% payouts" },
       { cost: 4000, level: 5, label: "+20% payouts" },
@@ -64,12 +65,12 @@ export const UPGRADES: UpgradeDef[] = [
   },
   {
     id: "pr", name: "PR Agency", group: "Business",
-    desc: "Popularity grows 50% faster from shipments.",
+    desc: "Get famous faster.",
     tiers: [{ cost: 1200, level: 3, label: "+50% popularity gain" }],
   },
   {
-    id: "backdoor", name: "BACKDOOR Access", group: "Access",
-    desc: "A key to the simulated underground market. Buy, sell, follow the FIRE list.",
+    id: "backdoor", name: "BACKDOOR Key", group: "Access",
+    desc: "A key to the underground market.",
     tiers: [{ cost: 2000, level: 5, label: "Unlock BACKDOOR" }],
   },
 ];

@@ -1,6 +1,6 @@
 # ODD DOSE — Build Status
 
-_Last updated: end of session 1 (phases 1–5 first pass complete)._
+_Last updated: v1.1 — gameplay, UI & visual update complete (see the v1.1 section below)._
 
 ## How to run
 
@@ -91,3 +91,47 @@ Engine rule: actions validate first, then mutate a **clone**; a failing action t
 - **Sound**: none yet.
 - **Market**: future items (auctions, bidding, events) intentionally not built.
 - Browser end-to-end checks are ad-hoc Playwright scripts, not yet committed as an automated suite.
+
+---
+
+## v1.1 — Gameplay, UI & visual update
+
+**Save format unchanged** (still version 1). A real save produced by the v1.0 code is committed as
+`tests/fixtures/save-v1.0.json` and is loaded by the test suite (cash, Known pills, star variants,
+running Machine + Copier jobs, orders all preserved).
+
+### Implemented
+- **Vault = what I own.** Physical inventory only, grouped by `pillId + exact star` (`vaultStacks()` in the engine;
+  specimen records untouched). Zero-stock pills leave the Vault but stay Known in the Notebook and in the Copier.
+- **Reusable `PillCard`** (`src/ui/components/PillCard.tsx`): card / compact / mini variants used by the Vault,
+  Copier, Machine picker, Scanner and Notebook. Base pills render **no** star UI; ★ / ★★ only on real starred specimens,
+  with a subtle gold foil corner.
+- **Pill detail**: large art, name (+stars), rarity, Types, quantity of that variant, flavor line; actions
+  Use in Machine / Make more / Sell 1 (exact star tier); recipe strip; history under an expandable *Details*.
+- **Copier workbench** inside the Vault with its own "What should we make?" picker of every Known pill.
+- **Desk**: warmer wood, lamp light, plant, mug, pen, clips, sticky note, paper grain, paper-clipped folders.
+  Orders are now a short title + one line + checklist + reward + due ("2 days").
+- **Tap-to-stamp shipping** (`src/ui/shipFlow.ts`): check items → tap the paper → red, rough-edged APPROVED ink
+  imprint at the tap point (with a thunk) → separate SHIP → dispatch slide + payout pop. No stamp object, no stamp button.
+  Enter/Space on the focused paper is the keyboard equivalent. Unchecking clears the stamp.
+- **HQ**: illustrated office that grows (window by time of day, sign, machines/copier/scanner/plant/secret door,
+  shelf of best pills, milestone frames), rank title, Cash / Worth / Popularity hearts, Equipment cards with art,
+  Milestones, and Reports + Settings (sound, save export/import, reset) tucked into expandable panels.
+- **Lab**: heavier Machine (cap, vents, pipes, gauge, iris shutter, bubbles), drop-in insert animation, big timer,
+  short verdicts ("Makes Bittersweet", "Something new?", "No reaction"). Reveal is quick for familiar pills,
+  full for new ones, dramatic for new Legendary/Secret; tap to skip.
+- **Notebook**: Chart as pill tiles (tap a Known tile for Types + recipe); Drafts as taped paper notes with
+  one-line summaries that expand.
+- **Sound**: generated Web Audio effects (`src/ui/sfx.ts`), mute in HQ → Settings; `prefers-reduced-motion` respected.
+- Copy audit across all screens.
+
+### v1.1 validation
+`tests/v11.test.ts` (15 tests) + the original 29 = **44 passing**. Covers checklist items 1–9, 13–15, 17–20 and 24.
+Browser playthrough on an iPhone-13 viewport verified: checkbox taps never stamp, paper tap stamps, keyboard stamp,
+no stamp button exists, SHIP disabled until stamped, pays once, Vault drops shipped-out pills, "Use in Machine"
+pre-fills a slot, starred stacks render separately, 0 px horizontal overflow on all four screens, no console errors.
+
+### Remaining
+- Final pill art (registry ready in `src/data/pillArt.ts`).
+- HQ office art is CSS placeholder illustration.
+- Browser checks are still ad-hoc Playwright scripts rather than a committed e2e suite.

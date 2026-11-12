@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { BALANCE } from "../../config/balance";
-import { PILL_BY_ID, RARITY_LABEL } from "../../data/pills";
+import { PILL_BY_ID } from "../../data/pills";
 import {
   collectMachine, incubationMs, isKnown, machineCount, scanSpecimen, scannerUnlocked, speedUpCost, speedUpMachine, startMachine,
 } from "../../engine/game";
@@ -9,26 +9,42 @@ import type { Machine } from "../../engine/types";
 import { useGame } from "../../store/GameContext";
 import type { Tab } from "../App";
 import { PillArt } from "../components/PillArt";
+import { PillCard } from "../components/PillCard";
 import { PillPicker } from "../components/PillPicker";
-import { ProgressRing, RarityTag, formatDuration, money, pillName } from "../components/common";
+import { RarityTag, money, pillName } from "../components/common";
+import { sfx } from "../sfx";
 
-export function LabScreen({ goto }: { goto: (t: Tab) => void }) {
-  const { state } = useGame();
+/** "2:41" / "1:02:09" — big readable timer. */
+export function clock(ms: number): string {
+  const s = Math.max(0, Math.ceil(ms / 1000));
+  const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
+  return h ? `${h}:${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}` : `${m}:${String(sec).padStart(2, "0")}`;
+}
+
+export function LabScreen({ goto, prefill, clearPrefill }: { goto: (t: Tab) => void; prefill: string | null; clearPrefill: () => void }) {
+  const { state, toast } = useGame();
   const installed = machineCount(state);
+  const freeIdx = state.machines.slice(0, installed).findIndex((m) => !m.job);
+  useEffect(() => {
+    if (prefill && freeIdx < 0) { toast("All Machines are busy right now.", "bad"); clearPrefill(); }
+  }, [prefill, freeIdx, toast, clearPrefill]);
+
   return (
     <div className="lab">
       <div className="screen-head">
         <h1>Lab</h1>
-        <p className="muted">Two pills in. One new pill out. Parents always come back.</p>
+        <p className="muted">Mix two pills. Get a new one.</p>
       </div>
       <div className="machines">
         {state.machines.slice(0, BALANCE.machine.maxMachines).map((m, i) =>
-          i < installed ? <MachineCard key={m.id} machine={m} index={i} /> : (
-            <div key={m.id} className="machine locked" onClick={() => goto("hq")}>
-              <div className="machine-plate">Machine {String.fromCharCode(65 + i)}</div>
-              <p>Not installed</p>
-              <span className="muted small">Purchase at HQ → Lab upgrades</span>
-            </div>
+          i < installed ? (
+            <MachineCard key={m.id} machine={m} index={i} prefill={i === freeIdx ? prefill : null} clearPrefill={clearPrefill} />
+          ) : (
+            <button key={m.id} className="machine locked" onClick={() => goto("hq")}>
+              <span className="machine-plate">Machine 0{i + 1}</span>
+              <span className="lock-ico" aria-hidden>🔒</span>
+              <span className="muted small">Unlock at HQ</span>
+            </button>
           ),
         )}
       </div>
@@ -37,7 +53,7 @@ export function LabScreen({ goto }: { goto: (t: Tab) => void }) {
   );
 }
 
-function MachineCard({ machine, index }: { machine: Machine; index: number }) {
+function MachineCard({ machine, index, prefill, clearPrefill }: { machine: Machine; index: number; prefill: string | null; clearPrefill: () => void }) {
   const { state, now, act, toast, setReveal } = useGame();
   const [a, setA] = useState<string | null>(null);
   const [b, setB] = useState<string | null>(null);
@@ -45,38 +61,46 @@ function MachineCard({ machine, index }: { machine: Machine; index: number }) {
   const [phase, setPhase] = useState<"idle" | "inserting" | "opening">("idle");
   const job = machine.job;
   const ready = !!job && job.endsAt <= now;
-  const label = `Machine ${String.fromCharCode(65 + index)}`;
 
   useEffect(() => { if (job) { setA(null); setB(null); } }, [job]);
+  useEffect(() => {
+    if (!prefill) return;
+    if (!a) setA(prefill); else if (!b) setB(prefill);
+    clearPrefill();
+  }, [prefill, a, b, clearPrefill]);
+  const wasReady = useRef(ready);
+  useEffect(() => { if (ready && !wasReady.current) sfx.ready(); wasReady.current = ready; }, [ready]);
 
   const preview = a && b ? previewBreed(a, b) : null;
-  let previewText = "";
+  let previewText = "", previewTone = "";
   if (preview) {
-    if (preview.kind === "none") previewText = "No Reaction — these pills share no Type.";
-    else if (preview.kind === "identical") previewText = `Identical pair → another ${pillName(preview.resultId)}`;
-    else if (preview.kind === "shared") previewText = `Shared Type → ${pillName(preview.options[0])} or ${pillName(preview.options[1])}`;
-    else if (isKnown(state, preview.resultId)) previewText = `Known recipe → ${pillName(preview.resultId)}`;
-    else previewText = "Unknown reaction… something new might form.";
+    if (preview.kind === "none") { previewText = "No reaction"; previewTone = "warn"; }
+    else if (preview.kind === "identical") previewText = `Makes another ${pillName(preview.resultId)}`;
+    else if (preview.kind === "shared") previewText = `Makes ${pillName(preview.options[0])} or ${pillName(preview.options[1])}`;
+    else if (isKnown(state, preview.resultId)) previewText = `Makes ${pillName(preview.resultId)}`;
+    else { previewText = "Something new?"; previewTone = "mystery"; }
   }
-  const etaRarity = preview && preview.kind === "recipe" ? PILL_BY_ID[preview.resultId].rarity : preview && preview.kind === "identical" ? PILL_BY_ID[preview.resultId].rarity : null;
+  const etaRarity = preview && (preview.kind === "recipe" || preview.kind === "identical") ? PILL_BY_ID[preview.resultId].rarity : null;
 
   const start = () => {
     if (!a || !b) return;
     const r = act((s, t, rng) => startMachine(s, machine.id, a, b, t, rng));
     if (!r) return;
-    if (r.kind === "none") { toast("No Reaction. Both pills stay in your Vault.", "bad"); return; }
+    if (r.kind === "none") { sfx.error(); toast("No reaction. Your pills are safe.", "bad"); return; }
+    sfx.insert();
+    setTimeout(() => sfx.close(), 450);
     setPhase("inserting");
-    setTimeout(() => setPhase("idle"), 1100);
+    setTimeout(() => setPhase("idle"), 1200);
   };
-
   const collect = () => {
     if (phase === "opening") return;
     setPhase("opening");
+    sfx.close();
     setTimeout(() => {
       const rev = act((s, t) => collectMachine(s, machine.id, t));
       setPhase("idle");
       if (rev) setReveal({ kind: "machine", reveal: rev });
-    }, 700);
+    }, 600);
   };
 
   const progress = job ? Math.min(1, (now - job.startedAt) / (job.endsAt - job.startedAt)) : 0;
@@ -86,69 +110,76 @@ function MachineCard({ machine, index }: { machine: Machine; index: number }) {
 
   return (
     <div className={`machine ${status} ${phase}`}>
-      <div className="machine-top">
-        <div className="machine-plate">{label}</div>
-        <div className={`status-led ${status}`}><i />{status === "available" ? "Available" : status === "ready" ? "Ready" : "Working"}</div>
+      <div className="machine-cap">
+        <span className="machine-plate">Machine 0{index + 1}</span>
+        <span className="vents" aria-hidden><i /><i /><i /><i /></span>
+        <span className={`status-led ${status}`}><i />{status === "available" ? "Ready to mix" : status === "ready" ? "Done!" : "Working"}</span>
       </div>
 
-      <div className="machine-body">
+      <div className="machine-core">
+        <div className="pipe left" aria-hidden />
+        <div className="pipe right" aria-hidden />
         <div className="chamber">
           <div className="glass" />
           <div className="chamber-floor" />
-          <div className="vapor" />
+          <div className="bubbles" aria-hidden><i /><i /><i /><i /><i /></div>
           {job ? (
             <div className="chamber-contents">
-              {!ready && <div className="parents-in"><PillArt pillId={job.parentPillIds[0]} size={46} /><PillArt pillId={job.parentPillIds[1]} size={46} /></div>}
-              {ready && <div className="result-glow"><PillArt pillId={job.resultPillId} silhouette={!resultKnown} unknown={false} size={86} /></div>}
+              {phase === "inserting" ? (
+                <div className="drop-in"><PillArt pillId={job.parentPillIds[0]} size={64} /><PillArt pillId={job.parentPillIds[1]} size={64} /></div>
+              ) : !ready ? (
+                <div className="parents-in"><PillArt pillId={job.parentPillIds[0]} size={44} /><PillArt pillId={job.parentPillIds[1]} size={44} /></div>
+              ) : (
+                <div className="result-glow"><PillArt pillId={job.resultPillId} silhouette={!resultKnown} size={92} /></div>
+              )}
             </div>
           ) : (
             <div className="slots">
               <button className={`slot ${a ? "filled" : ""}`} onClick={() => setPicking("a")} aria-label="Choose pill A">
-                {a ? <PillArt pillId={a} size={72} /> : <span>Pill A</span>}
+                {a ? <PillArt pillId={a} size={76} /> : <span>+</span>}
               </button>
-              <span className="plus">+</span>
               <button className={`slot ${b ? "filled" : ""}`} onClick={() => setPicking("b")} aria-label="Choose pill B">
-                {b ? <PillArt pillId={b} size={72} /> : <span>Pill B</span>}
+                {b ? <PillArt pillId={b} size={76} /> : <span>+</span>}
               </button>
             </div>
           )}
-          <div className="shutter" />
+          <div className="iris" aria-hidden><i /><i /></div>
         </div>
-
-        <div className="console">
-          {!job && (
-            <>
-              <div className="readout">
-                {a && b ? <>{pillName(a)} + {pillName(b)}<br /><span className={preview?.kind === "none" ? "warn" : "muted"}>{previewText}</span></> : <span className="muted">Select two Known pills.</span>}
-                {etaRarity && <div className="muted small">Incubation ≈ {formatDuration(incubationMs(state, etaRarity))}</div>}
-              </div>
-              <button className="btn primary big" disabled={!a || !b} onClick={start}>START</button>
-              <span className="muted small">Costs no Charge</span>
-            </>
-          )}
-          {job && !ready && (
-            <>
-              <ProgressRing value={progress} size={78}><span className="mono">{Math.floor(progress * 100)}%</span></ProgressRing>
-              <div className="readout">
-                <div>Incubating <strong>{resultKnown ? PILL_BY_ID[job.resultPillId].name : "???"}</strong></div>
-                <div className="muted small">{RARITY_LABEL[job.resultRarity]} result · {formatDuration(job.endsAt - now)} left</div>
-              </div>
-              <button className="btn ghost" disabled={state.cash < cost} onClick={() => act((s, t) => speedUpMachine(s, machine.id, t))}>
-                Finish now · {money(cost)}
-              </button>
-            </>
-          )}
-          {job && ready && (
-            <>
-              <div className="readout"><strong>Incubation complete.</strong><div className="muted small">{resultKnown ? PILL_BY_ID[job.resultPillId].name : "Unknown result"}</div></div>
-              <button className="btn primary big pulse" onClick={collect}>OPEN</button>
-            </>
-          )}
-        </div>
+        <div className="gauge" aria-hidden><i style={{ transform: `rotate(${-120 + progress * 240}deg)` }} /></div>
       </div>
 
-      <PillPicker open={picking !== null} onClose={() => setPicking(null)} title={picking === "a" ? "Choose Pill A" : "Choose Pill B"}
-        other={picking === "a" ? b : a} onPick={(id) => (picking === "a" ? setA(id) : setB(id))} />
+      <div className="console">
+        {!job && (
+          <>
+            <div className="readout">
+              {a && b ? (
+                <><span className="pair">{pillName(a)} + {pillName(b)}</span><span className={`verdict ${previewTone}`}>{previewText}</span>
+                  {etaRarity && <span className="muted small">{clock(incubationMs(state, etaRarity))}</span>}</>
+              ) : <span className="muted">Tap the two slots to add pills</span>}
+            </div>
+            <button className="btn start" disabled={!a || !b || preview?.kind === "none"} onClick={start}>Start</button>
+          </>
+        )}
+        {job && !ready && (
+          <>
+            <div className="readout">
+              <span className="timer-big mono">{clock(job.endsAt - now)}</span>
+              <span className="muted small">{resultKnown ? `Making ${PILL_BY_ID[job.resultPillId].name}` : "Making something…"}</span>
+              <span className="bar thin"><span style={{ width: `${progress * 100}%` }} /></span>
+            </div>
+            <button className="btn ghost-dark small" disabled={state.cash < cost} onClick={() => act((s, t) => speedUpMachine(s, machine.id, t))}>Finish now · {money(cost)}</button>
+          </>
+        )}
+        {job && ready && (
+          <>
+            <div className="readout"><span className="timer-big">Ready!</span></div>
+            <button className="btn start pulse" onClick={collect}>Open</button>
+          </>
+        )}
+      </div>
+
+      <PillPicker open={picking !== null} onClose={() => setPicking(null)} title="Pick a pill"
+        other={picking === "a" ? b : a} onPick={(id) => { sfx.tap(); if (picking === "a") setA(id); else setB(id); }} />
     </div>
   );
 }
@@ -160,20 +191,22 @@ function Scanner({ goto }: { goto: (t: Tab) => void }) {
   const unlocked = scannerUnlocked(state);
   const unknowns = state.specimens.filter((x) => !x.identified);
   const { cashCost, chargeCost, outcomes } = BALANCE.scanner;
-  const total = Object.values(outcomes).reduce((a, b) => a + b, 0);
+  const total = Object.values(outcomes).reduce((x, y) => x + y, 0);
   const selSpec = unknowns.find((x) => x.id === sel);
+  const pct = (k: keyof typeof outcomes) => Math.round((outcomes[k] / total) * 100);
 
   const scan = () => {
     if (!selSpec || scanning) return;
     setScanning(true);
+    sfx.insert();
     setTimeout(() => {
       const r = act((s, t, rng) => scanSpecimen(s, selSpec.id, t, rng));
       setScanning(false);
       if (!r) return;
-      if (r.kind === "identify") toast(`Identified: ${pillName(r.pillId)}${r.isNew ? " — new discovery!" : ""}`, "good");
-      else if (r.kind === "clue") toast("Clue recorded in Notebook → Drafts.", "info");
-      else if (r.kind === "transform") toast(r.identified ? `The specimen transformed into ${pillName(r.pillId)}.` : "The specimen transformed into something else (?).", "info");
-      else toast("The specimen crumbled during the scan.", "bad");
+      if (r.kind === "identify") { sfx.reveal(); toast(`It's ${pillName(r.pillId)}!${r.isNew ? " New Pill!" : ""}`, "good"); }
+      else if (r.kind === "clue") { sfx.tap(); toast("Found a clue — saved to your Notebook.", "info"); }
+      else if (r.kind === "transform") { sfx.tap(); toast(r.identified ? `It changed into ${pillName(r.pillId)}!` : "It changed into something else…", "info"); }
+      else { sfx.error(); toast("It crumbled to dust.", "bad"); }
       setSel(null);
     }, 1400);
   };
@@ -181,44 +214,35 @@ function Scanner({ goto }: { goto: (t: Tab) => void }) {
   return (
     <section className={`scanner ${unlocked ? "" : "locked"} ${scanning ? "scanning" : ""}`}>
       <div className="scanner-head">
-        <div>
-          <h2>Scanner</h2>
-          <p className="muted small">Identify unlabeled ? specimens. Known ✓ pills can't be scanned.</p>
-        </div>
-        <div className="scanner-cost"><span>{money(cashCost)}</span><span>ϟ {chargeCost}</span></div>
+        <div><h2>Scanner</h2><p className="muted small">What's inside a <b className="q-chip">?</b> pill</p></div>
+        {unlocked && <div className="scanner-cost">{money(cashCost)} <span>ϟ{chargeCost}</span></div>}
       </div>
       {!unlocked ? (
-        <div className="locked-note">
-          <p>The Scanner is not installed yet.</p>
-          <button className="btn ghost" onClick={() => goto("hq")}>Install at HQ</button>
-        </div>
+        <button className="locked-note" onClick={() => goto("hq")}><span>🔒 Unlock the Scanner at HQ</span><span aria-hidden>→</span></button>
       ) : (
         <>
           <div className="scan-bed">
             <div className="scan-beam" />
-            {selSpec ? <PillArt pillId={selSpec.pillId} unknown star={selSpec.star} size={110} /> : <span className="muted">Place a ? specimen</span>}
+            {selSpec ? <PillArt pillId={selSpec.pillId} unknown size={120} /> : <span className="muted">{unknowns.length ? "Pick a ? pill below" : "No ? pills yet"}</span>}
           </div>
-          <div className="odds">
-            {(Object.keys(outcomes) as (keyof typeof outcomes)[]).map((k) => (
-              <div key={k} className={`odd odd-${k}`}><span>{{ identify: "Identify", clue: "Useful clue", transform: "Transform", destroy: "Destroy" }[k]}</span><b>{Math.round((outcomes[k] / total) * 100)}%</b></div>
-            ))}
+          <div className="odds-icons">
+            <span className="good">✓ Identify <b>{pct("identify")}%</b></span>
+            <span>✎ Clue <b>{pct("clue")}%</b></span>
+            <span>↻ Change <b>{pct("transform")}%</b></span>
+            <span className="warn">✕ Crumble <b>{pct("destroy")}%</b></span>
           </div>
-          {unknowns.length === 0 ? (
-            <p className="muted small">No ? specimens. Unlabeled parcels in Desk mail can contain them.</p>
-          ) : (
+          {unknowns.length > 0 ? (
             <div className="specimen-strip">
-              {unknowns.map((x, i) => (
-                <button key={x.id} className={`specimen ${sel === x.id ? "on" : ""}`} onClick={() => setSel(x.id)} disabled={!!x.reservedBy}>
-                  <PillArt pillId={x.pillId} unknown star={x.star} size={52} />
-                  <span className="mono small">? #{i + 1}</span>
-                </button>
+              {unknowns.map((x) => (
+                <PillCard key={x.id} pillId={x.pillId} unknown variant="compact" selected={sel === x.id} disabled={!!x.reservedBy}
+                  note={PILL_BY_ID[x.pillId].rarity === "common" ? undefined : `${PILL_BY_ID[x.pillId].rarity} reading`} onClick={() => { sfx.tap(); setSel(x.id); }} />
               ))}
             </div>
-          )}
-          <button className="btn primary" disabled={!selSpec || scanning || state.cash < cashCost || state.charge < chargeCost} onClick={scan}>
-            {scanning ? "Scanning…" : `SCAN · ${money(cashCost)} + ϟ${chargeCost}`}
+          ) : <p className="muted small">Unlabeled mail parcels can contain ? pills. Known ✓ pills can't be scanned.</p>}
+          <button className="btn primary wide" disabled={!selSpec || scanning || state.cash < cashCost || state.charge < chargeCost} onClick={scan}>
+            {scanning ? "Scanning…" : "Scan"}
           </button>
-          {selSpec && <p className="muted small">Rarity reading: <RarityTag rarity={PILL_BY_ID[selSpec.pillId].rarity} /></p>}
+          {selSpec && <p className="muted small center">Signal: <RarityTag rarity={PILL_BY_ID[selSpec.pillId].rarity} /></p>}
         </>
       )}
     </section>

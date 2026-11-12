@@ -49,8 +49,8 @@ function faceShapes(face: PillFace | "question"): { d: string; fill?: boolean }[
     case "wink": out.push({ d: dot(-12, -5, 3), fill: true }, { d: "M7,-6 Q12,0 17,-6" }); break;
   }
   switch (face.brows) {
-    case "angry": both((x, m) => `M${x - 6 * m},-16 L${x + 5 * m},-11`); break;
-    case "worried": both((x, m) => `M${x - 6 * m},-11 L${x + 5 * m},-15`); break;
+    case "angry": both((x, m) => `M${x - 6 * m},-11 L${x + 5 * m},-16`); break;
+    case "worried": both((x, m) => `M${x - 6 * m},-16 L${x + 5 * m},-11`); break;
     case "raised": both((x) => `M${x - 6},-14 Q${x},-19 ${x + 6},-14`); break;
   }
   switch (face.mouth) {

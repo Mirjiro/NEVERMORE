@@ -33,43 +33,49 @@ export const ANONYMOUS_SENDERS: Sender[] = [
   { name: "The Gentleman in Gray", kind: "Anonymous", payoutMult: 1.4 },
 ];
 
-/** {pills} is replaced with a readable list of what's requested. */
-export const ORDER_TEMPLATES: Record<Sender["kind"], { title: string; body: string }[]> = {
+/** Short, memorable order titles keyed by the main requested pill's first Type. */
+export const ORDER_TITLES: Record<string, string[]> = {
+  happy: ["A Little Happiness", "Sunshine, Please", "Smile Supply", "Good Mood Delivery"],
+  sad: ["A Good Cry", "Rainy Day Kit", "For the Blues", "Sad Songs Only"],
+  angry: ["Righteous Fury", "Hot Under the Collar", "Grr, Urgently", "Let Off Steam"],
+  calm: ["Deep Breath", "Quiet Afternoon", "Slow Down", "Still Waters"],
+  fear: ["Spooky Season", "Goosebumps Wanted", "A Little Scared", "Things in the Dark"],
+  excited: ["Big Day!", "Let's Gooo", "Party Starter", "Can't Sit Still"],
+};
+
+/** One short, characterful line from the requester. No pill lists — the checklist shows those. */
+export const ORDER_LINES: Record<Sender["kind"], string[]> = {
   Customer: [
-    { title: "Small household order", body: "Hello! Could you send {pills}? My week has been a lot." },
-    { title: "Birthday party supplies", body: "Throwing a surprise party. Need {pills} by the weekend, please." },
-    { title: "For the commute", body: "The 7:42 train is unbearable. {pills}, if you'd be so kind." },
+    "It's my birthday tomorrow. I could use some cheering up.",
+    "My week has been a lot.",
+    "The 7:42 train is unbearable.",
+    "My cat has been judging me.",
+    "First day at a new job!",
   ],
   "Private client": [
-    { title: "Personal request", body: "I'm told you are discreet and excellent. I require {pills}." },
-    { title: "A delicate matter", body: "An important dinner is coming up. Please prepare {pills}." },
+    "I hear you're discreet.",
+    "An important dinner is coming up.",
+    "Wrap it nicely, please.",
   ],
   Company: [
-    { title: "Corporate purchase order", body: "Per our Q3 morale initiative, please ship {pills}. Invoice attached." },
-    { title: "Team offsite", body: "Our team retreat needs {pills}. Kindly mark the parcel 'NOT SNACKS'." },
+    "For our team offsite. Mark the box 'NOT SNACKS'.",
+    "Morale is low. The memo says 'fix it'.",
+    "Quarterly review is Friday.",
   ],
   Researcher: [
-    { title: "Sample request", body: "For an ongoing study I need {pills}. Clean samples, please." },
-    { title: "Field trial", body: "Requesting {pills} for a field trial. Results will be shared." },
+    "For a study. Very serious. Mostly.",
+    "My hypothesis needs feelings.",
+    "Clean samples, please.",
   ],
-  University: [
-    { title: "Departmental requisition", body: "The department requires {pills} for the spring seminar." },
-  ],
-  Hospital: [
-    { title: "Ward supply request", body: "The night ward is running low. Please send {pills}." },
-  ],
-  Government: [
-    { title: "Official requisition", body: "Under Directive 12-B (Morale), the office requires {pills}." },
-    { title: "Public mood program", body: "For the upcoming public holiday, please supply {pills}." },
-  ],
+  University: ["For the spring seminar on feelings.", "The students are restless."],
+  Hospital: ["The night ward is running low.", "For the long shifts."],
+  Government: ["Under Directive 12-B (Morale).", "For the public holiday."],
   Anonymous: [
-    { title: "CONFIDENTIAL", body: "No questions. {pills}. Payment is generous. Burn this note." },
-    { title: "CONFIDENTIAL", body: "I know what your Machine can do. Send {pills}. You will be well paid." },
-    { title: "CONFIDENTIAL", body: "A collector's request: {pills}. Leave the parcel at the usual place." },
+    "No questions. Burn this note.",
+    "I know what your Machine can do.",
+    "Leave it at the usual place.",
   ],
-  Organization: [
-    { title: "Club order", body: "Our members voted. We require {pills}. Thank you kindly!" },
-  ],
+  Organization: ["Our members voted.", "For the big tournament."],
 };
 
 export const FRONTIER_HINT_LINES = [

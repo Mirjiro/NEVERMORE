@@ -7,7 +7,7 @@
 import { BALANCE } from "../config/balance";
 import { EFFECTS, UPGRADES, UPGRADE_BY_ID } from "../config/upgrades";
 import {
-  ANONYMOUS_SENDERS, FRONTIER_HINT_LINES, MAIL_TEMPLATES, NEWSPAPERS, ORDER_TEMPLATES, REACTIONS, SENDERS, WELCOME,
+  ANONYMOUS_SENDERS, FRONTIER_HINT_LINES, MAIL_TEMPLATES, NEWSPAPERS, ORDER_LINES, ORDER_TITLES, REACTIONS, SENDERS, WELCOME,
 } from "../data/content";
 import type { Sender } from "../data/content";
 import { COMMON_IDS, PILLS, PILL_BY_ID, PILL_IDS, RARITY_LABEL, TYPE_LABEL, pillsOfRarity } from "../data/pills";
@@ -86,6 +86,31 @@ export function ownedCounts(s: GameState, pillId: string) {
     byStar: [0, 1, 2].map((st) => mine.filter((x) => x.star === st).length) as [number, number, number],
   };
 }
+
+export interface Stack { pillId: string; star: Star; count: number; reserved: number; specimenIds: string[] }
+
+/**
+ * Vault view: physically owned, identified specimens grouped by pill + exact star tier.
+ * Purely a view — individual specimen records are untouched.
+ */
+export function vaultStacks(s: GameState): Stack[] {
+  const map = new Map<string, Stack>();
+  for (const sp of s.specimens) {
+    if (!sp.identified) continue;
+    const key = `${sp.pillId}|${sp.star}`;
+    const st = map.get(key) ?? { pillId: sp.pillId, star: sp.star, count: 0, reserved: 0, specimenIds: [] };
+    st.count++;
+    if (sp.reservedBy) st.reserved++;
+    st.specimenIds.push(sp.id);
+    map.set(key, st);
+  }
+  const order = new Map(PILL_IDS.map((id, i) => [id, i]));
+  return [...map.values()].sort((a, b) => (order.get(a.pillId)! - order.get(b.pillId)!) || a.star - b.star);
+}
+
+/** Count of available (unreserved) specimens with exactly this star tier. */
+export const countExact = (s: GameState, pillId: string, star: Star) =>
+  s.specimens.filter((x) => x.pillId === pillId && x.identified && !x.reservedBy && x.star === star).length;
 
 function addSpecimen(s: GameState, pillId: string, star: Star, identified: boolean, source: SpecimenSource, now: number): Specimen {
   pillDef(pillId);
@@ -557,19 +582,19 @@ function makeOrder(s: GameState, now: number, rng: Rng, forced?: { sender: Sende
     }
     lines = [...merged.values()];
   }
-  const tpl = pick(rng, ORDER_TEMPLATES[sender.kind]);
-  const pills = lines.map((l) => `${l.quantity}× ${PILL_BY_ID[l.pillId].name}${l.minStar ? " " + "★".repeat(l.minStar) : ""}`).join(", ");
+  const mainType = PILL_BY_ID[lines[0].pillId].types[0];
+  const confidentialFile = confidential || sender.kind === "Anonymous";
   return {
     id: newId(s, "ord"),
     sender: sender.name,
     senderKind: sender.kind,
-    title: tpl.title,
-    description: tpl.body.replace("{pills}", pills),
+    title: confidentialFile ? "Confidential" : pick(rng, ORDER_TITLES[mainType]),
+    description: pick(rng, ORDER_LINES[sender.kind]),
     lines,
     payout: orderPayout(s, lines, sender, confidential, rng),
     createdAt: now,
     expiresAt: now + randRange(rng, cfg.deadlineMs),
-    confidential: confidential || sender.kind === "Anonymous",
+    confidential: confidentialFile,
     status: "open",
   };
 }
@@ -638,7 +663,8 @@ function deliverReaction(s: GameState, orderId: string, now: number, rng: Rng) {
       const repeat = makeOrder(s, now, rng);
       repeat.sender = snd.name;
       repeat.senderKind = snd.kind;
-      repeat.title = "Repeat order";
+      repeat.title = "Back for More";
+      repeat.description = "That last batch was perfect. Again, please!";
       s.orders.push(repeat);
     }
   }

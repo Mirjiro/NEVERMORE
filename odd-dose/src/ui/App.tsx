@@ -22,6 +22,7 @@ export function App() {
   const { state, now, toasts } = useGame();
   const [tab, setTab] = useState<Tab>(() => (localStorage.getItem("oddDose.tab") as Tab) || "desk");
   const [notebook, setNotebook] = useState(false);
+  const [machinePill, setMachinePill] = useState<string | null>(null);
   useEffect(() => {
     try { localStorage.setItem("oddDose.tab", tab); } catch { /* ignore */ }
     window.scrollTo({ top: 0 });
@@ -59,8 +60,8 @@ export function App() {
 
       <main className="screen" key={tab}>
         {tab === "desk" && <DeskScreen />}
-        {tab === "lab" && <LabScreen goto={setTab} />}
-        {tab === "vault" && <VaultScreen goto={setTab} />}
+        {tab === "lab" && <LabScreen goto={setTab} prefill={machinePill} clearPrefill={() => setMachinePill(null)} />}
+        {tab === "vault" && <VaultScreen goto={setTab} useInMachine={(id) => { setMachinePill(id); setTab("lab"); }} />}
         {tab === "hq" && <HQScreen />}
       </main>
 

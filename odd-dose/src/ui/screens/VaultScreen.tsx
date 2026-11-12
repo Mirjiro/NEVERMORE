@@ -1,184 +1,226 @@
-import { useState } from "react";
-import { PILLS, PILL_BY_ID } from "../../data/pills";
+import { useMemo, useState } from "react";
+import { PILLS, PILL_BY_ID, RARITY_LABEL } from "../../data/pills";
 import {
-  collectCopy, copierMaxBatch, copierQuote, countAvailable, isKnown, ownedCounts, speedUpCopy, speedUpCost, startCopy,
+  backdoorUnlocked, collectCopy, marketPrice, copierMaxBatch, copierQuote, countExact, isKnown, sellPill, sellPrice, speedUpCopy, speedUpCost,
+  startCopy, vaultStacks,
 } from "../../engine/game";
 import { RARITIES } from "../../engine/types";
 import type { Rarity, Star } from "../../engine/types";
 import { useGame } from "../../store/GameContext";
 import type { Tab } from "../App";
 import { PillArt } from "../components/PillArt";
-import { ProgressRing, RarityTag, Sheet, Stars, TypeChips, formatDuration, money, pillName } from "../components/common";
+import { PillCard } from "../components/PillCard";
+import { RarityTag, Sheet, TypeChips, formatDuration, money, pillName } from "../components/common";
+import { sfx } from "../sfx";
 
-type Filter = "all" | "owned" | Rarity;
+type Filter = "all" | "starred" | Rarity;
 
-export function VaultScreen({ goto }: { goto: (t: Tab) => void }) {
+export function VaultScreen({ goto, useInMachine }: { goto: (t: Tab) => void; useInMachine: (pillId: string) => void }) {
   const { state } = useGame();
   const [filter, setFilter] = useState<Filter>("all");
-  const [open, setOpen] = useState<string | null>(null);
-  const known = new Set(state.known);
-  const unknownSpecimens = state.specimens.filter((x) => !x.identified);
-  const list = PILLS.filter((p) => {
-    if (filter === "all") return true;
-    if (filter === "owned") return known.has(p.id) && ownedCounts(state, p.id).total > 0;
-    return known.has(p.id) && p.rarity === filter;
-  });
+  const [open, setOpen] = useState<{ pillId: string; star: Star } | null>(null);
+  const [copier, setCopier] = useState<string | null | "pick">(null);
+  const stacks = useMemo(() => vaultStacks(state), [state]);
+  const unknowns = state.specimens.filter((x) => !x.identified);
+  const total = stacks.reduce((a, s) => a + s.count, 0);
+  const rarities = RARITIES.filter((r) => stacks.some((s) => PILL_BY_ID[s.pillId].rarity === r));
+  const shown = stacks.filter((s) => filter === "all" || (filter === "starred" ? s.star > 0 : PILL_BY_ID[s.pillId].rarity === filter));
 
   return (
     <div className="vault">
       <div className="screen-head">
         <h1>Vault</h1>
-        <p className="muted">{known.size} / {PILLS.length} Known ✓ · {state.specimens.filter((x) => x.identified).length} pills stored</p>
+        <p className="muted">{total} pill{total === 1 ? "" : "s"} in storage</p>
       </div>
 
-      <CopierPanel onPick={() => setFilter("owned")} />
+      <CopierBench onMake={() => setCopier("pick")} />
 
-      {unknownSpecimens.length > 0 && (
-        <button className="unknown-banner" onClick={() => goto("lab")}>
-          <div className="unk-pills">{unknownSpecimens.slice(0, 4).map((x) => <PillArt key={x.id} pillId={x.pillId} unknown size={40} />)}</div>
-          <div><strong>{unknownSpecimens.length} unidentified ? specimen{unknownSpecimens.length > 1 ? "s" : ""}</strong><br /><span className="muted small">Take them to the Lab Scanner →</span></div>
-        </button>
+      {(rarities.length > 1 || stacks.some((s) => s.star > 0)) && (
+        <div className="chips-row">
+          <button className={`chip ${filter === "all" ? "on" : ""}`} onClick={() => setFilter("all")}>All</button>
+          {stacks.some((s) => s.star > 0) && <button className={`chip star-chip ${filter === "starred" ? "on" : ""}`} onClick={() => setFilter("starred")}>★ Starred</button>}
+          {rarities.map((r) => <button key={r} className={`chip ${filter === r ? "on" : ""}`} onClick={() => setFilter(r)}>{RARITY_LABEL[r]}</button>)}
+        </div>
       )}
 
-      <div className="chips-row">
-        {(["all", "owned", ...RARITIES] as Filter[]).map((f) => (
-          <button key={f} className={`chip ${filter === f ? "on" : ""}`} onClick={() => setFilter(f)}>{f[0].toUpperCase() + f.slice(1)}</button>
+      <div className="shelf-grid">
+        {shown.map((s, i) => (
+          <div key={`${s.pillId}|${s.star}`} className="shelf-slot" style={{ animationDelay: `${Math.min(i, 12) * 30}ms` }}>
+            <PillCard pillId={s.pillId} star={s.star} qty={s.count} onClick={() => { sfx.tap(); setOpen({ pillId: s.pillId, star: s.star }); }}
+              note={s.reserved ? (s.reserved === s.count ? "In Machine" : `${s.reserved} in Machine`) : undefined} />
+          </div>
         ))}
+        {filter === "all" && unknowns.length > 0 && (
+          <div className="shelf-slot">
+            <PillCard pillId={unknowns[0].pillId} unknown qty={unknowns.length} note="Scan in Lab" onClick={() => goto("lab")} />
+          </div>
+        )}
       </div>
+      {stacks.length === 0 && unknowns.length === 0 && (
+        <div className="empty-vault">
+          <PillArt pillId="calm" silhouette size={90} />
+          <p>Your Vault is empty.</p>
+          <span className="muted small">Make pills with the Copier or the Lab Machine.</span>
+        </div>
+      )}
 
-      <div className="vault-grid">
-        {list.map((p) => {
-          const isK = known.has(p.id);
-          const idx = PILLS.indexOf(p) + 1;
-          if (!isK) {
-            return (
-              <div key={p.id} className="vault-card unknown" aria-label="Undiscovered pill">
-                <span className="no mono">#{String(idx).padStart(2, "0")}</span>
-                <PillArt pillId={p.id} silhouette size={84} />
-                <strong>???</strong>
-                <span className="muted small">Undiscovered</span>
-              </div>
-            );
-          }
-          const c = ownedCounts(state, p.id);
-          const best = state.discovery[p.id]?.bestStar ?? 0;
-          return (
-            <button key={p.id} className={`vault-card r-${p.rarity} ${c.total === 0 ? "empty" : ""}`} onClick={() => setOpen(p.id)}>
-              <span className="no mono">#{String(idx).padStart(2, "0")}</span>
-              {best > 0 && <span className="best-star"><Stars star={best} /></span>}
-              <PillArt pillId={p.id} size={84} />
-              <strong>{p.name}</strong>
-              <RarityTag rarity={p.rarity} />
-              <span className="qty mono">×{c.total}{c.reserved ? <em> ({c.reserved} in use)</em> : null}</span>
-            </button>
-          );
-        })}
-      </div>
-      {list.length === 0 && <p className="muted center">Nothing here yet.</p>}
-
-      <PillDetail pillId={open} onClose={() => setOpen(null)} />
+      {open && (
+        <PillDetail pillId={open.pillId} star={open.star} onClose={() => setOpen(null)}
+          onMachine={() => { setOpen(null); useInMachine(open.pillId); }}
+          onCopy={() => { setOpen(null); setCopier(open.pillId); }} />
+      )}
+      <CopierSheet target={copier} onClose={() => setCopier(null)} onPick={(id) => setCopier(id)} />
     </div>
   );
 }
 
-function CopierPanel({ onPick }: { onPick: () => void }) {
+function CopierBench({ onMake }: { onMake: () => void }) {
   const { state, now, act, setReveal } = useGame();
   const job = state.copier;
-  const ready = job && job.endsAt <= now;
+  const ready = !!job && job.endsAt <= now;
+  const progress = job ? Math.min(1, (now - job.startedAt) / (job.endsAt - job.startedAt)) : 0;
   const collect = () => {
     const r = act((s, t) => collectCopy(s, t));
-    if (r) setReveal({ kind: "copier", pillId: r.pillId, quantity: r.quantity, stars: r.stars });
+    if (r) { sfx.ready(); setReveal({ kind: "copier", pillId: r.pillId, quantity: r.quantity, stars: r.stars }); }
   };
   return (
-    <section className={`copier ${job ? (ready ? "ready" : "working") : "idle"}`}>
-      <div className="copier-machine">
-        <div className="copier-slot">{job ? <PillArt pillId={job.pillId} size={58} /> : <span className="muted small">empty</span>}</div>
-        <div className="copier-belt"><i /><i /><i /><i /><i /></div>
+    <section className={`bench ${job ? (ready ? "ready" : "working") : "idle"}`}>
+      <div className="bench-machine" aria-hidden>
+        <div className="bench-hopper">{job && <PillArt pillId={job.pillId} size={50} />}</div>
+        <div className="bench-belt"><span style={{ width: `${progress * 100}%` }} /></div>
+        <div className="bench-tray">{job && Array.from({ length: Math.min(6, Math.ceil(progress * 6)) }).map((_, i) => <PillArt key={i} pillId={job.pillId} size={22} />)}</div>
       </div>
-      <div className="copier-info">
-        <div className="copier-title"><h2>Copier</h2><span className="muted small">Batch max {copierMaxBatch(state)}</span></div>
-        {!job && <p className="muted small">Open any Known pill below to copy it in batches. Runs alongside the Lab.</p>}
-        {!job && <button className="btn ghost small" onClick={onPick}>Show owned pills</button>}
+      <div className="bench-info">
+        <h2>Copier</h2>
+        {!job && <><p className="muted small">Copy any pill you've discovered.</p><button className="btn gold" onClick={onMake}>Make pills</button></>}
         {job && !ready && (
-          <div className="copier-run">
-            <ProgressRing value={(now - job.startedAt) / (job.endsAt - job.startedAt)} size={52}><span className="mono small">{job.quantity}</span></ProgressRing>
-            <div>
-              <div>Copying {job.quantity} × <strong>{pillName(job.pillId)}</strong></div>
-              <div className="muted small">{formatDuration(job.endsAt - now)} left</div>
-            </div>
-            <button className="btn ghost small" disabled={state.cash < speedUpCost(job.endsAt, now)} onClick={() => act((s, t) => speedUpCopy(s, t))}>
-              Finish · {money(speedUpCost(job.endsAt, now))}
+          <>
+            <p><strong>{job.quantity} × {pillName(job.pillId)}</strong></p>
+            <p className="timer mono">{formatDuration(job.endsAt - now)}</p>
+            <button className="btn ghost-dark small" disabled={state.cash < speedUpCost(job.endsAt, now)} onClick={() => act((s, t) => speedUpCopy(s, t))}>
+              Finish now · {money(speedUpCost(job.endsAt, now))}
             </button>
-          </div>
+          </>
         )}
         {job && ready && (
-          <div className="copier-run">
-            <div><strong>{job.quantity} × {pillName(job.pillId)}</strong> ready.</div>
-            <button className="btn primary pulse" onClick={collect}>COLLECT</button>
-          </div>
+          <>
+            <p><strong>Ready!</strong> {job.quantity} × {pillName(job.pillId)}</p>
+            <button className="btn gold pulse" onClick={collect}>Collect</button>
+          </>
         )}
       </div>
     </section>
   );
 }
 
-function PillDetail({ pillId, onClose }: { pillId: string | null; onClose: () => void }) {
+function PillDetail({ pillId, star, onClose, onMachine, onCopy }: { pillId: string; star: Star; onClose: () => void; onMachine: () => void; onCopy: () => void }) {
+  const { state, act, toast } = useGame();
+  const p = PILL_BY_ID[pillId];
+  const stack = vaultStacks(state).find((s) => s.pillId === pillId && s.star === star);
+  const count = stack?.count ?? 0;
+  const available = countExact(state, pillId, star);
+  const d = state.discovery[pillId];
+  const canSell = backdoorUnlocked(state) && available > 0;
+  const price = sellPrice(state, pillId, star);
+  const allVariants = state.specimens.filter((x) => x.pillId === pillId && x.identified).length;
+
+  return (
+    <Sheet open onClose={onClose} title="" className={`detail r-${p.rarity} ${star ? `star-${star}` : ""}`}>
+      <div className="detail-stage">
+        <div className="detail-glow" />
+        <PillArt pillId={pillId} size={220} />
+      </div>
+      <div className="detail-title">
+        <h2>{p.name}{star > 0 && <span className={`pcard-stars s${star}`}>{"★".repeat(star)}</span>}</h2>
+        <div className="detail-tags"><RarityTag rarity={p.rarity} /><TypeChips types={p.types} /></div>
+        <p className="own">You own <strong>×{count}</strong>{stack?.reserved ? <span className="muted"> · {stack.reserved} in Machine</span> : null}</p>
+        <p className="flavor">“{p.flavor}”</p>
+      </div>
+
+      <div className="detail-actions">
+        <button className="btn primary" disabled={available < 1} onClick={onMachine}>Use in Machine</button>
+        <button className="btn ghost" onClick={onCopy}>Make more</button>
+        {backdoorUnlocked(state) && (
+          <button className="btn ghost" disabled={!canSell} onClick={() => { const r = act((s, t) => sellPill(s, pillId, star, t)); if (r) { sfx.coin(); toast(`Sold for ${money(r.price)}`, "good"); if (count <= 1) onClose(); } }}>
+            Sell 1 · {money(price)}
+          </button>
+        )}
+      </div>
+
+      {p.parents && (
+        <div className="recipe-strip">
+          <span className="muted small">Recipe</span>
+          <span className="recipe-pair">
+            {isKnown(state, p.parents[0]) ? <PillArt pillId={p.parents[0]} size={34} /> : <PillArt pillId={p.parents[0]} silhouette size={34} />}
+            <b>{isKnown(state, p.parents[0]) ? pillName(p.parents[0]) : "???"}</b>
+            <span className="muted">+</span>
+            {isKnown(state, p.parents[1]) ? <PillArt pillId={p.parents[1]} size={34} /> : <PillArt pillId={p.parents[1]} silhouette size={34} />}
+            <b>{isKnown(state, p.parents[1]) ? pillName(p.parents[1]) : "???"}</b>
+          </span>
+        </div>
+      )}
+
+      <details className="more">
+        <summary>Details</summary>
+        <dl>
+          {d && <><dt>Discovered</dt><dd>{new Date(d.at).toLocaleDateString()} · {d.how}</dd></>}
+          {d && d.bestStar > 0 && <><dt>Best ever</dt><dd className="stars">{"★".repeat(d.bestStar)}</dd></>}
+          <dt>All copies</dt><dd>{allVariants}</dd>
+          <dt>Market value</dt><dd>{money(marketPrice(state, pillId, star))}</dd>
+        </dl>
+      </details>
+    </Sheet>
+  );
+}
+
+function CopierSheet({ target, onClose, onPick }: { target: string | null | "pick"; onClose: () => void; onPick: (id: string) => void }) {
   const { state, now, act, toast } = useGame();
   const max = copierMaxBatch(state);
   const [qty, setQty] = useState(11);
-  if (!pillId) return <Sheet open={false} onClose={onClose}>{null}</Sheet>;
-  const p = PILL_BY_ID[pillId];
-  const c = ownedCounts(state, pillId);
-  const d = state.discovery[pillId];
-  const q = Math.max(1, Math.min(qty, max));
-  const quote = copierQuote(state, pillId, q);
-  const busy = !!state.copier;
-  const copy = () => {
-    const r = act((s, t, rng) => startCopy(s, pillId, q, t, rng));
-    if (r) { toast(`Copier started: ${q} × ${p.name}`, "good"); onClose(); }
-  };
+  if (target === null) return null;
+  const busy = state.copier;
 
-  return (
-    <Sheet open onClose={onClose} title={p.name} className={`detail r-${p.rarity}`}>
-      <div className="detail-hero">
-        <PillArt pillId={pillId} size={190} star={d?.bestStar as Star} />
-        <div className="detail-meta">
-          <RarityTag rarity={p.rarity} />
-          <TypeChips types={p.types} />
-          <p className="flavor">“{p.flavor}”</p>
+  if (target === "pick") {
+    const known = PILLS.filter((p) => isKnown(state, p.id));
+    return (
+      <Sheet open onClose={onClose} title="What should we make?" className="copier-sheet">
+        <div className="pick-grid">
+          {known.map((p) => <PillCard key={p.id} pillId={p.id} variant="compact" note={money(copierQuote(state, p.id, 1).cost) + " each"} onClick={() => { sfx.tap(); onPick(p.id); }} />)}
         </div>
-      </div>
-      <dl className="facts">
-        <div><dt>Owned</dt><dd>{c.total}</dd></div>
-        <div><dt>Available</dt><dd>{countAvailable(state, pillId)}</dd></div>
-        <div><dt>Base · ★ · ★★</dt><dd className="mono">{c.byStar[0]} · {c.byStar[1]} · {c.byStar[2]}</dd></div>
-        <div><dt>Best ever</dt><dd>{d?.bestStar ? <Stars star={d.bestStar} /> : "Base"}</dd></div>
-        <div className="wide"><dt>Recipe</dt><dd>{p.parents ? `${isKnown(state, p.parents[0]) ? pillName(p.parents[0]) : "???"} + ${isKnown(state, p.parents[1]) ? pillName(p.parents[1]) : "???"}` : "Base Type — a fundamental emotion"}</dd></div>
-        <div className="wide"><dt>Discovered</dt><dd>{d ? `${d.how} · ${new Date(d.at).toLocaleDateString()}` : "—"}</dd></div>
-      </dl>
+      </Sheet>
+    );
+  }
 
-      <section className="copy-box">
-        <h3>Manufacture with the Copier</h3>
-        {busy ? (
-          <p className="muted">The Copier is busy ({formatDuration(state.copier!.endsAt - now)} left).</p>
-        ) : (
-          <>
-            <div className="qty-row">
-              <button className="btn ghost" onClick={() => setQty(Math.max(1, q - 1))}>−</button>
-              <input type="range" min={1} max={max} value={q} onChange={(e) => setQty(Number(e.target.value))} aria-label="Batch quantity" />
-              <button className="btn ghost" onClick={() => setQty(Math.min(max, q + 1))}>+</button>
-              <span className="qty-val mono">×{q}</span>
-            </div>
-            <div className="quote">
-              <span>Cost <strong>{money(quote.cost)}</strong></span>
-              <span>Time <strong>{formatDuration(quote.ms)}</strong></span>
-              <span>Charge <strong>0</strong></span>
-            </div>
-            <button className="btn primary big" disabled={state.cash < quote.cost} onClick={copy}>COPY {q}</button>
-            <p className="muted small">Every copy rolls its own star chance.</p>
-          </>
-        )}
-      </section>
+  const p = PILL_BY_ID[target];
+  const q = Math.max(1, Math.min(qty, max));
+  const quote = copierQuote(state, target, q);
+  const make = () => {
+    const r = act((s, t, rng) => startCopy(s, target, q, t, rng));
+    if (r) { sfx.insert(); toast(`Copier started: ${q} × ${p.name}`, "good"); onClose(); }
+  };
+  const presets = [1, 5, 11, max].filter((v, i, a) => v <= max && a.indexOf(v) === i);
+  return (
+    <Sheet open onClose={onClose} title="Copier" className="copier-sheet">
+      <div className="copy-hero">
+        <PillArt pillId={target} size={130} />
+        <div><h2>{p.name}</h2><RarityTag rarity={p.rarity} /></div>
+      </div>
+      {busy ? (
+        <p className="muted center">The Copier is busy for {formatDuration(busy.endsAt - now)}.</p>
+      ) : (
+        <>
+          <div className="qty-big">
+            <button className="qty-btn" onClick={() => setQty(Math.max(1, q - 1))} aria-label="Fewer">−</button>
+            <span className="qty-num mono">{q}</span>
+            <button className="qty-btn" onClick={() => setQty(Math.min(max, q + 1))} aria-label="More">+</button>
+          </div>
+          <div className="presets">{presets.map((v) => <button key={v} className={`chip ${q === v ? "on" : ""}`} onClick={() => setQty(v)}>{v === max && v !== 11 ? `Max ${v}` : v}</button>)}</div>
+          <button className="btn gold big wide" disabled={state.cash < quote.cost} onClick={make}>
+            Make {q} · {money(quote.cost)}
+          </button>
+          <p className="muted small center">Ready in {formatDuration(quote.ms)} · each copy might come out ★</p>
+        </>
+      )}
     </Sheet>
   );
 }
