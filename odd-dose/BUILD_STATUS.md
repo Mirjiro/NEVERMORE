@@ -161,3 +161,12 @@ Snapshot before this pass: git tag `odd-dose-v1.1.1-snapshot`. Full details in `
 ### Next / known gaps
 - Final pill PNGs and equipment art (placeholders are CSS/SVG; registries ready).
 - Browser checks are scripts in a scratch folder, not yet a committed Playwright suite.
+
+---
+
+## v1.3 — Splash & sign-in
+- Startup flow in `src/ui/Gate.tsx`: Splash → Welcome back (remembered) or Sign in → game.
+- Profiles in `src/store/profiles.ts`; `GameProvider` now takes the player's `saveKey`.
+- Verified in browser: login validation, old save inherited by first player (4,321g kept), remembered across reload,
+  Switch player → fresh 600g save for a new name, one-tap back to the first player with progress intact, splash skip.
+- Gap: real accounts / cross-device sync need a backend (not built).

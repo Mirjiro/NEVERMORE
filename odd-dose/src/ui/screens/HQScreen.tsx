@@ -47,7 +47,7 @@ function EquipArt({ id }: { id: string }) {
 }
 
 export function HQScreen() {
-  const { state, act, toast, replaceState, resetGame } = useGame();
+  const { state, act, toast, replaceState, resetGame, player, signOut } = useGame();
   const [view, setView] = useState<"hq" | "backdoor">("hq");
   const [saveCode, setSaveCode] = useState("");
   const [confirmReset, setConfirmReset] = useState(false);
@@ -95,7 +95,7 @@ export function HQScreen() {
         </div>
         <div className="office-title">
           <div className="company">ODD DOSE <span>· {RANKS[Math.min(lv, 10) - 1]}</span></div>
-          <div className="worth">{gold(value.total)} <small>company worth</small></div>
+          <div className="worth">{gold(value.total)} <small>company worth · run by {player}</small></div>
           <div className="lvl-line"><span className="lvl-pill">Level {lv}</span>
             <span className="lvl-track"><span style={{ width: `${lp.need ? (lp.into / lp.need) * 100 : 100}%` }} /></span>
           </div>
@@ -170,6 +170,10 @@ export function HQScreen() {
 
       <details className="panel-details">
         <summary>Settings</summary>
+        <div className="settings-row">
+          <span>Player · <b>{player}</b></span>
+          <button className="btn ghost small" onClick={signOut}>Switch player</button>
+        </div>
         <div className="settings-row">
           <span>Sound</span>
           <button className="btn ghost small" onClick={() => { setMuted(!muted); setMutedState(!muted); if (muted) sfx.tap(); }}>{muted ? "🔇 Off" : "🔊 On"}</button>

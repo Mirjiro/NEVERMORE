@@ -3,9 +3,9 @@ import type { GameState } from "../engine/types";
 
 export const SAVE_KEY = "oddDose.save.v1";
 
-export function loadGame(now: number): GameState {
+export function loadGame(now: number, key = SAVE_KEY): GameState {
   try {
-    const raw = localStorage.getItem(SAVE_KEY);
+    const raw = localStorage.getItem(key);
     if (raw) return parseSave(raw);
   } catch {
     /* storage blocked or corrupt — start fresh */
@@ -23,17 +23,17 @@ export function parseSave(raw: string): GameState {
   return sanitize({ ...base, ...data, stats: { ...base.stats, ...data.stats }, market: { ...base.market, ...data.market } });
 }
 
-export function saveGame(s: GameState) {
+export function saveGame(s: GameState, key = SAVE_KEY) {
   try {
-    localStorage.setItem(SAVE_KEY, JSON.stringify(s));
+    localStorage.setItem(key, JSON.stringify(s));
   } catch {
     /* ignore quota / privacy mode */
   }
 }
 
-export function clearSave() {
+export function clearSave(key = SAVE_KEY) {
   try {
-    localStorage.removeItem(SAVE_KEY);
+    localStorage.removeItem(key);
   } catch {
     /* ignore */
   }

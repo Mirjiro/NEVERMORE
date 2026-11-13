@@ -45,6 +45,7 @@ Keep `BUILD_STATUS.md` (what exists / what's next) and `CHANGELOG.md` (what chan
 | Store | `src/store/GameContext.tsx` (1 s real-time tick, autosave), `persistence.ts` (load/migrate/export) |
 | UI | `src/ui/App.tsx`, `screens/` (Desk, Lab, Vault, HQ, Backdoor), `components/` (PillCard, PillArt, Notebook, RevealOverlay…) |
 | Desk shipping flow | `src/ui/shipFlow.ts` (pure, tested) |
+| Startup / sign-in | `src/ui/Gate.tsx` (splash → welcome/sign-in), `src/store/profiles.ts` (device-local players, one save slot per name) |
 | Sound | `src/ui/sfx.ts` (generated Web Audio, mute stored in localStorage) |
 | Styles | `src/styles/app.css` (base) + `src/styles/v12.css` (v1.2 atmosphere layer, loaded last) |
 | No-spoiler rule | `incubationView()` in `src/engine/game.ts` — UI must never read `job.resultPillId`/`resultStar` directly |

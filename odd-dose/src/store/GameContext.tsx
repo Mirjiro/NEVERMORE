@@ -25,15 +25,18 @@ interface Ctx {
   setReveal: (r: RevealInfo | null) => void;
   replaceState: (s: GameState) => void;
   resetGame: () => void;
+  /** Signed-in player name and sign-out (device-local profiles). */
+  player: string;
+  signOut: () => void;
 }
 
 const GameCtx = createContext<Ctx | null>(null);
 
 const clone = (s: GameState): GameState => structuredClone(s);
 
-export function GameProvider({ children }: { children: ReactNode }) {
+export function GameProvider({ children, saveKey, player, onSignOut }: { children: ReactNode; saveKey: string; player: string; onSignOut: () => void }) {
   const [state, setState] = useState<GameState>(() => {
-    const s = loadGame(Date.now());
+    const s = loadGame(Date.now(), saveKey);
     advance(s, Date.now());
     return s;
   });
@@ -48,7 +51,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     const prevLevel = companyLevel(ref.current);
     ref.current = s;
     setState(s);
-    saveGame(s);
+    saveGame(s, saveKey);
     const lv = companyLevel(s);
     if (lv > prevLevel) queueReveal({ kind: "level", level: lv });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -95,9 +98,9 @@ export function GameProvider({ children }: { children: ReactNode }) {
       advance(s, t);
       ref.current = s;
       setState(s);
-      if (t - lastSave > 5000) { saveGame(s); lastSave = t; }
+      if (t - lastSave > 5000) { saveGame(s, saveKey); lastSave = t; }
     }, 1000);
-    const flush = () => saveGame(ref.current);
+    const flush = () => saveGame(ref.current, saveKey);
     window.addEventListener("pagehide", flush);
     document.addEventListener("visibilitychange", flush);
     return () => {
@@ -109,16 +112,16 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
   const replaceState = useCallback((s: GameState) => { advance(s, Date.now()); commit(s); }, [commit]);
   const resetGame = useCallback(() => {
-    clearSave();
+    clearSave(saveKey);
     const s = createInitialState(Date.now());
     ref.current = s;
     setState(s);
-    saveGame(s);
+    saveGame(s, saveKey);
   }, []);
 
   const value = useMemo(
-    () => ({ state, now, act, toast, toasts, reveal, setReveal, replaceState, resetGame }),
-    [state, now, act, toast, toasts, reveal, setReveal, replaceState, resetGame],
+    () => ({ state, now, act, toast, toasts, reveal, setReveal, replaceState, resetGame, player, signOut: () => { saveGame(ref.current, saveKey); onSignOut(); } }),
+    [state, now, act, toast, toasts, reveal, setReveal, replaceState, resetGame, player, saveKey, onSignOut],
   );
   return <GameCtx.Provider value={value}>{children}</GameCtx.Provider>;
 }

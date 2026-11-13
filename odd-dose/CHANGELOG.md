@@ -1,5 +1,16 @@
 # ODD DOSE — Changelog
 
+## v1.3 — Splash screen & player sign-in
+- **Splash screen** on launch: pills drop in, ODD DOSE logo, "Feel something new.", brass loading bar; tap to skip
+  (~2.4 s; shorter with reduced motion).
+- **Device-local sign-in:** enter a player name (2–16 chars). "Remember me on this device" (on by default) skips
+  sign-in next time with a "Welcome back, NAME" card; otherwise the name lasts for the browser session.
+- Each player name has its own save slot (`oddDose.save.v1:<name>`, case-insensitive). Players already used on the
+  device appear as one-tap chips. HQ → Settings shows the player and has **Switch player**.
+- Existing progress is kept: the first player to sign in inherits the pre-login save.
+- No passwords and no server — saves don't sync between devices (would need a backend).
+- Tests: +7 (`tests/profiles.test.ts`) — 62 total.
+
 ## v1.2 — Atmosphere, graphics & game feel
 _Snapshot of the previous version: git tag `odd-dose-v1.1.1-snapshot`._
 
