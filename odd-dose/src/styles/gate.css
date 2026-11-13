@@ -40,3 +40,4 @@
 .gate-known { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
 .gate-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .gate-note { font-size: 12px; color: var(--ink-3); text-align: center; margin-top: 4px; }
+.gate-loading { font-family: var(--serif); font-style: italic; font-size: 18px; color: #d9c6a4; animation: breathe 1.4s ease-in-out infinite; }

@@ -1,5 +1,16 @@
 # ODD DOSE — Changelog
 
+## v1.3.1 — Fix: sign-in not remembered
+- **Bug:** the remembered player (and saves) lived only in the page's browser storage, which the claude.ai viewer
+  can clear or block (e.g. mobile app, private windows) — so the game forgot the player.
+- **Fix:** on claude.ai the remembered player and every player's save are also kept in the viewer's private
+  account storage (`db` + `user` capabilities, `data/users/<id>/`). On launch the splash waits briefly for the
+  account, uses its remembered player, and loads the newer of the device save and the account save.
+  Account saves are written a few seconds after actions (and when the page is hidden), packed to stay small.
+  Works across devices signed in to the same claude.ai account. Browser storage remains the offline fallback.
+- Tests: +8 (`tests/cloud.test.ts`) — 70 total. Browser check: storage wiped between opens → "Welcome back",
+  Gold and a running Copier job restored from the account.
+
 ## v1.3 — Splash screen & player sign-in
 - **Splash screen** on launch: pills drop in, ODD DOSE logo, "Feel something new.", brass loading bar; tap to skip
   (~2.4 s; shorter with reduced motion).

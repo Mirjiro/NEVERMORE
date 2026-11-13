@@ -34,9 +34,15 @@ const GameCtx = createContext<Ctx | null>(null);
 
 const clone = (s: GameState): GameState => structuredClone(s);
 
-export function GameProvider({ children, saveKey, player, onSignOut }: { children: ReactNode; saveKey: string; player: string; onSignOut: () => void }) {
+export function GameProvider({ children, saveKey, player, onSignOut, initialState, cloudSaver }: {
+  children: ReactNode; saveKey: string; player: string; onSignOut: () => void;
+  /** Preloaded save (e.g. the newer of device and account copies). */
+  initialState?: GameState;
+  /** Account sync (claude.ai). Absent outside claude.ai. */
+  cloudSaver?: { schedule: (s: GameState) => void; flush: () => void } | null;
+}) {
   const [state, setState] = useState<GameState>(() => {
-    const s = loadGame(Date.now(), saveKey);
+    const s = initialState ?? loadGame(Date.now(), saveKey);
     advance(s, Date.now());
     return s;
   });
@@ -52,6 +58,7 @@ export function GameProvider({ children, saveKey, player, onSignOut }: { childre
     ref.current = s;
     setState(s);
     saveGame(s, saveKey);
+    cloudSaver?.schedule(s);
     const lv = companyLevel(s);
     if (lv > prevLevel) queueReveal({ kind: "level", level: lv });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -100,7 +107,10 @@ export function GameProvider({ children, saveKey, player, onSignOut }: { childre
       setState(s);
       if (t - lastSave > 5000) { saveGame(s, saveKey); lastSave = t; }
     }, 1000);
-    const flush = () => saveGame(ref.current, saveKey);
+    const flush = () => {
+      saveGame(ref.current, saveKey);
+      if (document.visibilityState === "hidden") { cloudSaver?.schedule(ref.current); cloudSaver?.flush(); }
+    };
     window.addEventListener("pagehide", flush);
     document.addEventListener("visibilitychange", flush);
     return () => {
@@ -117,10 +127,12 @@ export function GameProvider({ children, saveKey, player, onSignOut }: { childre
     ref.current = s;
     setState(s);
     saveGame(s, saveKey);
+    cloudSaver?.schedule(s);
+    cloudSaver?.flush();
   }, []);
 
   const value = useMemo(
-    () => ({ state, now, act, toast, toasts, reveal, setReveal, replaceState, resetGame, player, signOut: () => { saveGame(ref.current, saveKey); onSignOut(); } }),
+    () => ({ state, now, act, toast, toasts, reveal, setReveal, replaceState, resetGame, player, signOut: () => { saveGame(ref.current, saveKey); cloudSaver?.schedule(ref.current); cloudSaver?.flush(); onSignOut(); } }),
     [state, now, act, toast, toasts, reveal, setReveal, replaceState, resetGame, player, saveKey, onSignOut],
   );
   return <GameCtx.Provider value={value}>{children}</GameCtx.Provider>;

@@ -169,4 +169,5 @@ Snapshot before this pass: git tag `odd-dose-v1.1.1-snapshot`. Full details in `
 - Profiles in `src/store/profiles.ts`; `GameProvider` now takes the player's `saveKey`.
 - Verified in browser: login validation, old save inherited by first player (4,321g kept), remembered across reload,
   Switch player → fresh 600g save for a new name, one-tap back to the first player with progress intact, splash skip.
-- Gap: real accounts / cross-device sync need a backend (not built).
+- v1.3.1: remembered player + saves now also stored in the viewer's claude.ai account (cross-device on claude.ai).
+- Gap: outside claude.ai there is no account — device storage only.
