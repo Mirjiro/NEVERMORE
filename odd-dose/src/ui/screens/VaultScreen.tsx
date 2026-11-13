@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
+import { BALANCE } from "../../config/balance";
 import { PILLS, PILL_BY_ID, RARITY_LABEL } from "../../data/pills";
 import {
-  backdoorUnlocked, collectCopy, marketPrice, copierMaxBatch, copierQuote, countExact, isKnown, sellPill, sellPrice, speedUpCopy, speedUpCost,
+  backdoorUnlocked, canFreeCopy, collectCopy, collectFreeCopy, marketPrice, quickSell, quickSellPrice, startFreeCopy, copierMaxBatch, copierQuote, countExact, isKnown, sellPrice, speedUpCopy, speedUpCost,
   startCopy, vaultStacks,
 } from "../../engine/game";
 import { RARITIES } from "../../engine/types";
@@ -34,6 +35,7 @@ export function VaultScreen({ goto, useInMachine }: { goto: (t: Tab) => void; us
       </div>
 
       <CopierBench onMake={() => setCopier("pick")} />
+      <StarterTray />
 
       {(rarities.length > 1 || stacks.some((s) => s.star > 0)) && (
         <div className="chips-row">
@@ -122,6 +124,41 @@ function CopierBench({ onMake }: { onMake: () => void }) {
   );
 }
 
+/** The Copier's Starter tray: free small batches of the six starter pills. Always available — the way back from 0g. */
+function StarterTray() {
+  const { state, now, act, toast, setReveal } = useGame();
+  const job = state.freeCopier ?? null;
+  const ready = !!job && job.endsAt <= now;
+  const { quantity, ms } = BALANCE.copier.freeStarter;
+  const starters = PILLS.filter((p) => canFreeCopy(p.id));
+  return (
+    <section className={`starter-tray ${job ? (ready ? "ready" : "working") : "idle"}`}>
+      <div className="st-head">
+        <div><h3>Starter tray</h3><span className="muted small">Free · {quantity} pills · {formatDuration(ms)}</span></div>
+        {job && !ready && <span className="mono st-timer">{formatDuration(job.endsAt - now)}</span>}
+        {job && ready && (
+          <button className="btn gold small pulse" onClick={() => {
+            const r = act((s, t) => collectFreeCopy(s, t));
+            if (r) setReveal({ kind: "copier", pillId: r.pillId, quantity: r.quantity, stars: r.stars });
+          }}>Collect {job.quantity} × {pillName(job.pillId)}</button>
+        )}
+      </div>
+      {job ? (
+        <div className="st-run">{Array.from({ length: job.quantity }).map((_, i) => <PillArt key={i} pillId={job.pillId} size={34} />)}<span className="st-bar"><i style={{ width: `${Math.min(100, ((now - job.startedAt) / (job.endsAt - job.startedAt)) * 100)}%` }} /></span></div>
+      ) : (
+        <div className="st-picks">
+          {starters.map((p) => (
+            <button key={p.id} className="st-pick" aria-label={`Make ${quantity} free ${p.name}`} onClick={() => {
+              const r = act((s, t, rng) => startFreeCopy(s, p.id, t, rng));
+              if (r) { sfx.insert(); toast(`Free batch: ${quantity} × ${p.name}`, "good"); }
+            }}><PillArt pillId={p.id} size={40} /><span>{p.name}</span></button>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
 function PillDetail({ pillId, star, onClose, onMachine, onCopy }: { pillId: string; star: Star; onClose: () => void; onMachine: () => void; onCopy: () => void }) {
   const { state, act, toast } = useGame();
   const p = PILL_BY_ID[pillId];
@@ -129,8 +166,10 @@ function PillDetail({ pillId, star, onClose, onMachine, onCopy }: { pillId: stri
   const count = stack?.count ?? 0;
   const available = countExact(state, pillId, star);
   const d = state.discovery[pillId];
-  const canSell = backdoorUnlocked(state) && available > 0;
-  const price = sellPrice(state, pillId, star);
+  const [sellQty, setSellQty] = useState(1);
+  const [confirming, setConfirming] = useState(false);
+  const qty = Math.max(1, Math.min(sellQty, available));
+  const unit = quickSellPrice(pillId, star);
   const allVariants = state.specimens.filter((x) => x.pillId === pillId && x.identified).length;
 
   return (
@@ -149,12 +188,40 @@ function PillDetail({ pillId, star, onClose, onMachine, onCopy }: { pillId: stri
       <div className="detail-actions">
         <button className="btn primary" disabled={available < 1} onClick={onMachine}>Use in Machine</button>
         <button className="btn ghost" onClick={onCopy}>Make more</button>
-        {backdoorUnlocked(state) && (
-          <button className="btn ghost" disabled={!canSell} onClick={() => { const r = act((s, t) => sellPill(s, pillId, star, t)); if (r) { sfx.coin(); toast(`Sold for ${gold(r.price)}`, "good"); if (count <= 1) onClose(); } }}>
-            Sell 1 · {gold(price)}
-          </button>
-        )}
       </div>
+
+      <section className="quick-sell">
+        <div className="qs-head">
+          <h3>Quick sell</h3>
+          <span className="muted small">{gold(unit)} each{star > 0 ? ` (${"★".repeat(star)})` : ""}</span>
+        </div>
+        {available < 1 ? (
+          <p className="muted small">{stack?.reserved ? "These pills are in a Machine right now." : "None left to sell."}</p>
+        ) : !confirming ? (
+          <div className="qs-row">
+            <div className="qs-stepper">
+              <button className="qty-btn sm" onClick={() => setSellQty(Math.max(1, qty - 1))} aria-label="Sell fewer">−</button>
+              <span className="mono">{qty}</span>
+              <button className="qty-btn sm" onClick={() => setSellQty(Math.min(available, qty + 1))} aria-label="Sell more">+</button>
+              {available > 1 && <button className="chip" onClick={() => setSellQty(available)}>All {available}</button>}
+            </div>
+            <button className="btn ghost" onClick={() => setConfirming(true)}>Sell · {gold(unit * qty)}</button>
+          </div>
+        ) : (
+          <div className="qs-confirm">
+            <p>Sell <b>{qty} × {p.name}{star > 0 ? " " + "★".repeat(star) : ""}</b> for <b className="mono">{gold(unit * qty)}</b>?</p>
+            <div className="qs-row">
+              <button className="btn ghost" onClick={() => setConfirming(false)}>Cancel</button>
+              <button className="btn gold" onClick={() => {
+                const r = act((s) => quickSell(s, pillId, star, qty));
+                setConfirming(false);
+                if (r) { sfx.coin(); toast(`Sold ${r.sold} for ${gold(r.payout)}`, "good"); setSellQty(1); if (count - r.sold <= 0) onClose(); }
+              }}>Confirm</button>
+            </div>
+          </div>
+        )}
+        {backdoorUnlocked(state) && <p className="muted small">BACKDOOR pays more (~{gold(sellPrice(state, pillId, star))} each right now).</p>}
+      </section>
 
       {p.parents && (
         <div className="recipe-strip">

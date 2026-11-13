@@ -171,3 +171,10 @@ Snapshot before this pass: git tag `odd-dose-v1.1.1-snapshot`. Full details in `
   Switch player → fresh 600g save for a new name, one-tap back to the first player with progress intact, splash skip.
 - v1.3.1: remembered player + saves now also stored in the viewer's claude.ai account (cross-device on claude.ai).
 - Gap: outside claude.ai there is no account — device storage only.
+
+---
+
+## v1.4 — Economy correction
+- Charge removed; Quick Sell (Vault); free Starter tray (`state.freeCopier`); order payout floor (1.6× Copier cost).
+- Verified: 87 tests; browser run from an old 0g save with Charge data → no Charge shown, free tray → collect →
+  quick sell 2 × Calm for 4g, order shows "Copier cost", no console errors.

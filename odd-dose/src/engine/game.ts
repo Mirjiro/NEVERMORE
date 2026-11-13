@@ -172,11 +172,6 @@ function spendCash(s: GameState, amount: number) {
   if (s.cash < amount) throw new GameError(`Not enough Gold (need ${gold(amount)}).`);
   s.cash -= amount;
 }
-function spendCharge(s: GameState, amount: number, now: number) {
-  if (s.charge < amount) throw new GameError(`Not enough Charge (need ${amount}).`);
-  if (s.charge >= BALANCE.charge.max) s.chargeUpdatedAt = now; // regen starts once below max
-  s.charge -= amount;
-}
 
 export const fmt = (n: number) => Math.round(n).toLocaleString("en-US");
 const typeList = (p: PillDef) => p.types.map((t) => TYPE_LABEL[t]).join(" + ");
@@ -190,8 +185,6 @@ export function createInitialState(now: number, rng: Rng = Math.random): GameSta
     lastTickAt: now,
     idCounter: 0,
     cash: BALANCE.start.cash,
-    charge: BALANCE.start.charge,
-    chargeUpdatedAt: now,
     xp: 0,
     popularity: 5,
     popularityUpdatedAt: now,
@@ -200,6 +193,7 @@ export function createInitialState(now: number, rng: Rng = Math.random): GameSta
     specimens: [],
     machines: [],
     copier: null,
+    freeCopier: null,
     upgrades: {},
     orders: [],
     news: [],
@@ -236,21 +230,9 @@ export function createInitialState(now: number, rng: Rng = Math.random): GameSta
 
 // ================================================================ time advance
 
-/** Bring the world up to `now`: charge, popularity, orders, news, mail, market, reactions. */
+/** Bring the world up to `now`: popularity, orders, news, mail, market, reactions. */
 export function advance(s: GameState, now: number, rng: Rng = Math.random): void {
   if (now < s.lastTickAt) now = s.lastTickAt; // clock went backwards: ignore
-  // Charge
-  const reg = BALANCE.charge.regenEveryMs;
-  if (s.charge >= BALANCE.charge.max) {
-    s.charge = BALANCE.charge.max;
-    s.chargeUpdatedAt = now;
-  } else {
-    const gained = Math.floor((now - s.chargeUpdatedAt) / reg);
-    if (gained > 0) {
-      s.charge = Math.min(BALANCE.charge.max, s.charge + gained);
-      s.chargeUpdatedAt = s.charge >= BALANCE.charge.max ? now : s.chargeUpdatedAt + gained * reg;
-    }
-  }
   // Popularity decay (gentle)
   const hours = (now - s.popularityUpdatedAt) / 3_600_000;
   if (hours > 0) {
@@ -323,10 +305,6 @@ export function advance(s: GameState, now: number, rng: Rng = Math.random): void
   s.lastTickAt = now;
 }
 
-export function msUntilNextCharge(s: GameState, now: number): number | null {
-  if (s.charge >= BALANCE.charge.max) return null;
-  return Math.max(0, s.chargeUpdatedAt + BALANCE.charge.regenEveryMs - now);
-}
 
 // ================================================================ machine
 
@@ -454,6 +432,51 @@ export function startCopy(s: GameState, pillId: string, quantity: number, now: n
   return s.copier;
 }
 
+/** The six starter Commons can always be copied for free in small batches — the guaranteed way back from 0g. */
+export const canFreeCopy = (pillId: string) => COMMON_IDS.includes(pillId);
+
+export function startFreeCopy(s: GameState, pillId: string, now: number, rng: Rng = Math.random): CopierJob {
+  const def = pillDef(pillId);
+  if (s.freeCopier) throw new GameError("The Starter tray is already busy.");
+  if (!canFreeCopy(pillId)) throw new GameError("Free batches are for the six starter pills only.");
+  const { quantity, ms } = BALANCE.copier.freeStarter;
+  const stars: Star[] = [];
+  for (let i = 0; i < quantity; i++) stars.push(rollStarFor(rng, def.rarity));
+  s.freeCopier = { jobId: newId(s, "cp"), pillId, quantity, stars, cost: 0, startedAt: now, endsAt: now + ms, free: true };
+  s.stats.copierRuns++;
+  return s.freeCopier;
+}
+
+export function collectFreeCopy(s: GameState, now: number): { pillId: string; quantity: number; stars: Star[] } {
+  const job = s.freeCopier;
+  if (!job) throw new GameError("Nothing to collect.");
+  if (now < job.endsAt) throw new GameError("Still copying.");
+  s.freeCopier = null; // claim exactly once
+  for (const st of job.stars) addSpecimen(s, job.pillId, st, true, "copier", now);
+  s.stats.pillsMade += job.quantity;
+  return { pillId: job.pillId, quantity: job.quantity, stars: job.stars };
+}
+
+// ================================================================ quick sell (Vault)
+
+/** Fixed Gold for one pill of this exact star tier, sold straight from the Vault. */
+export function quickSellPrice(pillId: string, star: Star): number {
+  return BALANCE.quickSell.price[pillDef(pillId).rarity] * BALANCE.quickSell.starMult[star];
+}
+
+/** Sell `quantity` available pills of this exact star tier. Never touches other tiers or reserved pills; pays once. */
+export function quickSell(s: GameState, pillId: string, star: Star, quantity: number): { sold: number; payout: number } {
+  pillDef(pillId);
+  if (!Number.isInteger(quantity) || quantity < 1) throw new GameError("Choose how many to sell.");
+  const avail = s.specimens.filter((x) => x.pillId === pillId && x.star === star && x.identified && !x.reservedBy);
+  if (avail.length < quantity) throw new GameError("You don't have that many to sell (pills in use can't be sold).");
+  const take = new Set(avail.sort((a, b) => a.acquiredAt - b.acquiredAt).slice(0, quantity).map((x) => x.id));
+  s.specimens = s.specimens.filter((x) => !take.has(x.id));
+  const payout = quickSellPrice(pillId, star) * quantity;
+  s.cash += payout;
+  return { sold: quantity, payout };
+}
+
 export function collectCopy(s: GameState, now: number): { pillId: string; quantity: number; stars: Star[] } {
   const job = s.copier;
   if (!job) throw new GameError("Nothing to collect.");
@@ -489,11 +512,9 @@ export function scanSpecimen(s: GameState, specimenId: string, now: number, rng:
   if (!sp) throw new GameError("Specimen not found.");
   if (sp.identified || isKnown(s, sp.pillId)) throw new GameError("Known ✓ pills can't be scanned.");
   if (sp.reservedBy) throw new GameError("That specimen is in use.");
-  const { cashCost, chargeCost, outcomes } = BALANCE.scanner;
+  const { cashCost, outcomes } = BALANCE.scanner;
   if (s.cash < cashCost) throw new GameError(`Not enough Gold (need ${gold(cashCost)}).`);
-  if (s.charge < chargeCost) throw new GameError(`Not enough Charge (need ${chargeCost}).`);
   spendCash(s, cashCost);
-  spendCharge(s, chargeCost, now);
   s.stats.scans++;
   const kind = SCAN_OUTCOMES[weightedIndex(rng, SCAN_OUTCOMES.map((k) => outcomes[k]))];
   const def = pillDef(sp.pillId);
@@ -551,7 +572,14 @@ export function orderPayout(s: GameState, lines: OrderLine[], sender: Sender, co
   const pop = 1 + (s.popularity / BALANCE.company.popularity.max) * BALANCE.company.popularity.payoutBonusAtMax;
   const mult = randRange(rng, BALANCE.orders.payoutMult) * sender.payoutMult * pop * EFFECTS.payoutMult(upgradeTier(s, "sales")) *
     (confidential ? BALANCE.orders.confidentialPayoutBonus : 1);
-  return Math.max(5, Math.round((base * mult) / 5) * 5);
+  const copyCost = lines.reduce((sum, l) => sum + l.quantity * BALANCE.copier.costPerPill[PILL_BY_ID[l.pillId].rarity], 0);
+  const floor = Math.ceil((copyCost * BALANCE.orders.minPayoutOverCopyCost) / 5) * 5;
+  return Math.max(5, floor, Math.round((base * mult) / 5) * 5);
+}
+
+/** What it would cost to make an order's pills with the Copier (Base copies). */
+export function orderCopyCost(lines: OrderLine[]): number {
+  return lines.reduce((sum, l) => sum + l.quantity * BALANCE.copier.costPerPill[PILL_BY_ID[l.pillId].rarity], 0);
 }
 
 function makeOrder(s: GameState, now: number, rng: Rng, forced?: { sender: Sender; lines: OrderLine[] }): Order {
@@ -910,7 +938,11 @@ export function fireList(s: GameState): { pillId: string; change: number }[] {
 /** Repair a loaded save so invariants hold (no orphan reservations, no invalid pills, etc.). */
 export function sanitize(s: GameState): GameState {
   s.cash = Math.max(0, Number.isFinite(s.cash) ? s.cash : 0);
-  s.charge = Math.min(BALANCE.charge.max, Math.max(0, Number.isFinite(s.charge) ? s.charge : 0));
+  if (s.freeCopier === undefined) s.freeCopier = null;
+  // Charge was removed in v1.4: drop it from older saves.
+  const legacy = s as GameState & { charge?: unknown; chargeUpdatedAt?: unknown };
+  delete legacy.charge;
+  delete legacy.chargeUpdatedAt;
   s.known = [...new Set(s.known.filter((id) => PILL_BY_ID[id]))];
   s.specimens = s.specimens.filter((x) => PILL_BY_ID[x.pillId]);
   const seen = new Set<string>();

@@ -202,7 +202,7 @@ function Scanner({ goto }: { goto: (t: Tab) => void }) {
   const [scanning, setScanning] = useState(false);
   const unlocked = scannerUnlocked(state);
   const unknowns = state.specimens.filter((x) => !x.identified);
-  const { cashCost, chargeCost, outcomes } = BALANCE.scanner;
+  const { cashCost, outcomes } = BALANCE.scanner;
   const total = Object.values(outcomes).reduce((x, y) => x + y, 0);
   const selSpec = unknowns.find((x) => x.id === sel);
   const pct = (k: keyof typeof outcomes) => Math.round((outcomes[k] / total) * 100);
@@ -227,7 +227,7 @@ function Scanner({ goto }: { goto: (t: Tab) => void }) {
     <section className={`scanner ${unlocked ? "" : "locked"} ${scanning ? "scanning" : ""}`}>
       <div className="scanner-head">
         <div><h2>Scanner</h2><p className="muted small">What's inside a <b className="q-chip">?</b> pill</p></div>
-        {unlocked && <div className="scanner-cost">{gold(cashCost)} <span>ϟ{chargeCost}</span></div>}
+        {unlocked && <div className="scanner-cost">{gold(cashCost)} per scan</div>}
       </div>
       {!unlocked ? (
         <button className="locked-note" onClick={() => goto("hq")}><span>🔒 Unlock the Scanner at HQ</span><span aria-hidden>→</span></button>
@@ -251,7 +251,7 @@ function Scanner({ goto }: { goto: (t: Tab) => void }) {
               ))}
             </div>
           ) : <p className="muted small">Unlabeled mail parcels can contain ? pills. Known ✓ pills can't be scanned.</p>}
-          <button className="btn primary wide" disabled={!selSpec || scanning || state.cash < cashCost || state.charge < chargeCost} onClick={scan}>
+          <button className="btn primary wide" disabled={!selSpec || scanning || state.cash < cashCost} onClick={scan}>
             {scanning ? "Scanning…" : "Scan"}
           </button>
           {selSpec && <p className="muted small center">Signal: <RarityTag rarity={PILL_BY_ID[selSpec.pillId].rarity} /></p>}

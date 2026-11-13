@@ -13,15 +13,8 @@ export const BALANCE = {
   // ---------------------------------------------------------------- start
   start: {
     cash: 600,
-    charge: 100,
     copiesOfEachCommon: 2,
     machines: 1,
-  },
-
-  // ---------------------------------------------------------------- charge
-  charge: {
-    max: 100,
-    regenEveryMs: 3 * MIN, // 1 Charge every 3 minutes
   },
 
   // ---------------------------------------------------------------- machine
@@ -59,6 +52,17 @@ export const BALANCE = {
       secret: 240 * MIN,
     } as Record<Rarity, number>,
     minBatchMs: 10 * SEC,
+    /** Free recovery batches of the six starter Commons: always available, never cost Gold. */
+    freeStarter: { quantity: 3, ms: 2 * MIN },
+  },
+
+  // ---------------------------------------------------------------- quick sell (Vault)
+  /** Fixed Gold paid per pill when selling straight from the Vault. Deliberately below contract
+   *  rewards, BACKDOOR bids and Copier costs, so copying to quick-sell always loses Gold. */
+  quickSell: {
+    price: { common: 2, rare: 18, epic: 88, legendary: 440, secret: 2400 } as Record<Rarity, number>,
+    /** Multipliers for [Base, ★, ★★]. */
+    starMult: [1, 5, 30] as [number, number, number],
   },
 
   // ---------------------------------------------------------------- stars
@@ -74,7 +78,6 @@ export const BALANCE = {
   // ---------------------------------------------------------------- scanner
   scanner: {
     cashCost: 250,
-    chargeCost: 25,
     outcomes: { identify: 35, clue: 30, transform: 20, destroy: 15 },
   },
 
@@ -100,6 +103,8 @@ export const BALANCE = {
     frontierChance: 0.3,
     quantity: { common: [2, 6], rare: [1, 3], epic: [1, 2], legendary: [1, 1], secret: [1, 1] } as Record<Rarity, [number, number]>,
     reactionDelayMs: [2 * MIN, 8 * MIN] as [number, number],
+    /** Every order pays at least this multiple of what the Copier charges to make its pills. */
+    minPayoutOverCopyCost: 1.6,
   },
 
   // ---------------------------------------------------------------- news & mail

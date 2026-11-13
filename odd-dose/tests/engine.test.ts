@@ -98,13 +98,11 @@ describe("breeding", () => {
 });
 
 describe("machine", () => {
-  it("7+9. returns both parents, adds one pill, costs no Charge", () => {
+  it("7+9. returns both parents, adds one pill, costs nothing", () => {
     const s = fresh();
-    s.charge = 0;
     const before = s.specimens.length;
     const r = startMachine(s, "machine_1", "happy", "sad", T0);
     expect(r.kind).toBe("started");
-    expect(s.charge).toBe(0);
     expect(s.cash).toBe(BALANCE.start.cash);
     expect(availableSpecimens(s, "happy").length).toBe(1); // one reserved
     expect(() => collectMachine(s, "machine_1", T0 + 1000)).toThrow(GameError);
@@ -210,14 +208,14 @@ describe("scanner", () => {
     const happy = s.specimens.find((x) => x.pillId === "happy")!;
     expect(() => scanSpecimen(s, happy.id, T0)).toThrow(/Known/);
   });
-  it("14. costs $250 + 25 Charge and follows outcome odds", () => {
+  it("14. costs 250g (no Charge) and follows outcome odds", () => {
     const s = withUnknown();
     const r = scanSpecimen(clone(s) as GameState, "unk1", T0, seeded(1));
     expect(r).toBeTruthy();
     const one = clone(s);
     scanSpecimen(one, "unk1", T0, seeded(2));
     expect(one.cash).toBe(BALANCE.start.cash - 250);
-    expect(one.charge).toBe(75);
+    expect("charge" in one).toBe(false);
     const counts: Record<string, number> = { identify: 0, clue: 0, transform: 0, destroy: 0 };
     const rng = seeded(9);
     const N = 6000;
@@ -230,10 +228,12 @@ describe("scanner", () => {
     expect(counts.transform / N).toBeCloseTo(0.2, 1);
     expect(counts.destroy / N).toBeCloseTo(0.15, 1);
   });
-  it("outcomes have the right effects; can't scan without charge", () => {
+  it("outcomes have the right effects; can't scan without Gold", () => {
     const s = withUnknown();
-    s.charge = 10;
-    expect(() => scanSpecimen(s, "unk1", T0)).toThrow(/Charge/);
+    s.cash = 100;
+    expect(() => scanSpecimen(s, "unk1", T0)).toThrow(/Gold/);
+    expect(s.cash).toBe(100);
+    s.cash = BALANCE.start.cash;
     expect(s.cash).toBe(BALANCE.start.cash);
     // identify (roll 0 → identify)
     const a = withUnknown();
@@ -283,15 +283,14 @@ describe("orders & shipping", () => {
   });
 });
 
-describe("charge", () => {
-  it("regenerates 1 per 3 minutes up to max, never negative", () => {
-    const s = fresh();
-    s.charge = 10;
-    s.chargeUpdatedAt = T0;
-    advance(s, T0 + 9 * 60_000 + 5);
-    expect(s.charge).toBe(13);
+describe("Charge removed", () => {
+  it("old saves with Charge load cleanly and the field is dropped", () => {
+    const old = { ...fresh(), charge: 37, chargeUpdatedAt: T0 } as GameState & { charge: number };
+    const s = sanitize(JSON.parse(JSON.stringify(old)));
+    expect("charge" in s).toBe(false);
+    expect("chargeUpdatedAt" in s).toBe(false);
     advance(s, T0 + 1e9);
-    expect(s.charge).toBe(100);
+    expect("charge" in s).toBe(false);
   });
 });
 

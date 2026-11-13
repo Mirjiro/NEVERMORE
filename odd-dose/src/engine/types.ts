@@ -73,6 +73,8 @@ export interface CopierJob {
   cost: number;
   startedAt: number;
   endsAt: number;
+  /** Free starter batch (no Gold cost). */
+  free?: boolean;
 }
 
 export interface OrderLine {
@@ -181,8 +183,6 @@ export interface GameState {
   lastTickAt: number;
   idCounter: number;
   cash: number;
-  charge: number;
-  chargeUpdatedAt: number;
   xp: number;
   popularity: number;
   popularityUpdatedAt: number;
@@ -193,6 +193,8 @@ export interface GameState {
   specimens: Specimen[];
   machines: Machine[];
   copier: CopierJob | null;
+  /** The Copier's Starter tray: free batches of the six starter Commons, independent of paid batches. */
+  freeCopier?: CopierJob | null;
   upgrades: Record<string, number>;
   orders: Order[];
   news: NewsItem[];

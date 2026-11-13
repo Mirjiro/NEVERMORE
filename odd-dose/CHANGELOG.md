@@ -1,5 +1,19 @@
 # ODD DOSE — Changelog
 
+## v1.4 — Remove Charge & fix the Gold economy
+- **Charge removed** everywhere (header, Scanner, regeneration, config, messages). Scanner now costs only 250g.
+  No Gold costs were raised. Older saves load fine; their Charge fields are dropped.
+- **Quick Sell** in the Vault pill card, from Level 1: pick a quantity (or All), see the exact payout, confirm.
+  Sells only that exact star tier, never pills inside a Machine, pays once. Fixed prices (common 2g, rare 18g,
+  epic 88g, legendary 440g, secret 2400g; ★ ×5, ★★ ×30) — below contracts, BACKDOOR and Copier cost.
+- **Starter tray** on the Copier: free batch of 3 of any starter Common every 2 minutes. Runs alongside paid
+  Copier batches, so it is always available — the guaranteed way back from 0g.
+- **Contracts:** every order now pays at least 1.6× what the Copier charges to make it; the order shows its
+  Copier cost next to the reward. Early orders ask only for Known pills or one-step discoveries.
+- **Tests:** +17 economy tests (`tests/economy.test.ts`), 87 total. A bot plays each stuck scenario
+  (0g/no pills, 0g + Known recipes, several open contracts, Machine busy 10 h, Copier busy 10 h) for 2 hours
+  without BACKDOOR and always earns Gold; a fresh player ships ≥5 orders in 4 hours.
+
 ## v1.3.1 — Fix: sign-in not remembered
 - **Bug:** the remembered player (and saves) lived only in the page's browser storage, which the claude.ai viewer
   can clear or block (e.g. mobile app, private windows) — so the game forgot the player.

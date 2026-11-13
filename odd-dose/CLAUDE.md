@@ -28,7 +28,10 @@ Keep `BUILD_STATUS.md` (what exists / what's next) and `CHANGELOG.md` (what chan
   Stamping never changes game state; unchecking clears the stamp.
 - **Currency is Gold**, shown as `1,250g` via `gold()` in `src/ui/components/common.tsx`. The save field is still `cash`
   (kept for save compatibility). Never show `$`.
-- **One regenerating resource: Charge** (max 100, +1 / 3 min), used only by the Scanner.
+- **No Charge.** Removed in v1.4 by the owner. Gold is the only spendable resource; old saves' Charge fields are dropped on load.
+- **Economy guarantees:** the Copier's Starter tray makes 3 of a starter Common free every 2 min (always available,
+  even with the paid Copier busy); Vault Quick Sell pays fixed prices below contracts, BACKDOOR and Copier cost;
+  every order pays ≥ 1.6× its Copier cost. Never allow a state where earning Gold is impossible (see tests/economy.test.ts).
 - Exactly four tabs: Desk, Lab, Vault, HQ. Notebook is a floating button, not a tab. BACKDOOR lives inside HQ.
 - No new currencies, ingredients, catalysts, research steps, minigames or extra navigation tabs.
 - Saves must stay compatible. `tests/fixtures/save-v1.0.json` is a real older save the tests load.
@@ -55,6 +58,7 @@ Keep `BUILD_STATUS.md` (what exists / what's next) and `CHANGELOG.md` (what chan
 
 - Order text = short title from the main pill's Type + one sentence from the sender; pills live in the checklist only.
 - Confidential orders pay `confidentialPayoutBonus` (2.5×) and carry a Premium tag.
+- Quick Sell: common 2g, rare 18g, epic 88g, legendary 440g, secret 2400g; ★ ×5, ★★ ×30 (`BALANCE.quickSell`).
 - Mail offers every 4–7 min, first after ~1 min, max 4 sealed on the desk.
 - Shipping/selling/Machine always use the lowest qualifying star tier first.
 - Familiar Machine results reveal quickly; new pills get the full sequence; new Legendary/Secret the biggest.

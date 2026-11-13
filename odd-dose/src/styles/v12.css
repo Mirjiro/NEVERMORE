@@ -263,3 +263,28 @@ button.pcard-card:active { transform: translateY(1px) scale(.97); transition-dur
 .office { height: 352px; }
 .office-floor { bottom: 136px; }
 .office-shelf { top: 150px; }
+
+/* v1.4 economy: quick sell, free batch, order cost */
+.quick-sell { margin-top: 16px; padding: 14px; border-radius: 16px; background: rgba(0,0,0,.035); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 10px; }
+.qs-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.qs-head h3 { font-size: 17px; }
+.qs-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.qs-stepper { display: flex; align-items: center; gap: 10px; }
+.qs-stepper .mono { font-size: 20px; font-weight: 600; min-width: 28px; text-align: center; }
+.qty-btn.sm { width: 40px; height: 40px; font-size: 20px; }
+.qs-confirm { display: flex; flex-direction: column; gap: 10px; }
+.qs-confirm p { font-size: 15px; }
+.free-batch { margin-top: 8px; border-style: dashed; }
+.make-cost { text-align: center; font-weight: 600; }
+.order-foot { align-items: flex-end; }
+.starter-tray { margin: -4px 0 16px; padding: 12px 14px; border-radius: 18px; background: var(--grain), linear-gradient(170deg, #f3e9d5, #e6d6b8); box-shadow: 0 8px 18px rgba(0,0,0,.25), inset 0 0 0 1.5px rgba(196,154,82,.45); display: flex; flex-direction: column; gap: 10px; }
+.st-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.st-head h3 { font-size: 17px; }
+.st-timer { font-size: 17px; font-weight: 600; }
+.st-picks { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
+.st-pick { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 2px; border-radius: 12px; background: rgba(255,255,255,.6); border: 1px solid rgba(120,98,66,.18); font-size: 11px; font-weight: 600; }
+.st-pick:active { transform: scale(.95); }
+@media (max-width: 420px) { .st-picks { grid-template-columns: repeat(3, 1fr); } }
+.st-run { display: flex; align-items: center; gap: 4px; }
+.st-bar { flex: 1; height: 5px; margin-left: 8px; border-radius: 3px; background: rgba(0,0,0,.1); overflow: hidden; }
+.st-bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--brass-lo), var(--brass-hi)); transition: width 1s linear; }

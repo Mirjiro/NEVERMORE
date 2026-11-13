@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
-import { BALANCE } from "../config/balance";
-import { companyLevel, levelProgress, msUntilNextCharge } from "../engine/game";
+import { companyLevel, levelProgress } from "../engine/game";
 import { useGame } from "../store/GameContext";
-import { formatDuration, gold } from "./components/common";
+import { gold } from "./components/common";
 import { Notebook } from "./components/Notebook";
 import { RevealOverlay } from "./components/RevealOverlay";
 import { DeskScreen } from "./screens/DeskScreen";
@@ -29,14 +28,13 @@ export function App() {
   }, [tab]);
 
   const lp = levelProgress(state);
-  const nextCharge = msUntilNextCharge(state, now);
   const readyCount = state.machines.filter((m) => m.job && m.job.endsAt <= now).length + (state.copier && state.copier.endsAt <= now ? 1 : 0);
   const openOrders = state.orders.filter((o) => o.status === "open").length;
   const unreadDrafts = state.drafts.filter((d) => !d.read).length;
   const badges: Partial<Record<Tab, number>> = {
     desk: state.news.filter((n) => !n.read).length + openOrders + state.mail.filter((m) => m.status === "sealed").length,
     lab: readyCount,
-    vault: state.copier && state.copier.endsAt <= now ? 1 : 0,
+    vault: (state.copier && state.copier.endsAt <= now ? 1 : 0) + (state.freeCopier && state.freeCopier.endsAt <= now ? 1 : 0),
   };
 
   return (
@@ -51,10 +49,6 @@ export function App() {
         </div>
         <div className="resources">
           <div className="res cash" title="Gold"><span className="res-label">Gold</span><span className="res-val">{gold(state.cash)}</span></div>
-          <div className="res charge" title={nextCharge === null ? "Charge full" : `+1 in ${formatDuration(nextCharge)}`}>
-            <span className="res-label">Charge</span>
-            <span className="res-val"><span className="bolt">ϟ</span>{state.charge}<small>/{BALANCE.charge.max}</small></span>
-          </div>
         </div>
       </header>
 
