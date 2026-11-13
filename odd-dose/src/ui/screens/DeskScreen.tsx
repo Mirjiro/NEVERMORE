@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import type { KeyboardEvent, MouseEvent, ReactNode } from "react";
 import { PILL_BY_ID, RARITY_LABEL } from "../../data/pills";
-import { checkOrder, orderCopyCost, dismissMail, dismissNews, dismissOrder, isKnown, markNewsRead, openMail, shipOrder } from "../../engine/game";
+import { checkOrder, orderCopyTime, dismissMail, dismissNews, dismissOrder, isKnown, markNewsRead, openMail, shipOrder } from "../../engine/game";
 import { RARITIES } from "../../engine/types";
 import type { MailOffer, NewsItem, Order } from "../../engine/types";
 import { useGame } from "../../store/GameContext";
 import { PillArt } from "../components/PillArt";
-import { gold } from "../components/common";
+import { formatDuration, gold } from "../components/common";
 import { sfx } from "../sfx";
 import { allChecked, applyStamp, canShip, canStamp, friendlyDue, initialFlow, toggleCheck } from "../shipFlow";
 import type { ShipFlow, Stamp } from "../shipFlow";
@@ -254,7 +254,7 @@ function OrderDoc({ id, onClose, onShipped }: { id: string; onClose: () => void;
 
       <div className="order-foot">
         <div><span className="muted small">Reward{order.confidential && <span className="premium-tag">Premium</span>}</span><div className="payout">{gold(order.payout)}</div></div>
-        <div className="make-cost"><span className="muted small">Copier cost</span><div>~{gold(orderCopyCost(order.lines))}</div></div>
+        <div className="make-cost"><span className="muted small">Copier time</span><div>~{formatDuration(orderCopyTime(state, order.lines))}</div></div>
         <div className="due"><span className="muted small">Due</span><div>{order.status === "expired" ? <span className="warn">Expired</span> : friendlyDue(order.expiresAt - now)}</div></div>
       </div>
 

@@ -1,5 +1,22 @@
 # ODD DOSE — Changelog
 
+## v1.5 — Critical economy fix
+Reported: Level 3 with 38g, Copier needed ~43g, orders asked for undiscovered Epics (e.g. Ruin ×2 + Happy ×5).
+Reproduced with the engine: ~1 in 6 Level 3 orders required an undiscovered Epic; 11 Happy cost 55g to copy;
+order descriptions came from a few per-sender lines and repeated.
+- **The Copier is free** for every rarity. Limits are time (Happy 16 s, Rare 1 min, Epic 4 min, Legendary 15 min,
+  Secret 45 min per pill) and batch size (11 / 6 / 3 / 1 / 1, doubled per Bigger Batches tier). The Starter tray was
+  folded into the normal Copier; old saves' tray batches move into the Copier (or are delivered if it was busy).
+  "Copier cost" is gone; orders show "Copier time" instead.
+- **Rushing never mints Gold:** Machine and Copier speed-ups cost at least 1.25× what the rushed pills would sell for
+  instantly (Quick Sell, or BACKDOOR once unlocked), scaled by the share of time skipped.
+- **Orders fit progression:** ordinary orders ask only for Known pills of allowed rarities (Epic from Level 4,
+  Legendary 6, Secret 8) or a one-step discovery (Rare from Level 1, Epic 5, Legendary 8). Confidential orders are
+  the special commissions (may stretch one tier). Line count and quantities grow with level. Payout ≥ 3× Quick Sell.
+- **Descriptions** now match the requested pill's Type (36 lines) and never repeat across open orders.
+- Tests: economy suite rewritten (92 total). Simulated: 0g/no pills, 0g + busy Machine, BACKDOOR locked, orders for
+  undiscovered pills, Copier busy, and a recreated stuck Level-3 38g save — all recover through normal play.
+
 ## v1.4 — Remove Charge & fix the Gold economy
 - **Charge removed** everywhere (header, Scanner, regeneration, config, messages). Scanner now costs only 250g.
   No Gold costs were raised. Older saves load fine; their Charge fields are dropped.

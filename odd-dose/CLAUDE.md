@@ -29,9 +29,12 @@ Keep `BUILD_STATUS.md` (what exists / what's next) and `CHANGELOG.md` (what chan
 - **Currency is Gold**, shown as `1,250g` via `gold()` in `src/ui/components/common.tsx`. The save field is still `cash`
   (kept for save compatibility). Never show `$`.
 - **No Charge.** Removed in v1.4 by the owner. Gold is the only spendable resource; old saves' Charge fields are dropped on load.
-- **Economy guarantees:** the Copier's Starter tray makes 3 of a starter Common free every 2 min (always available,
-  even with the paid Copier busy); Vault Quick Sell pays fixed prices below contracts, BACKDOOR and Copier cost;
-  every order pays ≥ 1.6× its Copier cost. Never allow a state where earning Gold is impossible (see tests/economy.test.ts).
+- **Economy (v1.5, owner-approved):** the Copier is FREE for every rarity — limited only by time and per-rarity batch
+  size (`BALANCE.copier`). Gold comes from contracts and Vault Quick Sell (contracts pay ≥ 3× Quick Sell).
+  Rushing (Machine or Copier) always costs ≥ 1.25× the instant sale value of what it finishes, so rush-and-sell
+  can never mint Gold. Ordinary orders only ask for Known pills of rarities the level allows, or a one-step
+  discovery within the level's limit (`knownRarityFromLevel` / `discoveryRarityFromLevel`); Confidential orders are the
+  marked special commissions. No state may make earning Gold impossible (`tests/economy.test.ts`).
 - Exactly four tabs: Desk, Lab, Vault, HQ. Notebook is a floating button, not a tab. BACKDOOR lives inside HQ.
 - No new currencies, ingredients, catalysts, research steps, minigames or extra navigation tabs.
 - Saves must stay compatible. `tests/fixtures/save-v1.0.json` is a real older save the tests load.
@@ -49,6 +52,7 @@ Keep `BUILD_STATUS.md` (what exists / what's next) and `CHANGELOG.md` (what chan
 | UI | `src/ui/App.tsx`, `screens/` (Desk, Lab, Vault, HQ, Backdoor), `components/` (PillCard, PillArt, Notebook, RevealOverlay…) |
 | Desk shipping flow | `src/ui/shipFlow.ts` (pure, tested) |
 | Startup / sign-in | `src/ui/Gate.tsx` (splash → welcome/sign-in), `src/store/profiles.ts` (device-local players, one save slot per name) |
+| Economy tests | `tests/economy.test.ts` — a no-cheats bot plays every stuck scenario on the real engine |
 | Account sync | `src/store/cloud.ts` — on claude.ai, remembered player + saves in `data/users/<id>/` (publish with `capabilities: {db: {}, user: {}}`) |
 | Sound | `src/ui/sfx.ts` (generated Web Audio, mute stored in localStorage) |
 | Styles | `src/styles/app.css` (base) + `src/styles/v12.css` (v1.2 atmosphere layer, loaded last) |

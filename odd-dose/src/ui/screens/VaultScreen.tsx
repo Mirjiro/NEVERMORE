@@ -1,8 +1,7 @@
 import { useMemo, useState } from "react";
-import { BALANCE } from "../../config/balance";
 import { PILLS, PILL_BY_ID, RARITY_LABEL } from "../../data/pills";
 import {
-  backdoorUnlocked, canFreeCopy, collectCopy, collectFreeCopy, marketPrice, quickSell, quickSellPrice, startFreeCopy, copierMaxBatch, copierQuote, countExact, isKnown, sellPrice, speedUpCopy, speedUpCost,
+  backdoorUnlocked, collectCopy, copierSpeedUpCost, marketPrice, quickSell, quickSellPrice, copierMaxBatch, copierQuote, countExact, isKnown, sellPrice, speedUpCopy,
   startCopy, vaultStacks,
 } from "../../engine/game";
 import { RARITIES } from "../../engine/types";
@@ -35,7 +34,6 @@ export function VaultScreen({ goto, useInMachine }: { goto: (t: Tab) => void; us
       </div>
 
       <CopierBench onMake={() => setCopier("pick")} />
-      <StarterTray />
 
       {(rarities.length > 1 || stacks.some((s) => s.star > 0)) && (
         <div className="chips-row">
@@ -113,48 +111,13 @@ function CopierBench({ onMake }: { onMake: () => void }) {
         {job && !ready && (
           <div className="bench-row">
             <span className="timer mono">{formatDuration(job.endsAt - now)}</span>
-            <button className="btn ghost-dark small" disabled={state.cash < speedUpCost(job.endsAt, now)} onClick={() => act((s, t) => speedUpCopy(s, t))}>
-              Finish · {gold(speedUpCost(job.endsAt, now))}
+            <button className="btn ghost-dark small" disabled={state.cash < copierSpeedUpCost(state, now)} onClick={() => act((s, t) => speedUpCopy(s, t))}>
+              Finish · {gold(copierSpeedUpCost(state, now))}
             </button>
           </div>
         )}
         {job && ready && <button className="btn gold pulse" onClick={collect}>Collect {job.quantity} × {pillName(job.pillId)}</button>}
       </div>
-    </section>
-  );
-}
-
-/** The Copier's Starter tray: free small batches of the six starter pills. Always available — the way back from 0g. */
-function StarterTray() {
-  const { state, now, act, toast, setReveal } = useGame();
-  const job = state.freeCopier ?? null;
-  const ready = !!job && job.endsAt <= now;
-  const { quantity, ms } = BALANCE.copier.freeStarter;
-  const starters = PILLS.filter((p) => canFreeCopy(p.id));
-  return (
-    <section className={`starter-tray ${job ? (ready ? "ready" : "working") : "idle"}`}>
-      <div className="st-head">
-        <div><h3>Starter tray</h3><span className="muted small">Free · {quantity} pills · {formatDuration(ms)}</span></div>
-        {job && !ready && <span className="mono st-timer">{formatDuration(job.endsAt - now)}</span>}
-        {job && ready && (
-          <button className="btn gold small pulse" onClick={() => {
-            const r = act((s, t) => collectFreeCopy(s, t));
-            if (r) setReveal({ kind: "copier", pillId: r.pillId, quantity: r.quantity, stars: r.stars });
-          }}>Collect {job.quantity} × {pillName(job.pillId)}</button>
-        )}
-      </div>
-      {job ? (
-        <div className="st-run">{Array.from({ length: job.quantity }).map((_, i) => <PillArt key={i} pillId={job.pillId} size={34} />)}<span className="st-bar"><i style={{ width: `${Math.min(100, ((now - job.startedAt) / (job.endsAt - job.startedAt)) * 100)}%` }} /></span></div>
-      ) : (
-        <div className="st-picks">
-          {starters.map((p) => (
-            <button key={p.id} className="st-pick" aria-label={`Make ${quantity} free ${p.name}`} onClick={() => {
-              const r = act((s, t, rng) => startFreeCopy(s, p.id, t, rng));
-              if (r) { sfx.insert(); toast(`Free batch: ${quantity} × ${p.name}`, "good"); }
-            }}><PillArt pillId={p.id} size={40} /><span>{p.name}</span></button>
-          ))}
-        </div>
-      )}
     </section>
   );
 }
@@ -251,7 +214,6 @@ function PillDetail({ pillId, star, onClose, onMachine, onCopy }: { pillId: stri
 
 function CopierSheet({ target, onClose }: { target: string | null | "pick"; onClose: () => void }) {
   const { state, now, act, toast } = useGame();
-  const max = copierMaxBatch(state);
   const known = PILLS.filter((p) => isKnown(state, p.id));
   const [qty, setQty] = useState(11);
   const [sel, setSel] = useState<string | null>(null);
@@ -260,6 +222,7 @@ function CopierSheet({ target, onClose }: { target: string | null | "pick"; onCl
   if (!pillId) return null;
   const busy = state.copier;
   const p = PILL_BY_ID[pillId];
+  const max = copierMaxBatch(state, pillId);
   const q = Math.max(1, Math.min(qty, max));
   const quote = copierQuote(state, pillId, q);
   const close = () => { setSel(null); onClose(); };
@@ -289,8 +252,8 @@ function CopierSheet({ target, onClose }: { target: string | null | "pick"; onCl
             <button className="qty-btn" onClick={() => setQty(Math.min(max, q + 1))} aria-label="More">+</button>
           </div>
           <div className="presets">{presets.map((v) => <button key={v} className={`chip ${q === v ? "on" : ""}`} onClick={() => setQty(v)}>{v === max && v !== 11 ? `Max ${v}` : v}</button>)}</div>
-          <div className="copy-quote"><span><b>{gold(quote.cost)}</b> total</span><span><b>{formatDuration(quote.ms)}</b> to make</span></div>
-          <button className="btn gold big wide" disabled={state.cash < quote.cost} onClick={make}>Start copying</button>
+          <div className="copy-quote"><span><b>Free</b></span><span>Ready in <b>{formatDuration(quote.ms)}</b></span><span className="muted">max {max}</span></div>
+          <button className="btn gold big wide" onClick={make}>Start copying</button>
           <p className="muted small center">Every copy has a tiny chance to come out ★</p>
         </>
       )}

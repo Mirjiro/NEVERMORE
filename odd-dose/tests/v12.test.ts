@@ -5,7 +5,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { PILLS } from "../src/data/pills";
-import { collectCopy, collectMachine, createInitialState, incubationView, startCopy, startMachine, vaultStacks } from "../src/engine/game";
+import { collectCopy, collectMachine, createInitialState, incubationView, scanSpecimen, startCopy, startMachine, vaultStacks } from "../src/engine/game";
 import { gold } from "../src/engine/format";
 import { seeded } from "../src/engine/random";
 import { GameError, RARITIES } from "../src/engine/types";
@@ -41,8 +41,10 @@ describe("Gold currency", () => {
     const s = createInitialState(T0, seeded(1));
     s.cash = 10;
     let msg = "";
-    try { startCopy(s, "happy", 11, T0); } catch (e) { msg = (e as GameError).message; }
-    expect(msg).toBe("Not enough Gold (need 55g).");
+    s.upgrades.scanner = 1;
+    s.specimens.push({ id: "u1", pillId: "void", star: 0, identified: false, acquiredAt: T0, source: "mail" });
+    try { scanSpecimen(s, "u1", T0); } catch (e) { msg = (e as GameError).message; }
+    expect(msg).toBe("Not enough Gold (need 250g).");
     expect(s.cash).toBe(10);
   });
 });

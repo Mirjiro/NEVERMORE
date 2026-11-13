@@ -34,7 +34,7 @@ export function App() {
   const badges: Partial<Record<Tab, number>> = {
     desk: state.news.filter((n) => !n.read).length + openOrders + state.mail.filter((m) => m.status === "sealed").length,
     lab: readyCount,
-    vault: (state.copier && state.copier.endsAt <= now ? 1 : 0) + (state.freeCopier && state.freeCopier.endsAt <= now ? 1 : 0),
+    vault: state.copier && state.copier.endsAt <= now ? 1 : 0,
   };
 
   return (

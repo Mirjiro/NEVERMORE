@@ -178,3 +178,13 @@ Snapshot before this pass: git tag `odd-dose-v1.1.1-snapshot`. Full details in `
 - Charge removed; Quick Sell (Vault); free Starter tray (`state.freeCopier`); order payout floor (1.6× Copier cost).
 - Verified: 87 tests; browser run from an old 0g save with Charge data → no Charge shown, free tray → collect →
   quick sell 2 × Calm for 4g, order shows "Copier cost", no console errors.
+
+---
+
+## v1.5 — Critical economy fix
+- Free Copier (time + batch-size limits), rush pricing floor, progression-aware orders, varied descriptions,
+  save migration for the old Starter tray. Details in CHANGELOG.md.
+- Verified: 92 tests; bot from 0g/no pills reaches ~2,200g and 14 shipments in 1 h, Level 6 in 3 h (a perfect,
+  minute-by-minute player — tune `orders.payoutMult` / `orders.intervalMs` if progression feels too fast).
+  Browser: recreated Level-3 38g save → tray batch migrated, Copier free, "Copier time" on orders, no errors.
+- Known: orders already in an old save (e.g. the reported Ruin order) stay until they expire (no penalty).

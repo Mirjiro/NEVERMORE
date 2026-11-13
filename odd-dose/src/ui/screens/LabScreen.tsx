@@ -3,7 +3,7 @@ import type { CSSProperties } from "react";
 import { BALANCE } from "../../config/balance";
 import { PILL_BY_ID } from "../../data/pills";
 import {
-  collectMachine, incubationMs, incubationView, isKnown, machineCount, scanSpecimen, scannerUnlocked, speedUpCost, speedUpMachine, startMachine,
+  collectMachine, incubationMs, incubationView, isKnown, machineCount, machineSpeedUpCost, scanSpecimen, scannerUnlocked, speedUpMachine, startMachine,
 } from "../../engine/game";
 import { previewBreed } from "../../engine/recipes";
 import type { Machine } from "../../engine/types";
@@ -116,7 +116,7 @@ function MachineCard({ machine, index, prefill, clearPrefill }: { machine: Machi
   const progress = job ? Math.min(1, (now - job.startedAt) / (job.endsAt - job.startedAt)) : 0;
   const view = job ? incubationView(state, job) : null;
   const status = !job ? "available" : ready ? "ready" : "working";
-  const cost = job ? speedUpCost(job.endsAt, now) : 0;
+  const cost = job ? machineSpeedUpCost(state, machine.id, now) : 0;
   const lamps = status === "available" ? 1 : status === "ready" ? 3 : 1 + Math.floor(progress * 2);
 
   return (

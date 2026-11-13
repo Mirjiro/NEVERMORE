@@ -35,25 +35,19 @@ export const BALANCE = {
   speedUp: {
     cashPerMinute: 4,
     minimum: 2,
+    /** Rushing never pays: a rush costs at least this × the instant sale value of what it finishes
+     *  (scaled by the share of time skipped), so rush-then-sell always loses Gold. */
+    rushOverSaleValue: 1.25,
   },
 
   // ---------------------------------------------------------------- copier
   copier: {
-    baseMaxBatch: 11,
-    /** Gold cost per pill copied. Common 5g → Happy ×11 = 55g. */
-    costPerPill: { common: 5, rare: 28, epic: 140, legendary: 700, secret: 3800 } as Record<Rarity, number>,
-    /** Time for a batch of `referenceBatch` pills; scales linearly with quantity. Happy ×11 = 3 min. */
-    referenceBatch: 11,
-    referenceBatchMs: {
-      common: 3 * MIN,
-      rare: 10 * MIN,
-      epic: 30 * MIN,
-      legendary: 90 * MIN,
-      secret: 240 * MIN,
-    } as Record<Rarity, number>,
+    /** The Copier is FREE to run. Time and batch size are the only limits. */
+    /** Largest batch per rarity before upgrades (Copier Tray tiers double it). */
+    maxBatch: { common: 11, rare: 6, epic: 3, legendary: 1, secret: 1 } as Record<Rarity, number>,
+    /** Time per pill (before Faster Copier upgrades). Happy ×11 = 3 minutes. */
+    msPerPill: { common: (3 * MIN) / 11, rare: 1 * MIN, epic: 4 * MIN, legendary: 15 * MIN, secret: 45 * MIN } as Record<Rarity, number>,
     minBatchMs: 10 * SEC,
-    /** Free recovery batches of the six starter Commons: always available, never cost Gold. */
-    freeStarter: { quantity: 3, ms: 2 * MIN },
   },
 
   // ---------------------------------------------------------------- quick sell (Vault)
@@ -103,8 +97,13 @@ export const BALANCE = {
     frontierChance: 0.3,
     quantity: { common: [2, 6], rare: [1, 3], epic: [1, 2], legendary: [1, 1], secret: [1, 1] } as Record<Rarity, [number, number]>,
     reactionDelayMs: [2 * MIN, 8 * MIN] as [number, number],
-    /** Every order pays at least this multiple of what the Copier charges to make its pills. */
-    minPayoutOverCopyCost: 1.6,
+    /** Every order pays at least this multiple of what its pills would fetch by Quick Sell. */
+    minPayoutOverQuickSell: 3,
+    /** Ordinary orders only ask for Known pills of a rarity once the company reaches this level. */
+    knownRarityFromLevel: { common: 1, rare: 1, epic: 4, legendary: 6, secret: 8 } as Record<Rarity, number>,
+    /** Ordinary orders may ask for an undiscovered pill (both parents Known) of this rarity from this level.
+     *  Confidential "special" requests get it two levels earlier. */
+    discoveryRarityFromLevel: { common: 99, rare: 1, epic: 5, legendary: 8, secret: 99 } as Record<Rarity, number>,
   },
 
   // ---------------------------------------------------------------- news & mail

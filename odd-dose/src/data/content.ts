@@ -43,40 +43,67 @@ export const ORDER_TITLES: Record<string, string[]> = {
   excited: ["Big Day!", "Let's Gooo", "Party Starter", "Can't Sit Still"],
 };
 
-/** One short, characterful line from the requester. No pill lists — the checklist shows those. */
-export const ORDER_LINES: Record<Sender["kind"], string[]> = {
-  Customer: [
+/** One short line that fits the main pill's Type (matches the title). Pills live in the checklist, never here. */
+export const ORDER_LINES_BY_TYPE: Record<string, string[]> = {
+  happy: [
     "It's my birthday tomorrow. I could use some cheering up.",
-    "My week has been a lot.",
-    "The 7:42 train is unbearable.",
-    "My cat has been judging me.",
-    "First day at a new job!",
+    "First day at a new job. Make it a good one.",
+    "Grandma is visiting. Smiles all round, please.",
+    "The office party needs rescuing.",
+    "Sunday brunch, but make it extra.",
+    "My team finally won. Help me celebrate.",
   ],
-  "Private client": [
-    "I hear you're discreet.",
-    "An important dinner is coming up.",
-    "Wrap it nicely, please.",
+  sad: [
+    "Rainy week. I'd like to feel it properly.",
+    "Watching an old movie tonight. Bring tissues.",
+    "Writing a sad song. I need material.",
+    "Saying goodbye to my old apartment.",
+    "My cat has been judging me all week.",
+    "Need a good cry before Monday.",
   ],
-  Company: [
-    "For our team offsite. Mark the box 'NOT SNACKS'.",
-    "Morale is low. The memo says 'fix it'.",
-    "Quarterly review is Friday.",
+  angry: [
+    "Customer service put me on hold for an hour.",
+    "Someone parked in my spot. Again.",
+    "Debate club finals are tonight.",
+    "Gym in ten minutes. I need to be a menace.",
+    "My neighbor's leaf blower starts at 6 a.m.",
+    "Big negotiation tomorrow. No mercy.",
   ],
-  Researcher: [
-    "For a study. Very serious. Mostly.",
-    "My hypothesis needs feelings.",
-    "Clean samples, please.",
+  calm: [
+    "Exams are over. Time to breathe.",
+    "Long flight tomorrow. Keep me steady.",
+    "The baby finally sleeps. So should I.",
+    "Yoga retreat starts Friday.",
+    "Inbox: 400. Me: unbothered, hopefully.",
+    "Quiet evening with a good book.",
   ],
-  University: ["For the spring seminar on feelings.", "The students are restless."],
-  Hospital: ["The night ward is running low.", "For the long shifts."],
-  Government: ["Under Directive 12-B (Morale).", "For the public holiday."],
-  Anonymous: [
-    "No questions. Burn this note.",
-    "I know what your Machine can do.",
-    "Leave it at the usual place.",
+  fear: [
+    "Haunted house night with friends.",
+    "Horror movie marathon this weekend.",
+    "Camping trip. Something howled.",
+    "My first skydiving lesson is Thursday.",
+    "Spooky season starts early this year.",
+    "I want to feel brave by feeling scared first.",
   ],
-  Organization: ["Our members voted.", "For the big tournament."],
+  excited: [
+    "Concert tickets came through!",
+    "Road trip leaves at dawn.",
+    "Opening night at the theater.",
+    "We're moving to a new city!",
+    "Launch day at the startup.",
+    "Big game tonight. Let's go!",
+  ],
 };
+
+/** Lines for Confidential (special) requests. */
+export const CONFIDENTIAL_LINES = [
+  "No questions. Burn this note.",
+  "I know what your Machine can do.",
+  "Leave it at the usual place.",
+  "Discretion is part of the price.",
+  "A collector's request. Tell no one.",
+  "You'll be paid well. Don't be late.",
+];
 
 export const FRONTIER_HINT_LINES = [
   "Word is it carries a {types} character.",

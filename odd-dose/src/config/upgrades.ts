@@ -1,5 +1,3 @@
-import { BALANCE } from "./balance";
-
 /** HQ upgrades. Each upgrade has tiers; the player owns 0..tiers.length of them. */
 export interface UpgradeTier {
   cost: number;
@@ -82,7 +80,7 @@ export const EFFECTS = {
   machineCount: (t: number) => 1 + t,
   incubationMult: (t: number) => 1 - 0.15 * t,
   copierTimeMult: (t: number) => 1 - 0.2 * t,
-  copierMaxBatch: (t: number) => BALANCE.copier.baseMaxBatch * 2 ** t,
+  copierBatchMult: (t: number) => 2 ** t,
   payoutMult: (t: number) => 1 + 0.1 * t,
   popularityGainMult: (t: number) => 1 + 0.5 * t,
 };

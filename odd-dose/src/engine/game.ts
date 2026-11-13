@@ -7,7 +7,7 @@
 import { BALANCE } from "../config/balance";
 import { EFFECTS, UPGRADES, UPGRADE_BY_ID } from "../config/upgrades";
 import {
-  ANONYMOUS_SENDERS, FRONTIER_HINT_LINES, MAIL_TEMPLATES, NEWSPAPERS, ORDER_LINES, ORDER_TITLES, REACTIONS, SENDERS, WELCOME,
+  ANONYMOUS_SENDERS, CONFIDENTIAL_LINES, FRONTIER_HINT_LINES, MAIL_TEMPLATES, NEWSPAPERS, ORDER_LINES_BY_TYPE, ORDER_TITLES, REACTIONS, SENDERS, WELCOME,
 } from "../data/content";
 import type { Sender } from "../data/content";
 import { COMMON_IDS, PILLS, PILL_BY_ID, PILL_IDS, RARITY_LABEL, TYPE_LABEL, pillsOfRarity } from "../data/pills";
@@ -55,7 +55,9 @@ export function levelProgress(s: GameState): { level: number; into: number; need
 
 export const machineCount = (s: GameState) =>
   Math.min(BALANCE.machine.maxMachines, EFFECTS.machineCount(upgradeTier(s, "machines")));
-export const copierMaxBatch = (s: GameState) => EFFECTS.copierMaxBatch(upgradeTier(s, "copierBatch"));
+/** Largest Copier batch for this pill (rarer pills come in smaller batches). */
+export const copierMaxBatch = (s: GameState, pillId = "happy") =>
+  BALANCE.copier.maxBatch[pillDef(pillId).rarity] * EFFECTS.copierBatchMult(upgradeTier(s, "copierBatch"));
 export const scannerUnlocked = (s: GameState) => upgradeTier(s, "scanner") > 0;
 export const backdoorUnlocked = (s: GameState) => upgradeTier(s, "backdoor") > 0;
 
@@ -193,7 +195,6 @@ export function createInitialState(now: number, rng: Rng = Math.random): GameSta
     specimens: [],
     machines: [],
     copier: null,
-    freeCopier: null,
     upgrades: {},
     orders: [],
     news: [],
@@ -394,27 +395,45 @@ export function incubationView(s: GameState, job: MachineJob): { known: boolean;
     : { known, pillId: null, label: "Something is forming…" };
 }
 
+/** Gold these pills could fetch instantly right now (Quick Sell, or BACKDOOR once unlocked). */
+export function instantSaleValue(s: GameState, pillId: string, star: Star = 0): number {
+  const q = quickSellPrice(pillId, star);
+  return backdoorUnlocked(s) ? Math.max(q, sellPrice(s, pillId, star)) : q;
+}
+
+/** Time-based rush price, but never below RUSH × the instant sale value of the skipped share of the job. */
+function rushCost(startedAt: number, endsAt: number, now: number, saleValue: number): number {
+  const base = speedUpCost(endsAt, now);
+  if (base === 0) return 0;
+  const skipped = (endsAt - now) / Math.max(1, endsAt - startedAt);
+  return Math.max(base, Math.ceil(saleValue * BALANCE.speedUp.rushOverSaleValue * skipped));
+}
+
+export function machineSpeedUpCost(s: GameState, machineId: string, now: number): number {
+  const job = s.machines.find((x) => x.id === machineId)?.job;
+  if (!job) return 0;
+  // Priced on a Base copy of the result so the price never hints at a ★.
+  return rushCost(job.startedAt, job.endsAt, now, instantSaleValue(s, job.resultPillId, 0));
+}
+
 export function speedUpMachine(s: GameState, machineId: string, now: number): number {
   const m = s.machines.find((x) => x.id === machineId);
   if (!m || !m.job) throw new GameError("Nothing to speed up.");
-  const cost = speedUpCost(m.job.endsAt, now);
+  const cost = machineSpeedUpCost(s, machineId, now);
   if (cost === 0) return 0;
   spendCash(s, cost);
   m.job.endsAt = now;
   return cost;
 }
 
-// ================================================================ copier
+// ================================================================ copier (free)
 
+/** How long a free Copier batch takes. The Copier never costs Gold. */
 export function copierQuote(s: GameState, pillId: string, quantity: number) {
   const def = pillDef(pillId);
   const c = BALANCE.copier;
-  const cost = c.costPerPill[def.rarity] * quantity;
-  const ms = Math.max(
-    c.minBatchMs,
-    Math.round((c.referenceBatchMs[def.rarity] * quantity / c.referenceBatch) * EFFECTS.copierTimeMult(upgradeTier(s, "copierSpeed"))),
-  );
-  return { cost, ms };
+  const ms = Math.max(c.minBatchMs, Math.round(c.msPerPill[def.rarity] * quantity * EFFECTS.copierTimeMult(upgradeTier(s, "copierSpeed"))));
+  return { ms, maxBatch: copierMaxBatch(s, pillId) };
 }
 
 export function startCopy(s: GameState, pillId: string, quantity: number, now: number, rng: Rng = Math.random): CopierJob {
@@ -422,39 +441,39 @@ export function startCopy(s: GameState, pillId: string, quantity: number, now: n
   if (s.copier) throw new GameError("The Copier is already running.");
   if (!isKnown(s, pillId)) throw new GameError("Only Known ✓ pills can be copied.");
   if (!Number.isInteger(quantity) || quantity < 1) throw new GameError("Choose a quantity.");
-  if (quantity > copierMaxBatch(s)) throw new GameError(`Max batch is ${copierMaxBatch(s)}.`);
+  const max = copierMaxBatch(s, pillId);
+  if (quantity > max) throw new GameError(`Max batch for ${def.name} is ${max}.`);
   const q = copierQuote(s, pillId, quantity);
-  spendCash(s, q.cost);
   const stars: Star[] = [];
   for (let i = 0; i < quantity; i++) stars.push(rollStarFor(rng, def.rarity));
-  s.copier = { jobId: newId(s, "cp"), pillId, quantity, stars, cost: q.cost, startedAt: now, endsAt: now + q.ms };
+  s.copier = { jobId: newId(s, "cp"), pillId, quantity, stars, cost: 0, startedAt: now, endsAt: now + q.ms };
   s.stats.copierRuns++;
   return s.copier;
 }
 
-/** The six starter Commons can always be copied for free in small batches — the guaranteed way back from 0g. */
-export const canFreeCopy = (pillId: string) => COMMON_IDS.includes(pillId);
-
-export function startFreeCopy(s: GameState, pillId: string, now: number, rng: Rng = Math.random): CopierJob {
-  const def = pillDef(pillId);
-  if (s.freeCopier) throw new GameError("The Starter tray is already busy.");
-  if (!canFreeCopy(pillId)) throw new GameError("Free batches are for the six starter pills only.");
-  const { quantity, ms } = BALANCE.copier.freeStarter;
-  const stars: Star[] = [];
-  for (let i = 0; i < quantity; i++) stars.push(rollStarFor(rng, def.rarity));
-  s.freeCopier = { jobId: newId(s, "cp"), pillId, quantity, stars, cost: 0, startedAt: now, endsAt: now + ms, free: true };
-  s.stats.copierRuns++;
-  return s.freeCopier;
-}
-
-export function collectFreeCopy(s: GameState, now: number): { pillId: string; quantity: number; stars: Star[] } {
-  const job = s.freeCopier;
+export function collectCopy(s: GameState, now: number): { pillId: string; quantity: number; stars: Star[] } {
+  const job = s.copier;
   if (!job) throw new GameError("Nothing to collect.");
   if (now < job.endsAt) throw new GameError("Still copying.");
-  s.freeCopier = null; // claim exactly once
+  s.copier = null; // claim exactly once
   for (const st of job.stars) addSpecimen(s, job.pillId, st, true, "copier", now);
   s.stats.pillsMade += job.quantity;
   return { pillId: job.pillId, quantity: job.quantity, stars: job.stars };
+}
+
+export function copierSpeedUpCost(s: GameState, now: number): number {
+  const job = s.copier;
+  if (!job) return 0;
+  return rushCost(job.startedAt, job.endsAt, now, instantSaleValue(s, job.pillId, 0) * job.quantity);
+}
+
+export function speedUpCopy(s: GameState, now: number): number {
+  if (!s.copier) throw new GameError("Nothing to speed up.");
+  const cost = copierSpeedUpCost(s, now);
+  if (cost === 0) return 0;
+  spendCash(s, cost);
+  s.copier.endsAt = now;
+  return cost;
 }
 
 // ================================================================ quick sell (Vault)
@@ -475,25 +494,6 @@ export function quickSell(s: GameState, pillId: string, star: Star, quantity: nu
   const payout = quickSellPrice(pillId, star) * quantity;
   s.cash += payout;
   return { sold: quantity, payout };
-}
-
-export function collectCopy(s: GameState, now: number): { pillId: string; quantity: number; stars: Star[] } {
-  const job = s.copier;
-  if (!job) throw new GameError("Nothing to collect.");
-  if (now < job.endsAt) throw new GameError("Still copying.");
-  s.copier = null; // claim exactly once
-  for (const st of job.stars) addSpecimen(s, job.pillId, st, true, "copier", now);
-  s.stats.pillsMade += job.quantity;
-  return { pillId: job.pillId, quantity: job.quantity, stars: job.stars };
-}
-
-export function speedUpCopy(s: GameState, now: number): number {
-  if (!s.copier) throw new GameError("Nothing to speed up.");
-  const cost = speedUpCost(s.copier.endsAt, now);
-  if (cost === 0) return 0;
-  spendCash(s, cost);
-  s.copier.endsAt = now;
-  return cost;
 }
 
 // ================================================================ scanner
@@ -572,14 +572,38 @@ export function orderPayout(s: GameState, lines: OrderLine[], sender: Sender, co
   const pop = 1 + (s.popularity / BALANCE.company.popularity.max) * BALANCE.company.popularity.payoutBonusAtMax;
   const mult = randRange(rng, BALANCE.orders.payoutMult) * sender.payoutMult * pop * EFFECTS.payoutMult(upgradeTier(s, "sales")) *
     (confidential ? BALANCE.orders.confidentialPayoutBonus : 1);
-  const copyCost = lines.reduce((sum, l) => sum + l.quantity * BALANCE.copier.costPerPill[PILL_BY_ID[l.pillId].rarity], 0);
-  const floor = Math.ceil((copyCost * BALANCE.orders.minPayoutOverCopyCost) / 5) * 5;
+  const quick = lines.reduce((sum, l) => sum + l.quantity * quickSellPrice(l.pillId, l.minStar), 0);
+  const floor = Math.ceil((quick * BALANCE.orders.minPayoutOverQuickSell) / 5) * 5;
   return Math.max(5, floor, Math.round((base * mult) / 5) * 5);
 }
 
-/** What it would cost to make an order's pills with the Copier (Base copies). */
-export function orderCopyCost(lines: OrderLine[]): number {
-  return lines.reduce((sum, l) => sum + l.quantity * BALANCE.copier.costPerPill[PILL_BY_ID[l.pillId].rarity], 0);
+/** Roughly how long the (free) Copier needs to make an order's pills from scratch. */
+export function orderCopyTime(s: GameState, lines: OrderLine[]): number {
+  return lines.reduce((sum, l) => {
+    const max = copierMaxBatch(s, l.pillId);
+    const full = Math.floor(l.quantity / max), rest = l.quantity % max;
+    return sum + full * copierQuote(s, l.pillId, max).ms + (rest ? copierQuote(s, l.pillId, rest).ms : 0);
+  }, 0);
+}
+
+/** Rarities an ordinary order may ask for at this level: Known ones, and undiscovered ones the player can make next. */
+export function orderableRarity(s: GameState, rarity: Rarity, known: boolean, special = false): boolean {
+  const lv = companyLevel(s) + (special ? 2 : 0);
+  const o = BALANCE.orders;
+  return known ? lv >= o.knownRarityFromLevel[rarity] : lv >= o.discoveryRarityFromLevel[rarity];
+}
+
+/** How many lines and how many of each pill, scaled with company level. */
+function orderShape(lv: number, rng: Rng) {
+  const counts = lv <= 2 ? [1, 1, 1, 2] : lv <= 4 ? [1, 1, 2, 2] : [1, 1, 2, 2, 3];
+  const qty: Record<Rarity, [number, number]> = {
+    common: [2, Math.min(8, 2 + lv)],
+    rare: [1, lv >= 3 ? 3 : 2],
+    epic: [1, lv >= 6 ? 2 : 1],
+    legendary: [1, 1],
+    secret: [1, 1],
+  };
+  return { count: counts[Math.floor(rng() * counts.length)], qty };
 }
 
 function makeOrder(s: GameState, now: number, rng: Rng, forced?: { sender: Sender; lines: OrderLine[] }): Order {
@@ -590,17 +614,21 @@ function makeOrder(s: GameState, now: number, rng: Rng, forced?: { sender: Sende
   let lines: OrderLine[];
   if (forced) lines = forced.lines;
   else {
-    const pool = PILLS.filter((p) => isKnown(s, p.id));
-    const count = Math.min(pool.length, [1, 1, 1, 2, 2, 3][Math.floor(rng() * 6)]);
+    // Ordinary orders: Known pills the company is ready for (everything Known can be copied for free).
+    let pool = PILLS.filter((p) => isKnown(s, p.id) && orderableRarity(s, p.rarity, true, confidential));
+    if (!pool.length) pool = PILLS.filter((p) => p.rarity === "common");
+    const shape = orderShape(lv, rng);
+    const count = Math.min(pool.length, shape.count);
     lines = [];
     const used = new Set<string>();
     for (let i = 0; i < count; i++) {
       const choices = pool.filter((p) => !used.has(p.id));
       const p = choices[weightedIndex(rng, choices.map((c) => ORDER_RARITY_WEIGHT[c.rarity] * (confidential && c.rarity !== "common" ? 2 : 1)))];
       used.add(p.id);
-      lines.push({ pillId: p.id, quantity: randInt(rng, cfg.quantity[p.rarity]), minStar: 0 });
+      lines.push({ pillId: p.id, quantity: randInt(rng, shape.qty[p.rarity]), minStar: 0 });
     }
-    const frontier = frontierPills(s);
+    // Sometimes: one pill the player can discover next (both parents Known), within the level's rarity limit.
+    const frontier = frontierPills(s).filter((p) => orderableRarity(s, p.rarity, false, confidential));
     if (frontier.length && rng() < cfg.frontierChance) {
       const fp = pick(rng, frontier);
       lines[lines.length - 1] = { pillId: fp.id, quantity: 1, minStar: 0 };
@@ -616,7 +644,6 @@ function makeOrder(s: GameState, now: number, rng: Rng, forced?: { sender: Sende
       target.minStar = 1;
       target.quantity = 1;
     }
-    // merge duplicate pills (frontier replacement could duplicate)
     const merged = new Map<string, OrderLine>();
     for (const l of lines) {
       const m = merged.get(l.pillId);
@@ -626,12 +653,16 @@ function makeOrder(s: GameState, now: number, rng: Rng, forced?: { sender: Sende
   }
   const mainType = PILL_BY_ID[lines[0].pillId].types[0];
   const confidentialFile = confidential || sender.kind === "Anonymous";
+  // Short line that fits what's being asked for, and isn't already on the desk.
+  const onDesk = new Set(s.orders.filter((o) => o.status === "open").map((o) => o.description));
+  const linePool = confidentialFile ? CONFIDENTIAL_LINES : ORDER_LINES_BY_TYPE[mainType];
+  const fresh = linePool.filter((l) => !onDesk.has(l));
   return {
     id: newId(s, "ord"),
     sender: sender.name,
     senderKind: sender.kind,
     title: confidentialFile ? "Confidential" : pick(rng, ORDER_TITLES[mainType]),
-    description: pick(rng, ORDER_LINES[sender.kind]),
+    description: pick(rng, fresh.length ? fresh : linePool),
     lines,
     payout: orderPayout(s, lines, sender, confidential, rng),
     createdAt: now,
@@ -938,7 +969,13 @@ export function fireList(s: GameState): { pillId: string; change: number }[] {
 /** Repair a loaded save so invariants hold (no orphan reservations, no invalid pills, etc.). */
 export function sanitize(s: GameState): GameState {
   s.cash = Math.max(0, Number.isFinite(s.cash) ? s.cash : 0);
-  if (s.freeCopier === undefined) s.freeCopier = null;
+  // v1.5: the Starter tray was folded into the (now free) Copier.
+  const legacyTray = (s as GameState & { freeCopier?: CopierJob | null }).freeCopier;
+  if (legacyTray) {
+    if (!s.copier) s.copier = { ...legacyTray, free: undefined };
+    else for (const st of legacyTray.stars) addSpecimen(s, legacyTray.pillId, st, true, "copier", s.lastTickAt || Date.now());
+  }
+  delete (s as GameState & { freeCopier?: unknown }).freeCopier;
   // Charge was removed in v1.4: drop it from older saves.
   const legacy = s as GameState & { charge?: unknown; chargeUpdatedAt?: unknown };
   delete legacy.charge;

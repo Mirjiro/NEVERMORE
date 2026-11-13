@@ -73,7 +73,7 @@ export interface CopierJob {
   cost: number;
   startedAt: number;
   endsAt: number;
-  /** Free starter batch (no Gold cost). */
+  /** Legacy (v1.4 Starter tray). */
   free?: boolean;
 }
 
@@ -193,8 +193,6 @@ export interface GameState {
   specimens: Specimen[];
   machines: Machine[];
   copier: CopierJob | null;
-  /** The Copier's Starter tray: free batches of the six starter Commons, independent of paid batches. */
-  freeCopier?: CopierJob | null;
   upgrades: Record<string, number>;
   orders: Order[];
   news: NewsItem[];
