@@ -1,6 +1,6 @@
 # ODD DOSE — Build Status
 
-_Last updated: v1.1 — gameplay, UI & visual update complete (see the v1.1 section below)._
+_Last updated: v1.2 — atmosphere, graphics & game feel complete (see the v1.2 section at the end). Change history: CHANGELOG.md._
 
 ## How to run
 
@@ -135,3 +135,29 @@ pre-fills a slot, starred stacks render separately, 0 px horizontal overflow on 
 - Final pill art (registry ready in `src/data/pillArt.ts`).
 - HQ office art is CSS placeholder illustration.
 - Browser checks are still ad-hoc Playwright scripts rather than a committed e2e suite.
+
+---
+
+## v1.2 — Atmosphere, graphics & game feel
+
+Snapshot before this pass: git tag `odd-dose-v1.1.1-snapshot`. Full details in `CHANGELOG.md`.
+
+### Done
+- Gold currency display everywhere (`gold()`), no `$` left (enforced by a source-scan test).
+- Lab redesign + no-spoiler incubation (`incubationView`) + staged discovery reveal.
+- Vault rarity outlines; Copier device, one-screen setup, tray batch reveal with ★ spotlight.
+- Desk: plant removed, stationery + steaming mug, walnut grain, deeper shadows, mystery-delivery mail offers + crate reveal.
+- HQ: company worth in the scene, upgrades visible as objects, larger equipment art.
+- Styles for this pass live in `src/styles/v12.css` (loaded after `app.css`).
+
+### Verified
+- `npm test`: 55 passing (engine, recipes, stamp flow, save fixture, Gold formatting, no-spoiler view,
+  Copier counts + star stacks, rarity outline classes).
+- Browser (iPhone 13 viewport): first-time mix shows only "Something is forming…" / "Something new is waiting"
+  (no name in the Machine); known mix shows "Making Bittersweet"; stamp/ship flow unchanged (checkbox never stamps,
+  paper tap + keyboard stamp, SHIP gated, pays once, no stamp button); Copier start → tray → batch reveal; mail open →
+  crate reveal → queued level-up; "Use in Machine"; 0 px horizontal overflow on all tabs; no `$` on screen; no console errors.
+
+### Next / known gaps
+- Final pill PNGs and equipment art (placeholders are CSS/SVG; registries ready).
+- Browser checks are scripts in a scratch folder, not yet a committed Playwright suite.

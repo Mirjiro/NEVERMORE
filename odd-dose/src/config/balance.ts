@@ -38,7 +38,7 @@ export const BALANCE = {
     sharedTypeParentAChance: 0.5,
   },
 
-  /** Cash to finish a timer early: per remaining minute (rounded up), with a minimum. */
+  /** Gold to finish a timer early: per remaining minute (rounded up), with a minimum. */
   speedUp: {
     cashPerMinute: 4,
     minimum: 2,
@@ -47,7 +47,7 @@ export const BALANCE = {
   // ---------------------------------------------------------------- copier
   copier: {
     baseMaxBatch: 11,
-    /** Cash cost per pill copied. Common $5 → Happy ×11 = $55. */
+    /** Gold cost per pill copied. Common 5g → Happy ×11 = 55g. */
     costPerPill: { common: 5, rare: 28, epic: 140, legendary: 700, secret: 3800 } as Record<Rarity, number>,
     /** Time for a batch of `referenceBatch` pills; scales linearly with quantity. Happy ×11 = 3 min. */
     referenceBatch: 11,

@@ -11,7 +11,7 @@ import type { GameState } from "../../engine/types";
 import { useGame } from "../../store/GameContext";
 import { exportSave, importSave } from "../../store/persistence";
 import { PillArt } from "../components/PillArt";
-import { money } from "../components/common";
+import { gold } from "../components/common";
 import { isMuted, setMuted, sfx } from "../sfx";
 import { Backdoor } from "./Backdoor";
 
@@ -76,21 +76,26 @@ export function HQScreen() {
     <div className="hq">
       {/* Office scene — fills in as the company grows */}
       <section className={`office sky-${sky} lv-${Math.min(lv, 10)}`}>
+        <div className="office-light" aria-hidden />
         <div className="window"><span className="sun" /><span className="city" /></div>
-        <div className="wall-sign"><span>ODD</span><b>DOSE</b></div>
+        <div className="wall-sign"><span>ODD</span><b>DOSE</b><small>est. {new Date(state.createdAt).getFullYear()}</small></div>
+        {upgradeTier(state, "pr") > 0 && <div className="poster" aria-hidden><b>FEEL</b>SOMETHING</div>}
+        {upgradeTier(state, "incubation") > 0 && <div className="wall-gauge" aria-hidden><i style={{ transform: `rotate(${-60 + upgradeTier(state, "incubation") * 40}deg)` }} /></div>}
         <div className="frames">{done.slice(0, 5).map((m) => <span key={m.id} className="frame" title={m.label} />)}</div>
         <div className="office-shelf">
           {showcase.map((p) => <span key={p.id} className="shelf-pill"><PillArt pillId={p.id} size={34} /></span>)}
         </div>
         <div className="office-floor">
           {Array.from({ length: machineCount(state) }).map((_, i) => <span key={i} className="mini-machine" />)}
-          <span className="mini-copier" />
+          <span className={`mini-copier t${upgradeTier(state, "copierBatch")}`}>{upgradeTier(state, "copierSpeed") > 0 && <i className="gear" />}</span>
           {scannerUnlocked(state) && <span className="mini-scanner" />}
+          {upgradeTier(state, "sales") > 0 && <span className="briefcase" />}
           {lv >= 2 && <span className="office-plant" />}
           {backdoorUnlocked(state) && <span className="secret-door" />}
         </div>
         <div className="office-title">
-          <div className="rank">{RANKS[Math.min(lv, 10) - 1]}</div>
+          <div className="company">ODD DOSE <span>· {RANKS[Math.min(lv, 10) - 1]}</span></div>
+          <div className="worth">{gold(value.total)} <small>company worth</small></div>
           <div className="lvl-line"><span className="lvl-pill">Level {lv}</span>
             <span className="lvl-track"><span style={{ width: `${lp.need ? (lp.into / lp.need) * 100 : 100}%` }} /></span>
           </div>
@@ -98,8 +103,8 @@ export function HQScreen() {
       </section>
 
       <div className="hq-stats">
-        <div className="hq-stat"><span className="lbl">Cash</span><b>{money(state.cash)}</b></div>
-        <div className="hq-stat"><span className="lbl">Company worth</span><b>{money(value.total)}</b></div>
+        <div className="hq-stat"><span className="lbl">Gold</span><b>{gold(state.cash)}</b></div>
+        <div className="hq-stat"><span className="lbl">Milestones</span><b>{done.length}<small>/{MILESTONES.length}</small></b></div>
         <div className="hq-stat"><span className="lbl">Popularity</span><b className="hearts">{"♥".repeat(Math.max(1, Math.ceil(state.popularity / 20)))}<i>{"♥".repeat(5 - Math.max(1, Math.ceil(state.popularity / 20)))}</i></b></div>
       </div>
 
@@ -121,7 +126,7 @@ export function HQScreen() {
               </div>
               {next ? (
                 <button className="btn equip-buy" disabled={locked || state.cash < next.cost} onClick={() => buy(u)}>
-                  {locked ? `🔒 Lv ${needLevel}` : money(next.cost)}
+                  {locked ? `🔒 Lv ${needLevel}` : gold(next.cost)}
                 </button>
               ) : <span className="owned-tag">✓ Owned</span>}
             </div>
@@ -144,17 +149,17 @@ export function HQScreen() {
         <summary>Reports</summary>
         <ValueChart data={state.valueHistory.map((h) => h.value)} />
         <div className="breakdown">
-          <span>Cash <b>{money(value.cash)}</b></span>
-          <span>Inventory <b>{money(value.inventory)}</b></span>
-          <span>Equipment <b>{money(value.equipment)}</b></span>
-          <span>Discoveries <b>{money(value.discoveries)}</b></span>
-          <span>Performance <b>{money(value.performance)}</b></span>
+          <span>Gold <b>{gold(value.cash)}</b></span>
+          <span>Inventory <b>{gold(value.inventory)}</b></span>
+          <span>Equipment <b>{gold(value.equipment)}</b></span>
+          <span>Discoveries <b>{gold(value.discoveries)}</b></span>
+          <span>Performance <b>{gold(value.performance)}</b></span>
           <span>Popularity <b>{Math.round(state.popularity)}/100</b></span>
           <span>XP <b>{state.xp}</b></span>
         </div>
         <div className="breakdown">
           <span>Shipments <b>{state.stats.shipments}</b></span>
-          <span>Revenue <b>{money(state.stats.revenue)}</b></span>
+          <span>Revenue <b>{gold(state.stats.revenue)}</b></span>
           <span>Pills made <b>{state.stats.pillsMade}</b></span>
           <span>Machine runs <b>{state.stats.machineRuns}</b></span>
           <span>Copier runs <b>{state.stats.copierRuns}</b></span>

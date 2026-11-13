@@ -172,7 +172,7 @@ describe("copier", () => {
     expect(() => startCopy(s, "zen", 1, T0)).toThrow(/Known/);
     expect(() => startCopy(s, "happy", 12, T0)).toThrow(/Max batch/);
     s.cash = 10;
-    expect(() => startCopy(s, "happy", 11, T0)).toThrow(/Cash/);
+    expect(() => startCopy(s, "happy", 11, T0)).toThrow(/Gold/);
     expect(s.cash).toBe(10);
   });
   it("12. stars are rolled per pill and stored separately from rarity", () => {
@@ -366,7 +366,7 @@ describe("HQ & progression", () => {
     s.xp = BALANCE.company.levelXp[1];
     expect(companyLevel(s)).toBe(2);
     s.cash = 100;
-    expect(() => buyUpgrade(s, "machines")).toThrow(/Cash/);
+    expect(() => buyUpgrade(s, "machines")).toThrow(/Gold/);
     expect(s.cash).toBe(100);
     s.cash = 1500;
     buyUpgrade(s, "machines");

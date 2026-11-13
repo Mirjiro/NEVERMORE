@@ -127,6 +127,6 @@ export const WELCOME = {
     "• LAB — put two pills in the Machine and press START. Parents come back; you get one new pill.\n" +
     "• VAULT — copy any Known pill in batches with the Copier.\n" +
     "• DESK — open order files, tick the checklist, stamp the sticker, SHIP.\n" +
-    "• HQ — spend Cash on Machines, Copier upgrades, the Scanner and more.\n\n" +
+    "• HQ — spend Gold on Machines, Copier upgrades, the Scanner and more.\n\n" +
     "Your NOTEBOOK collects clues automatically. Good luck. — The Board",
 };

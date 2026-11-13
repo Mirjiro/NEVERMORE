@@ -13,7 +13,7 @@ export function formatDuration(ms: number): string {
   return `${sec}s`;
 }
 
-export const money = (n: number) => `$${Math.round(n).toLocaleString("en-US")}`;
+export { gold } from "../../engine/format";
 
 export function RarityTag({ rarity }: { rarity: Rarity }) {
   return <span className={`rarity-tag r-${rarity}`}>{RARITY_LABEL[rarity]}</span>;

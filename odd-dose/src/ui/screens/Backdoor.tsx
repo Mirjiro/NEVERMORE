@@ -4,7 +4,7 @@ import { buyListing, fireList, isKnown, listingPrice, marketPrice, sellPill, sel
 import type { Star } from "../../engine/types";
 import { useGame } from "../../store/GameContext";
 import { PillArt } from "../components/PillArt";
-import { RarityTag, Sparkline, Stars, formatDuration, money } from "../components/common";
+import { RarityTag, Sparkline, Stars, formatDuration, gold } from "../components/common";
 
 export function Backdoor({ onExit }: { onExit: () => void }) {
   const { state, now, act, toast } = useGame();
@@ -63,7 +63,7 @@ export function Backdoor({ onExit }: { onExit: () => void }) {
                   <span className="dim small">Stock {l.stock}</span>
                 </div>
                 <div className="bd-buy">
-                  <span className="price">{money(price)}</span>
+                  <span className="price">{gold(price)}</span>
                   <button className="btn amber" disabled={!l.stock || state.cash < price} onClick={() => { const r = act((s, t) => buyListing(s, l.id, t)); if (r) toast(`Bought ${p.name}${r.isNew ? " — now Known ✓" : ""}`, "good"); }}>
                     {l.stock ? "Buy" : "Sold out"}
                   </button>
@@ -89,8 +89,8 @@ export function Backdoor({ onExit }: { onExit: () => void }) {
                   <span className="dim small">{RARITY_LABEL[p.rarity]} · you have {g.count}</span>
                 </div>
                 <div className="bd-buy">
-                  <span className="price">{money(price)}</span>
-                  <button className="btn ghost-dark" onClick={() => { const r = act((s, t) => sellPill(s, g.pillId, g.star, t)); if (r) toast(`Sold ${p.name} for ${money(r.price)}`, "good"); }}>Sell 1</button>
+                  <span className="price">{gold(price)}</span>
+                  <button className="btn ghost-dark" onClick={() => { const r = act((s, t) => sellPill(s, g.pillId, g.star, t)); if (r) toast(`Sold ${p.name} for ${gold(r.price)}`, "good"); }}>Sell 1</button>
                 </div>
               </div>
             );
@@ -110,7 +110,7 @@ export function Backdoor({ onExit }: { onExit: () => void }) {
                 <div key={id} className="trend-row">
                   <span className="trend-name">{PILL_BY_ID[id].name}</span>
                   <Sparkline data={h} width={120} height={24} />
-                  <span className="mono">{money(marketPrice(state, id, 0))}</span>
+                  <span className="mono">{gold(marketPrice(state, id, 0))}</span>
                   <span className={`mono ${change >= 0 ? "up" : "down"}`}>{change >= 0 ? "+" : ""}{(change * 100).toFixed(1)}%</span>
                 </div>
               );
@@ -125,7 +125,7 @@ export function Backdoor({ onExit }: { onExit: () => void }) {
             <div key={t.id} className="tx-row">
               <span className={`tx-kind ${t.kind}`}>{t.kind === "buy" ? "BUY" : "SELL"}</span>
               <span>{PILL_BY_ID[t.pillId].name} <Stars star={t.star} /></span>
-              <span className="mono">{t.kind === "buy" ? "−" : "+"}{money(t.price)}</span>
+              <span className="mono">{t.kind === "buy" ? "−" : "+"}{gold(t.price)}</span>
               <span className="dim small">{formatDuration(now - t.at)} ago</span>
             </div>
           ))}

@@ -11,13 +11,14 @@ import {
 } from "../data/content";
 import type { Sender } from "../data/content";
 import { COMMON_IDS, PILLS, PILL_BY_ID, PILL_IDS, RARITY_LABEL, TYPE_LABEL, pillsOfRarity } from "../data/pills";
+import { gold } from "./format";
 import { pick, randInt, randRange, weightedIndex } from "./random";
 import { resolveBreed } from "./recipes";
 import {
   GameError, RARITIES,
 } from "./types";
 import type {
-  CopierJob, Draft, GameState, MailOffer, Order, OrderLine, PillDef, Rarity, Rng, Specimen, SpecimenSource, Star,
+  CopierJob, Draft, MachineJob, GameState, MailOffer, Order, OrderLine, PillDef, Rarity, Rng, Specimen, SpecimenSource, Star,
 } from "./types";
 
 export const SAVE_VERSION = 1;
@@ -168,7 +169,7 @@ function addNews(s: GameState, now: number, n: { kind: GameState["news"][number]
 
 function spendCash(s: GameState, amount: number) {
   if (!Number.isFinite(amount) || amount < 0) throw new GameError("Invalid amount.");
-  if (s.cash < amount) throw new GameError(`Not enough Cash (need $${fmt(amount)}).`);
+  if (s.cash < amount) throw new GameError(`Not enough Gold (need ${gold(amount)}).`);
   s.cash -= amount;
 }
 function spendCharge(s: GameState, amount: number, now: number) {
@@ -404,6 +405,17 @@ export function collectMachine(s: GameState, machineId: string, now: number): Re
   return { pillId: job.resultPillId, star: job.resultStar, isNew, rarity: job.resultRarity, rule: job.rule };
 }
 
+/**
+ * What the Machine is allowed to show about a job before collection.
+ * Undiscovered results never leak name, art or star. Stars are never shown before collection.
+ */
+export function incubationView(s: GameState, job: MachineJob): { known: boolean; pillId: string | null; label: string } {
+  const known = isKnown(s, job.resultPillId);
+  return known
+    ? { known, pillId: job.resultPillId, label: `Making ${PILL_BY_ID[job.resultPillId].name}` }
+    : { known, pillId: null, label: "Something is forming…" };
+}
+
 export function speedUpMachine(s: GameState, machineId: string, now: number): number {
   const m = s.machines.find((x) => x.id === machineId);
   if (!m || !m.job) throw new GameError("Nothing to speed up.");
@@ -478,7 +490,7 @@ export function scanSpecimen(s: GameState, specimenId: string, now: number, rng:
   if (sp.identified || isKnown(s, sp.pillId)) throw new GameError("Known ✓ pills can't be scanned.");
   if (sp.reservedBy) throw new GameError("That specimen is in use.");
   const { cashCost, chargeCost, outcomes } = BALANCE.scanner;
-  if (s.cash < cashCost) throw new GameError(`Not enough Cash (need $${cashCost}).`);
+  if (s.cash < cashCost) throw new GameError(`Not enough Gold (need ${gold(cashCost)}).`);
   if (s.charge < chargeCost) throw new GameError(`Not enough Charge (need ${chargeCost}).`);
   spendCash(s, cashCost);
   spendCharge(s, chargeCost, now);

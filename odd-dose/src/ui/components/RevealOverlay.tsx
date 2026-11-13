@@ -9,29 +9,55 @@ import { RarityTag, TypeChips } from "./common";
 const reducedMotion = () => typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
 /**
- * Reveals for Machine results, Copier batches, Mail pulls and level-ups.
- * Familiar pills reveal quickly; new discoveries get the full show; new Legendary/Secret get the most.
- * Tap once to skip to the end, tap again to close.
+ * Machine reveal stages:
+ *   0 sealed → 1 pill appears → 2 suspense → 3 name → 4 rarity → 5 stars (only if starred) → 6 collect.
+ * Familiar pills jump straight to the end. Tap to skip ahead; tap again to close.
  */
+const FINAL = 6;
+
 export function RevealOverlay() {
   const { reveal, setReveal } = useGame();
   const [stage, setStage] = useState(0);
   useEffect(() => {
     setStage(0);
     if (!reveal) return;
-    const isNew = reveal.kind === "machine" && reveal.reveal.isNew;
-    const big = reveal.kind === "machine" && isNew && ["legendary", "secret"].includes(reveal.reveal.rarity);
-    const fast = reducedMotion() || (reveal.kind === "machine" && !isNew);
-    const [t1, t2] = fast ? [120, 380] : big ? [1100, 2000] : [600, 1200];
-    if (reveal.kind === "machine") (big ? sfx.epic : isNew ? sfx.reveal : sfx.tap)();
-    if (reveal.kind === "level") sfx.upgrade();
-    const a = setTimeout(() => setStage(1), t1);
-    const b = setTimeout(() => setStage(2), t2);
-    return () => { clearTimeout(a); clearTimeout(b); };
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    const at = (ms: number, fn: () => void) => timers.push(setTimeout(fn, ms));
+    if (reveal.kind === "machine") {
+      const r = reveal.reveal;
+      const big = r.isNew && (r.rarity === "legendary" || r.rarity === "secret");
+      if (!r.isNew || reducedMotion()) {
+        sfx.tap();
+        at(80, () => setStage(1));
+        at(320, () => { setStage(FINAL); if (r.star) sfx.stars(); });
+      } else {
+        const k = big ? 1.5 : 1;
+        at(300 * k, () => { setStage(1); sfx.close(); });
+        at(700 * k, () => { setStage(2); sfx.suspense(); });
+        at(1500 * k, () => { setStage(3); (big ? sfx.epic : sfx.reveal)(); });
+        at(1950 * k, () => setStage(4));
+        if (r.star) at(2450 * k, () => { setStage(5); sfx.stars(); });
+        at((r.star ? 2900 : 2350) * k, () => setStage(FINAL));
+      }
+    } else if (reveal.kind === "copier") {
+      sfx.ready();
+      at(100, () => setStage(1));
+      const lucky = reveal.stars.some((s) => s > 0);
+      at(250 + reveal.stars.length * 45, () => { setStage(lucky ? 2 : FINAL); if (lucky) sfx.stars(); });
+      if (lucky) at(1500 + reveal.stars.length * 45, () => setStage(FINAL));
+    } else if (reveal.kind === "mail") {
+      at(500, () => { setStage(1); sfx.paper(); });
+      at(1100, () => setStage(2));
+      at(1100 + reveal.results.length * 260 + 500, () => setStage(FINAL));
+    } else {
+      sfx.upgrade();
+      setStage(FINAL);
+    }
+    return () => timers.forEach(clearTimeout);
   }, [reveal]);
   if (!reveal) return null;
   const close = () => setReveal(null);
-  const tap = () => (stage < 2 ? setStage(2) : close());
+  const tap = () => (stage < FINAL ? setStage(FINAL) : close());
 
   if (reveal.kind === "level") {
     return (
@@ -39,7 +65,7 @@ export function RevealOverlay() {
         <div className="reveal level-up">
           <div className="reveal-kicker">Your company grew</div>
           <div className="level-num">Level {reveal.level}</div>
-          <p className="muted">New upgrades may be waiting at HQ.</p>
+          <p className="muted">New equipment may be waiting at HQ.</p>
           <button className="btn cream" onClick={close}>Nice!</button>
         </div>
       </div>
@@ -51,20 +77,20 @@ export function RevealOverlay() {
     const def = PILL_BY_ID[r.pillId];
     const big = r.isNew && (r.rarity === "legendary" || r.rarity === "secret");
     return (
-      <div className={`reveal-backdrop r-${r.rarity} ${big ? "dramatic" : ""} ${r.isNew ? "" : "familiar"}`} onClick={tap}>
-        <div className={`reveal machine-reveal stage-${stage} ${r.isNew ? "is-new" : ""}`}>
+      <div className={`reveal-backdrop r-${r.rarity} ${big ? "dramatic" : ""} ${r.isNew ? "is-new" : "familiar"} st-${stage}`} onClick={tap}>
+        <div className="reveal machine-reveal">
           {r.isNew && <div className="rays" />}
+          {big && <div className="sparks" aria-hidden>{Array.from({ length: 14 }).map((_, i) => <i key={i} style={{ ["--a" as string]: `${i * 26}deg` }} />)}</div>}
           <div className="capsule-shell"><div className="shell-top" /><div className="shell-bottom" /></div>
-          <div className="reveal-pill"><PillArt pillId={r.pillId} size={r.isNew ? 210 : 170} /></div>
-          {stage >= 2 && (
-            <div className="reveal-info">
-              {r.isNew && <div className="reveal-kicker gold">New Pill!</div>}
-              <h2>{def.name}{r.star > 0 && <span className={`pcard-stars s${r.star}`}>{"★".repeat(r.star)}</span>}</h2>
-              <div className="reveal-meta"><RarityTag rarity={def.rarity} />{r.isNew && <TypeChips types={def.types} />}</div>
-              {r.isNew && <p className="flavor">“{def.flavor}”</p>}
-              <button className="btn cream" onClick={(e) => { e.stopPropagation(); close(); }}>{r.isNew ? "Add to collection" : "Got it"}</button>
-            </div>
-          )}
+          <div className="reveal-pill"><PillArt pillId={r.pillId} size={r.isNew ? 220 : 170} /></div>
+          <div className="reveal-info">
+            {r.isNew && <div className={`reveal-kicker gold ${stage >= 3 ? "show" : ""}`}>New Pill!</div>}
+            <h2 className={stage >= 3 ? "show" : ""}>{def.name}</h2>
+            <div className={`reveal-meta ${stage >= 4 ? "show" : ""}`}><RarityTag rarity={def.rarity} />{r.isNew && <TypeChips types={def.types} />}</div>
+            {r.star > 0 && <div className={`reveal-stars s${r.star} ${stage >= 5 ? "show" : ""}`}>{"★".repeat(r.star)}</div>}
+            {r.isNew && <p className={`flavor ${stage >= FINAL ? "show" : ""}`}>“{def.flavor}”</p>}
+            <button className={`btn cream ${stage >= FINAL ? "show" : ""}`} onClick={(e) => { e.stopPropagation(); close(); }}>Collect</button>
+          </div>
         </div>
       </div>
     );
@@ -72,36 +98,45 @@ export function RevealOverlay() {
 
   if (reveal.kind === "copier") {
     const def = PILL_BY_ID[reveal.pillId];
-    const starred = reveal.stars.filter((s) => s > 0);
+    const starred = reveal.stars.map((s, i) => ({ s, i })).filter((x) => x.s > 0);
     return (
-      <div className="reveal-backdrop" onClick={close}>
+      <div className={`reveal-backdrop st-${stage}`} onClick={tap}>
         <div className="reveal batch-reveal">
           <div className="reveal-kicker">Batch ready</div>
-          <div className="batch-row">
-            {reveal.stars.slice(0, 22).map((s, i) => (
-              <span key={i} className={`batch-pill ${s ? "lucky-one" : ""}`} style={{ animationDelay: `${i * 40}ms` }}><PillArt pillId={def.id} star={s as Star} size={46} /></span>
+          <div className={`batch-tray n${Math.min(reveal.stars.length, 44)}`}>
+            {reveal.stars.map((s, i) => (
+              <span key={i} className={`batch-pill ${s ? "lucky-one" : ""}`} style={{ animationDelay: `${i * 45}ms` }}>
+                <PillArt pillId={def.id} size={reveal.stars.length > 22 ? 32 : 44} />
+                {s > 0 && stage >= 2 && <b className="batch-star">{"★".repeat(s)}</b>}
+              </span>
             ))}
           </div>
           <h2>{reveal.quantity} × {def.name}</h2>
-          {starred.length > 0 && <p className="lucky">Lucky! {starred.map((s) => "★".repeat(s)).join(" ")}</p>}
-          <button className="btn cream" onClick={close}>Into the Vault</button>
+          {starred.length > 0 && stage >= 2 && (
+            <div className="lucky-spot">
+              <PillArt pillId={def.id} star={Math.max(...starred.map((x) => x.s)) as Star} size={90} />
+              <span>Lucky copy! {starred.map((x) => "★".repeat(x.s)).join(" ")}</span>
+            </div>
+          )}
+          <button className={`btn cream ${stage >= FINAL ? "show" : ""}`} onClick={(e) => { e.stopPropagation(); close(); }}>Into the Vault</button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="reveal-backdrop" onClick={() => (stage >= 1 ? close() : setStage(1))}>
+    <div className={`reveal-backdrop st-${stage}`} onClick={tap}>
       <div className="reveal mail-reveal">
         <div className="reveal-kicker">{reveal.name}</div>
+        <div className="crate"><div className="crate-lid" /><div className="crate-box" /></div>
         <div className="mail-results">
           {reveal.results.map((r, i) => {
             const def = PILL_BY_ID[r.pillId];
             return (
-              <div key={i} className={`mail-card r-${r.identified ? def.rarity : "unknown"} ${stage >= 1 ? "flipped" : ""}`} style={{ transitionDelay: `${i * 220}ms` }}>
-                <div className="mail-card-back">ODD<br />DOSE</div>
+              <div key={i} className={`mail-card r-${r.identified ? def.rarity : "unknown"} ${stage >= 2 ? "flipped" : ""}`} style={{ transitionDelay: `${i * 260}ms` }}>
+                <div className="mail-card-back"><span className="wax-mini" /></div>
                 <div className="mail-card-front">
-                  <PillArt pillId={r.pillId} unknown={!r.identified} size={92} />
+                  <PillArt pillId={r.pillId} unknown={!r.identified} size={88} />
                   <strong>{r.identified ? def.name : "? Pill"}{r.star > 0 && r.identified && <span className={`pcard-stars s${r.star}`}>{"★".repeat(r.star)}</span>}</strong>
                   <span className="muted small">{r.identified ? RARITY_LABEL[def.rarity] : "Unlabeled"}</span>
                   {r.isNew && <span className="new-chip">NEW</span>}
@@ -110,7 +145,7 @@ export function RevealOverlay() {
             );
           })}
         </div>
-        <button className="btn cream" onClick={close}>Done</button>
+        <button className={`btn cream ${stage >= FINAL ? "show" : ""}`} onClick={(e) => { e.stopPropagation(); close(); }}>Done</button>
       </div>
     </div>
   );

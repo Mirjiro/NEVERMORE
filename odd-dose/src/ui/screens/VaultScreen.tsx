@@ -10,7 +10,7 @@ import { useGame } from "../../store/GameContext";
 import type { Tab } from "../App";
 import { PillArt } from "../components/PillArt";
 import { PillCard } from "../components/PillCard";
-import { RarityTag, Sheet, TypeChips, formatDuration, money, pillName } from "../components/common";
+import { RarityTag, Sheet, TypeChips, formatDuration, gold, pillName } from "../components/common";
 import { sfx } from "../sfx";
 
 type Filter = "all" | "starred" | Rarity;
@@ -69,7 +69,7 @@ export function VaultScreen({ goto, useInMachine }: { goto: (t: Tab) => void; us
           onMachine={() => { setOpen(null); useInMachine(open.pillId); }}
           onCopy={() => { setOpen(null); setCopier(open.pillId); }} />
       )}
-      <CopierSheet target={copier} onClose={() => setCopier(null)} onPick={(id) => setCopier(id)} />
+      <CopierSheet key={String(copier)} target={copier} onClose={() => setCopier(null)} />
     </div>
   );
 }
@@ -79,35 +79,44 @@ function CopierBench({ onMake }: { onMake: () => void }) {
   const job = state.copier;
   const ready = !!job && job.endsAt <= now;
   const progress = job ? Math.min(1, (now - job.startedAt) / (job.endsAt - job.startedAt)) : 0;
+  const made = job ? (ready ? job.quantity : Math.floor(progress * job.quantity)) : 0;
+  const slots = job ? Math.min(job.quantity, 22) : 11;
+  const filled = job ? Math.round((made / job.quantity) * slots) : 0;
   const collect = () => {
     const r = act((s, t) => collectCopy(s, t));
-    if (r) { sfx.ready(); setReveal({ kind: "copier", pillId: r.pillId, quantity: r.quantity, stars: r.stars }); }
+    if (r) setReveal({ kind: "copier", pillId: r.pillId, quantity: r.quantity, stars: r.stars });
   };
   return (
     <section className={`bench ${job ? (ready ? "ready" : "working") : "idle"}`}>
-      <div className="bench-machine" aria-hidden>
-        <div className="bench-hopper">{job && <PillArt pillId={job.pillId} size={50} />}</div>
-        <div className="bench-belt"><span style={{ width: `${progress * 100}%` }} /></div>
-        <div className="bench-tray">{job && Array.from({ length: Math.min(6, Math.ceil(progress * 6)) }).map((_, i) => <PillArt key={i} pillId={job.pillId} size={22} />)}</div>
+      <div className="cp-device" aria-hidden>
+        <div className="cp-head">
+          <span className="cp-lamp" />
+          <span className="cp-plate">COPIER</span>
+          <span className="cp-dial"><i style={{ transform: `rotate(${-120 + progress * 240}deg)` }} /></span>
+        </div>
+        <div className="cp-window">{job ? <PillArt pillId={job.pillId} size={58} /> : <span className="cp-empty" />}</div>
+        <div className="cp-rollers"><i /><i /><i /></div>
       </div>
       <div className="bench-info">
-        <h2>Copier</h2>
-        {!job && <><p className="muted small">Copy any pill you've discovered.</p><button className="btn gold" onClick={onMake}>Make pills</button></>}
+        <div className="bench-row">
+          <h2>Copier</h2>
+          {job && <span className="cp-count mono">{made} / {job.quantity}</span>}
+        </div>
+        <div className={`cp-tray ${job ? "" : "idle"}`}>
+          {Array.from({ length: slots }).map((_, i) => (
+            <span key={i} className={`cp-slot ${i < filled ? "full" : ""}`}>{job && i < filled && <PillArt pillId={job.pillId} size={24} />}</span>
+          ))}
+        </div>
+        {!job && <button className="btn gold" onClick={onMake}>Make pills</button>}
         {job && !ready && (
-          <>
-            <p><strong>{job.quantity} × {pillName(job.pillId)}</strong></p>
-            <p className="timer mono">{formatDuration(job.endsAt - now)}</p>
+          <div className="bench-row">
+            <span className="timer mono">{formatDuration(job.endsAt - now)}</span>
             <button className="btn ghost-dark small" disabled={state.cash < speedUpCost(job.endsAt, now)} onClick={() => act((s, t) => speedUpCopy(s, t))}>
-              Finish now · {money(speedUpCost(job.endsAt, now))}
+              Finish · {gold(speedUpCost(job.endsAt, now))}
             </button>
-          </>
+          </div>
         )}
-        {job && ready && (
-          <>
-            <p><strong>Ready!</strong> {job.quantity} × {pillName(job.pillId)}</p>
-            <button className="btn gold pulse" onClick={collect}>Collect</button>
-          </>
-        )}
+        {job && ready && <button className="btn gold pulse" onClick={collect}>Collect {job.quantity} × {pillName(job.pillId)}</button>}
       </div>
     </section>
   );
@@ -141,8 +150,8 @@ function PillDetail({ pillId, star, onClose, onMachine, onCopy }: { pillId: stri
         <button className="btn primary" disabled={available < 1} onClick={onMachine}>Use in Machine</button>
         <button className="btn ghost" onClick={onCopy}>Make more</button>
         {backdoorUnlocked(state) && (
-          <button className="btn ghost" disabled={!canSell} onClick={() => { const r = act((s, t) => sellPill(s, pillId, star, t)); if (r) { sfx.coin(); toast(`Sold for ${money(r.price)}`, "good"); if (count <= 1) onClose(); } }}>
-            Sell 1 · {money(price)}
+          <button className="btn ghost" disabled={!canSell} onClick={() => { const r = act((s, t) => sellPill(s, pillId, star, t)); if (r) { sfx.coin(); toast(`Sold for ${gold(r.price)}`, "good"); if (count <= 1) onClose(); } }}>
+            Sell 1 · {gold(price)}
           </button>
         )}
       </div>
@@ -166,44 +175,42 @@ function PillDetail({ pillId, star, onClose, onMachine, onCopy }: { pillId: stri
           {d && <><dt>Discovered</dt><dd>{new Date(d.at).toLocaleDateString()} · {d.how}</dd></>}
           {d && d.bestStar > 0 && <><dt>Best ever</dt><dd className="stars">{"★".repeat(d.bestStar)}</dd></>}
           <dt>All copies</dt><dd>{allVariants}</dd>
-          <dt>Market value</dt><dd>{money(marketPrice(state, pillId, star))}</dd>
+          <dt>Market value</dt><dd>{gold(marketPrice(state, pillId, star))}</dd>
         </dl>
       </details>
     </Sheet>
   );
 }
 
-function CopierSheet({ target, onClose, onPick }: { target: string | null | "pick"; onClose: () => void; onPick: (id: string) => void }) {
+function CopierSheet({ target, onClose }: { target: string | null | "pick"; onClose: () => void }) {
   const { state, now, act, toast } = useGame();
   const max = copierMaxBatch(state);
+  const known = PILLS.filter((p) => isKnown(state, p.id));
   const [qty, setQty] = useState(11);
+  const [sel, setSel] = useState<string | null>(null);
   if (target === null) return null;
+  const pillId = sel ?? (target !== "pick" ? target : known[0]?.id);
+  if (!pillId) return null;
   const busy = state.copier;
-
-  if (target === "pick") {
-    const known = PILLS.filter((p) => isKnown(state, p.id));
-    return (
-      <Sheet open onClose={onClose} title="What should we make?" className="copier-sheet">
-        <div className="pick-grid">
-          {known.map((p) => <PillCard key={p.id} pillId={p.id} variant="compact" note={money(copierQuote(state, p.id, 1).cost) + " each"} onClick={() => { sfx.tap(); onPick(p.id); }} />)}
-        </div>
-      </Sheet>
-    );
-  }
-
-  const p = PILL_BY_ID[target];
+  const p = PILL_BY_ID[pillId];
   const q = Math.max(1, Math.min(qty, max));
-  const quote = copierQuote(state, target, q);
+  const quote = copierQuote(state, pillId, q);
+  const close = () => { setSel(null); onClose(); };
   const make = () => {
-    const r = act((s, t, rng) => startCopy(s, target, q, t, rng));
-    if (r) { sfx.insert(); toast(`Copier started: ${q} × ${p.name}`, "good"); onClose(); }
+    const r = act((s, t, rng) => startCopy(s, pillId, q, t, rng));
+    if (r) { sfx.insert(); toast(`Copying ${q} × ${p.name}`, "good"); close(); }
   };
   const presets = [1, 5, 11, max].filter((v, i, a) => v <= max && a.indexOf(v) === i);
   return (
-    <Sheet open onClose={onClose} title="Copier" className="copier-sheet">
-      <div className="copy-hero">
-        <PillArt pillId={target} size={130} />
-        <div><h2>{p.name}</h2><RarityTag rarity={p.rarity} /></div>
+    <Sheet open onClose={close} title="Copier" className={`copier-sheet r-${p.rarity}`}>
+      <div className="copy-stage">
+        <div className="copy-glow" />
+        <PillArt pillId={pillId} size={150} />
+        <h2>{p.name}</h2>
+        <RarityTag rarity={p.rarity} />
+      </div>
+      <div className="copy-strip">
+        {known.map((k) => <PillCard key={k.id} pillId={k.id} variant="mini" selected={k.id === pillId} onClick={() => { sfx.tap(); setSel(k.id); }} />)}
       </div>
       {busy ? (
         <p className="muted center">The Copier is busy for {formatDuration(busy.endsAt - now)}.</p>
@@ -215,10 +222,9 @@ function CopierSheet({ target, onClose, onPick }: { target: string | null | "pic
             <button className="qty-btn" onClick={() => setQty(Math.min(max, q + 1))} aria-label="More">+</button>
           </div>
           <div className="presets">{presets.map((v) => <button key={v} className={`chip ${q === v ? "on" : ""}`} onClick={() => setQty(v)}>{v === max && v !== 11 ? `Max ${v}` : v}</button>)}</div>
-          <button className="btn gold big wide" disabled={state.cash < quote.cost} onClick={make}>
-            Make {q} · {money(quote.cost)}
-          </button>
-          <p className="muted small center">Ready in {formatDuration(quote.ms)} · each copy might come out ★</p>
+          <div className="copy-quote"><span><b>{gold(quote.cost)}</b> total</span><span><b>{formatDuration(quote.ms)}</b> to make</span></div>
+          <button className="btn gold big wide" disabled={state.cash < quote.cost} onClick={make}>Start copying</button>
+          <p className="muted small center">Every copy has a tiny chance to come out ★</p>
         </>
       )}
     </Sheet>

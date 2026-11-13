@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { BALANCE } from "../config/balance";
 import { companyLevel, levelProgress, msUntilNextCharge } from "../engine/game";
 import { useGame } from "../store/GameContext";
-import { formatDuration, money } from "./components/common";
+import { formatDuration, gold } from "./components/common";
 import { Notebook } from "./components/Notebook";
 import { RevealOverlay } from "./components/RevealOverlay";
 import { DeskScreen } from "./screens/DeskScreen";
@@ -50,7 +50,7 @@ export function App() {
           </span>
         </div>
         <div className="resources">
-          <div className="res cash" title="Cash"><span className="res-label">Cash</span><span className="res-val">{money(state.cash)}</span></div>
+          <div className="res cash" title="Gold"><span className="res-label">Gold</span><span className="res-val">{gold(state.cash)}</span></div>
           <div className="res charge" title={nextCharge === null ? "Charge full" : `+1 in ${formatDuration(nextCharge)}`}>
             <span className="res-label">Charge</span>
             <span className="res-val"><span className="bolt">ϟ</span>{state.charge}<small>/{BALANCE.charge.max}</small></span>

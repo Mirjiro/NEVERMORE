@@ -63,4 +63,8 @@ export const sfx = {
   epic: () => { [392, 523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, i * 0.11, 0.9, "triangle", 0.07)); },
   upgrade: () => { [523, 784, 1047].forEach((f, i) => tone(f, i * 0.08, 0.4, "triangle", 0.07)); },
   error: () => tone(220, 0, 0.14, "triangle", 0.08, 170),
+  /** Soft mechanical hum when a Machine starts incubating. */
+  hum: () => { tone(70, 0, 1.8, "sine", 0.12); tone(140, 0.05, 1.6, "sine", 0.04); tone(105, 0.3, 1.2, "triangle", 0.02); },
+  stars: () => { [1568, 2093, 2637].forEach((f, i) => tone(f, i * 0.07, 0.4, "triangle", 0.06)); },
+  suspense: () => { tone(220, 0, 0.9, "sine", 0.06, 440); },
 };

@@ -6,7 +6,7 @@ import { RARITIES } from "../../engine/types";
 import type { MailOffer, NewsItem, Order } from "../../engine/types";
 import { useGame } from "../../store/GameContext";
 import { PillArt } from "../components/PillArt";
-import { money } from "../components/common";
+import { gold } from "../components/common";
 import { sfx } from "../sfx";
 import { allChecked, applyStamp, canShip, canStamp, friendlyDue, initialFlow, toggleCheck } from "../shipFlow";
 import type { ShipFlow, Stamp } from "../shipFlow";
@@ -39,8 +39,9 @@ export function DeskScreen() {
     <div className="desk-wrap">
       <div className="desk">
         <div className="lamp-light" aria-hidden />
-        <div className="deco plant" aria-hidden><i /></div>
-        <div className="deco mug" aria-hidden />
+        <div className="deco notepad" aria-hidden><i /><i /><i /><i /></div>
+        <div className="deco pencil" aria-hidden />
+        <div className="deco mug" aria-hidden><span className="handle" /><span className="steam"><i /><i /><i /></span></div>
         <div className="deco pen" aria-hidden />
         <div className="deco clips" aria-hidden><i /><i /></div>
         <div className="deco sticky" aria-hidden>{new Date(now).toLocaleDateString(undefined, { weekday: "short", day: "numeric" })}</div>
@@ -65,7 +66,7 @@ export function DeskScreen() {
                     ))}
                   </span>
                   <span className="paper-foot">
-                    <strong>{money(o.payout)}{o.confidential && <span className="premium-tag">Premium</span>}</strong>
+                    <strong>{gold(o.payout)}{o.confidential && <span className="premium-tag">Premium</span>}</strong>
                     <span className={o.status === "expired" ? "warn" : "muted"}>{o.status === "expired" ? "Expired" : `Due ${friendlyDue(o.expiresAt - now)}`}</span>
                   </span>
                   {o.status === "expired" && <span className="stamp-mark expired-mark">Expired</span>}
@@ -87,7 +88,8 @@ export function DeskScreen() {
                   <span className="wax">{m.identified ? "OD" : "?"}</span>
                   <span className="stampbox" />
                   <span className="paper-title">{m.name}</span>
-                  <span className="paper-foot"><strong>{money(m.price)}</strong><span className="muted">{m.pulls} pill{m.pulls > 1 ? "s" : ""}</span></span>
+                  <span className="mail-sub">{m.pulls} {m.identified ? "mystery" : "unlabeled"} pill{m.pulls > 1 ? "s" : ""}</span>
+                  <span className="paper-foot"><strong>{gold(m.price)}</strong><span className="muted">Sealed</span></span>
                 </button>
               ))}
             </div>
@@ -122,7 +124,7 @@ export function DeskScreen() {
         )}
       </div>
 
-      {payout && <div key={payout.key} className="payout-pop"><span className="coin" />+{money(payout.amount)}</div>}
+      {payout && <div key={payout.key} className="payout-pop"><span className="coin" />+{gold(payout.amount)}</div>}
 
       {focus?.kind === "order" && <OrderDoc id={focus.id} onClose={() => setFocus(null)} onShipped={(amount) => setPayout({ amount, key: Date.now() })} />}
       {focus?.kind === "mail" && <MailDoc offer={state.mail.find((m) => m.id === focus.id)} onClose={() => setFocus(null)} />}
@@ -251,7 +253,7 @@ function OrderDoc({ id, onClose, onShipped }: { id: string; onClose: () => void;
       </div>
 
       <div className="order-foot">
-        <div><span className="muted small">Reward{order.confidential && <span className="premium-tag">Premium</span>}</span><div className="payout">{money(order.payout)}</div></div>
+        <div><span className="muted small">Reward{order.confidential && <span className="premium-tag">Premium</span>}</span><div className="payout">{gold(order.payout)}</div></div>
         <div className="due"><span className="muted small">Due</span><div>{order.status === "expired" ? <span className="warn">Expired</span> : friendlyDue(order.expiresAt - now)}</div></div>
       </div>
 
@@ -275,6 +277,15 @@ function OrderDoc({ id, onClose, onShipped }: { id: string; onClose: () => void;
   );
 }
 
+/** Stacked bar of rarity odds — accurate widths, colors per rarity. */
+function OddsBar({ odds }: { odds: MailOffer["odds"] }) {
+  return (
+    <div className="odds-stack" role="img" aria-label={RARITIES.filter((r) => odds[r] > 0).map((r) => `${RARITY_LABEL[r]} ${odds[r]}%`).join(", ")}>
+      {RARITIES.filter((r) => odds[r] > 0).map((r) => <i key={r} className={`r-${r}`} style={{ flexGrow: odds[r] }} />)}
+    </div>
+  );
+}
+
 function MailDoc({ offer, onClose }: { offer?: MailOffer; onClose: () => void }) {
   const { state, now, act, setReveal } = useGame();
   if (!offer) return null;
@@ -283,33 +294,40 @@ function MailDoc({ offer, onClose }: { offer?: MailOffer; onClose: () => void })
     const res = act((s, t, rng) => openMail(s, offer.id, t, rng));
     if (res) { sfx.paper(); setReveal({ kind: "mail", results: res, name: offer.name }); onClose(); }
   };
+  const best = RARITIES.filter((r) => offer.odds[r] > 0).slice(-1)[0];
   return (
-    <FocusFrame onClose={onClose} className="mail-doc">
-      <div className="doc-kicker">From {offer.seller}</div>
+    <FocusFrame onClose={onClose} className={`mail-doc ${offer.identified ? "" : "mystery"}`}>
+      <div className="doc-kicker">Delivery from {offer.seller}</div>
       <h2 className="order-title">{offer.name}</h2>
-      <p className="order-quote">{offer.blurb}</p>
-      <div className="mail-facts">
-        <span><b>{offer.pulls}</b> pill{offer.pulls > 1 ? "s" : ""}</span>
-        <span>{offer.identified ? "Labeled ✓" : "Unlabeled ?"}</span>
-        <span className="muted">Expires in {friendlyDue(offer.expiresAt - now)}</span>
+      <p className="mail-count">{offer.pulls} {offer.identified ? "mystery" : "unlabeled"} pill{offer.pulls > 1 ? "s" : ""}</p>
+      <div className="compartments">
+        {Array.from({ length: offer.pulls }).map((_, i) => <span key={i} className="compartment"><span className="sealed-pill" /><span className="seal" /></span>)}
       </div>
-      <div className="odds-table">
-        {RARITIES.filter((r) => offer.odds[r] > 0).map((r) => (
-          <div key={r} className={`odds-row r-${r}`}>
-            <span>{RARITY_LABEL[r]}</span>
-            <span className="odds-bar"><i style={{ width: `${offer.odds[r]}%` }} /></span>
-            <b className="mono">{offer.odds[r]}%</b>
-          </div>
-        ))}
+      <div className="price-line"><span className="muted small">Price</span><b>{gold(offer.price)}</b></div>
+      <OddsBar odds={offer.odds} />
+      <div className="odds-legend">
+        {RARITIES.filter((r) => offer.odds[r] > 0).map((r) => <span key={r} className={`r-${r}`}><i />{RARITY_LABEL[r]} {offer.odds[r]}%</span>)}
       </div>
+      <p className="plain">{offer.identified
+        ? "Each pill goes to your Vault and becomes Known ✓ — then you can copy it any time."
+        : "Pills arrive unlabeled (?). Scan them in the Lab to find out what they are."}</p>
       <details className="more">
-        <summary>Star odds & pool</summary>
-        <p className="small">★ {((offer.starOdds[1] / totalStars) * 100).toFixed(1)}% · ★★ {((offer.starOdds[2] / totalStars) * 100).toFixed(1)}% per pill.</p>
-        <p className="small muted">Any pill of the rolled rarity can appear, equally likely. {offer.identified ? "Labeled pills become Known ✓." : "Unlabeled pills arrive as ? and need the Scanner."}</p>
+        <summary>Odds &amp; contents</summary>
+        <div className="odds-table">
+          {RARITIES.map((r) => (
+            <div key={r} className={`odds-row r-${r}`}>
+              <span>{RARITY_LABEL[r]}</span>
+              <span className="odds-bar"><i style={{ width: `${offer.odds[r]}%` }} /></span>
+              <b className="mono">{offer.odds[r]}%</b>
+            </div>
+          ))}
+        </div>
+        <p className="small mt">Per pill: ★ {((offer.starOdds[1] / totalStars) * 100).toFixed(1)}% · ★★ {((offer.starOdds[2] / totalStars) * 100).toFixed(1)}%.</p>
+        <p className="small muted mt">Each pill rolls its rarity first, then any pill of that rarity is equally likely. Best possible: {RARITY_LABEL[best]}. Offer expires in {friendlyDue(offer.expiresAt - now)}.</p>
       </details>
       <div className="doc-actions split">
-        <button className="btn ghost" onClick={() => { act((s) => dismissMail(s, offer.id)); onClose(); }}>Decline</button>
-        <button className="btn primary big" disabled={state.cash < offer.price} onClick={buy}>Open · {money(offer.price)}</button>
+        <button className="btn ghost" onClick={() => { act((s) => dismissMail(s, offer.id)); onClose(); }}>Not now</button>
+        <button className="btn primary big" disabled={state.cash < offer.price} onClick={buy}>Open · {gold(offer.price)}</button>
       </div>
     </FocusFrame>
   );
