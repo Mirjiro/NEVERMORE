@@ -199,3 +199,29 @@ describe("Save compatibility", () => {
     expect(collectCopy(s, s.copier!.endsAt).quantity).toBe(5);
   });
 });
+
+describe("Balance: faster mail, richer confidential orders", () => {
+  it("first mail offer arrives within ~1 minute, then every 4–7 minutes", async () => {
+    const { BALANCE } = await import("../src/config/balance");
+    const s = fresh();
+    advance(s, T0 + BALANCE.mail.firstMailMs, seeded(3));
+    expect(s.mail.filter((m) => m.status === "sealed").length).toBe(1);
+    expect(s.nextMailAt - s.lastTickAt).toBeLessThanOrEqual(7 * 60_000);
+  });
+  it("old saves on the slow timetable get pulled forward", () => {
+    const s = fresh();
+    s.nextMailAt = T0 + 60 * 60_000; // an hour away
+    advance(s, T0 + 1000, seeded(2));
+    expect(s.nextMailAt - s.lastTickAt).toBeLessThanOrEqual(7 * 60_000);
+  });
+  it("confidential orders pay 2.5× an ordinary order for the same pills and sender", async () => {
+    const { orderPayout } = await import("../src/engine/game");
+    const s = fresh();
+    const lines: OrderLine[] = [{ pillId: "zen", quantity: 2, minStar: 0 }];
+    const sender = { name: "X", kind: "Customer" as const, payoutMult: 1 };
+    const normal = orderPayout(s, lines, sender, false, () => 0.5);
+    const secret = orderPayout(s, lines, sender, true, () => 0.5);
+    expect(secret / normal).toBeGreaterThanOrEqual(2.4);
+    expect(secret / normal).toBeLessThanOrEqual(2.6);
+  });
+});

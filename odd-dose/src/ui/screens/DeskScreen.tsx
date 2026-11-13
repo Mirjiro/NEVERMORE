@@ -65,7 +65,7 @@ export function DeskScreen() {
                     ))}
                   </span>
                   <span className="paper-foot">
-                    <strong>{money(o.payout)}</strong>
+                    <strong>{money(o.payout)}{o.confidential && <span className="premium-tag">Premium</span>}</strong>
                     <span className={o.status === "expired" ? "warn" : "muted"}>{o.status === "expired" ? "Expired" : `Due ${friendlyDue(o.expiresAt - now)}`}</span>
                   </span>
                   {o.status === "expired" && <span className="stamp-mark expired-mark">Expired</span>}
@@ -251,7 +251,7 @@ function OrderDoc({ id, onClose, onShipped }: { id: string; onClose: () => void;
       </div>
 
       <div className="order-foot">
-        <div><span className="muted small">Reward</span><div className="payout">{money(order.payout)}</div></div>
+        <div><span className="muted small">Reward{order.confidential && <span className="premium-tag">Premium</span>}</span><div className="payout">{money(order.payout)}</div></div>
         <div className="due"><span className="muted small">Due</span><div>{order.status === "expired" ? <span className="warn">Expired</span> : friendlyDue(order.expiresAt - now)}</div></div>
       </div>
 

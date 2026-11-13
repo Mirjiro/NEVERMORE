@@ -92,7 +92,8 @@ export const BALANCE = {
     payoutMult: [1.4, 1.9] as [number, number],
     confidentialFromLevel: 2,
     confidentialChance: 0.18,
-    confidentialPayoutBonus: 1.6,
+    /** Confidential requests pay this much more than an ordinary order for the same pills. */
+    confidentialPayoutBonus: 2.5,
     starOrdersFromLevel: 3,
     starOrderChance: 0.08,
     /** Chance an order asks for an undiscovered pill whose parents are both Known. */
@@ -108,8 +109,9 @@ export const BALANCE = {
     offlineCatchUp: 1,
   },
   mail: {
-    intervalMs: [12 * MIN, 20 * MIN] as [number, number],
-    maxOffers: 3,
+    firstMailMs: 1 * MIN,
+    intervalMs: [4 * MIN, 7 * MIN] as [number, number],
+    maxOffers: 4,
     offlineCatchUp: 1,
     offerLifetimeMs: 36 * HOUR,
   },

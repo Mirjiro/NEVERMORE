@@ -208,7 +208,7 @@ export function createInitialState(now: number, rng: Rng = Math.random): GameSta
     stats: { shipments: 0, revenue: 0, pillsMade: 0, machineRuns: 0, copierRuns: 0, scans: 0, mailOpened: 0, spentUpgrades: 0 },
     nextOrderAt: now + 2 * 60_000,
     nextNewsAt: now + 4 * 60_000,
-    nextMailAt: now + 3 * 60_000,
+    nextMailAt: now + BALANCE.mail.firstMailMs,
     nextHistoryAt: now,
     valueHistory: [],
     pendingReactions: [],
@@ -290,6 +290,8 @@ export function advance(s: GameState, now: number, rng: Rng = Math.random): void
   for (const m of s.mail) if (m.status === "sealed" && m.expiresAt <= now) m.status = "expired";
   s.mail = s.mail.filter((m) => m.status === "sealed" || now - m.createdAt < 6 * 3_600_000).slice(0, 12);
   made = 0;
+  // Older saves may have mail scheduled on the previous, slower timetable.
+  s.nextMailAt = Math.min(s.nextMailAt, now + BALANCE.mail.intervalMs[1]);
   while (s.nextMailAt <= now) {
     const sealed = s.mail.filter((m) => m.status === "sealed").length;
     if (sealed >= BALANCE.mail.maxOffers || made >= BALANCE.mail.offlineCatchUp) {

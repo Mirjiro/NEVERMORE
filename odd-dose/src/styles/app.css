@@ -295,6 +295,7 @@ button.pcard-compact:hover:not(:disabled) { border-color: var(--line-2); transfo
 .order-foot { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; padding-top: 12px; border-top: 1px dashed rgba(90,70,40,.25); }
 .payout { font-family: var(--mono); font-size: 28px; font-weight: 600; }
 .due { text-align: right; font-weight: 600; }
+.premium-tag { display: inline-block; margin-left: 8px; padding: 1px 7px; border-radius: 4px; font-family: var(--mono); font-size: 9.5px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: #fff; background: var(--ink-red); vertical-align: 2px; }
 .stamp-hint { min-height: 40px; display: flex; align-items: center; justify-content: center; margin-top: 10px; }
 .hint-pulse { font-size: 13.5px; font-weight: 600; color: var(--ink-red); display: inline-flex; align-items: center; gap: 8px; animation: hint 1.6s ease-in-out infinite; }
 .hint-pulse::before { content: ""; width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--ink-red); animation: ripple 1.6s ease-out infinite; }
