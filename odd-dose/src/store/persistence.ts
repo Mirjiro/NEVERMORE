@@ -20,7 +20,8 @@ export function parseSave(raw: string): GameState {
   }
   const base = createInitialState(data.createdAt ?? Date.now());
   // Fill any fields missing from older saves, then repair invariants.
-  return sanitize({ ...base, ...data, stats: { ...base.stats, ...data.stats }, market: { ...base.market, ...data.market } });
+  // econVersion must come from the save itself (a fresh game's default would skip one-time migrations).
+  return sanitize({ ...base, ...data, econVersion: data.econVersion, stats: { ...base.stats, ...data.stats }, market: { ...base.market, ...data.market } });
 }
 
 export function saveGame(s: GameState, key = SAVE_KEY) {

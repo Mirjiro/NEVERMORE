@@ -96,6 +96,8 @@ export interface Order {
   confidential: boolean;
   status: "open" | "shipped" | "expired";
   shippedAt?: number;
+  /** How the reward was calculated (v1.6+). Older orders may not have it. */
+  breakdown?: { base: number; bonuses: { label: string; amount: number }[] };
 }
 
 export interface NewsItem {
@@ -205,6 +207,8 @@ export interface GameState {
   nextMailAt: number;
   nextHistoryAt: number;
   valueHistory: { at: number; value: number }[];
+  /** Economy revision applied to this save (used for one-time migrations). */
+  econVersion?: number;
   /** Scheduled follow-up reactions. */
   pendingReactions: { at: number; orderId: string }[];
 }

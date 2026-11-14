@@ -288,3 +288,9 @@ button.pcard-card:active { transform: translateY(1px) scale(.97); transition-dur
 .st-run { display: flex; align-items: center; gap: 4px; }
 .st-bar { flex: 1; height: 5px; margin-left: 8px; border-radius: 3px; background: rgba(0,0,0,.1); overflow: hidden; }
 .st-bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--brass-lo), var(--brass-hi)); transition: width 1s linear; }
+
+/* v1.6 reward breakdown */
+.line-value { margin-left: 8px; font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--ink-2); }
+.reward-breakdown { display: flex; flex-direction: column; gap: 3px; margin: -4px 0 12px; padding: 8px 12px; border-radius: 10px; background: rgba(0,0,0,.035); font-size: 13px; }
+.reward-breakdown span { display: flex; justify-content: space-between; gap: 10px; }
+.reward-breakdown b { font-family: var(--mono); font-weight: 600; }

@@ -219,8 +219,9 @@ describe("Balance: faster mail, richer confidential orders", () => {
     const s = fresh();
     const lines: OrderLine[] = [{ pillId: "zen", quantity: 2, minStar: 0 }];
     const sender = { name: "X", kind: "Customer" as const, payoutMult: 1 };
-    const normal = orderPayout(s, lines, sender, false, () => 0.5);
-    const secret = orderPayout(s, lines, sender, true, () => 0.5);
+    void sender;
+    const normal = orderPayout(s, lines, false).total;
+    const secret = orderPayout(s, lines, true).total;
     expect(secret / normal).toBeGreaterThanOrEqual(2.4);
     expect(secret / normal).toBeLessThanOrEqual(2.6);
   });

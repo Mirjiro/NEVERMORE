@@ -151,19 +151,20 @@ describe("machine", () => {
 });
 
 describe("copier", () => {
-  it("10+11. Happy ×11 is free, takes 3 min and makes exactly 11", () => {
+  it("10+11. Happy ×11 is free, takes 11 × the Common copy time and makes exactly 11", () => {
     const s = fresh();
     const q = copierQuote(s, "happy", 11);
-    expect(q.ms).toBe(180_000);
+    const MS = 11 * BALANCE.copier.msPerPill.common;
+    expect(q.ms).toBe(MS);
     const before = availableSpecimens(s, "happy").length;
     startMachine(s, "machine_1", "calm", "calm", T0); // copier works while machine busy
     startCopy(s, "happy", 11, T0);
     expect(s.cash).toBe(BALANCE.start.cash);
-    expect(() => collectCopy(s, T0 + 179_000)).toThrow(GameError);
-    const out = collectCopy(s, T0 + 180_000);
+    expect(() => collectCopy(s, T0 + MS - 1000)).toThrow(GameError);
+    const out = collectCopy(s, T0 + MS);
     expect(out.quantity).toBe(11);
     expect(availableSpecimens(s, "happy").length).toBe(before + 11);
-    expect(() => collectCopy(s, T0 + 180_000)).toThrow(GameError);
+    expect(() => collectCopy(s, T0 + MS)).toThrow(GameError);
   });
   it("rejects unknown pills and oversize batches; works at 0g", () => {
     const s = fresh();
@@ -385,7 +386,7 @@ describe("HQ & progression", () => {
     for (const o of s.orders.filter((x) => x.status === "open" && ["calm", "bittersweet"].includes(x.lines[0].pillId))) shipOrder(s, o.id, now, rng);
     // manufacture
     startCopy(s, "happy", 11, now, rng);
-    now += 180_000;
+    now += copierQuote(s, "happy", 11).ms;
     collectCopy(s, now);
     // upgrade
     buyUpgrade(s, "scanner");

@@ -1,5 +1,23 @@
 # ODD DOSE — Changelog
 
+## v1.6 — Gold economy & shipping rebalance
+- **Central pill values** (`BALANCE.values`, `src/engine/values.ts`): Quick Sell 15 / 75 / 400 / 1,600 / 6,000g and
+  ship value 40 / 200 / 950 / 3,800 / 14,000g (Common → Secret). One star multiplier `[1, 5, 25]` for Quick Sell,
+  shipping and BACKDOOR.
+- **Order reward = Σ ship value × quantity** (Angry ×3 + Manic ×1 = 320g; Ruin ×2 + Happy ×5 = 2,100g). Removed the
+  random ×1.4–1.9, sender multipliers and the popularity pay bonus (popularity still speeds up orders). Kept only
+  labelled bonuses: Confidential premium ×2.5 and Sales Team +10%/tier. Each order shows a per-line value and a
+  breakdown; ★ lines pay the ★ value and consume the ★ specimen.
+- **BACKDOOR** reference price is now the ship value (market index, bid/ask spreads, stock and FIRE list unchanged).
+- **Balanced against time** (Copier stays free): Copier time per pill Common 2 min, Rare 8 min, Epic 40 min,
+  Legendary 2 h, Secret 6 h (Happy ×11 is now 22 min). XP per shipped Gold 0.5 → 0.1 because rewards are ~5× higher.
+  Mail offer prices now follow the values (expected Quick Sell value × 1.3, 8% off 3+ pulls).
+- **Saves:** one-time migration raises open orders to the new reward (never lowers a promised reward; shipped/expired
+  untouched; Gold, inventory, jobs and progress unchanged). Fixed during testing: the migration was skipped for real
+  saves because a fresh game's marker was merged in on load.
+- **Simulated (perfect always-on player, BACKDOOR locked):** Level 5 in ~6.5 h; 10 h ≈ 18,700g from orders vs ~450g
+  from Quick Sell; 0g/no pills → ~900g in 1 h; copy-and-Quick-Sell alone ≈ 345g/h. 114 tests.
+
 ## v1.5 — Critical economy fix
 Reported: Level 3 with 38g, Copier needed ~43g, orders asked for undiscovered Epics (e.g. Ruin ×2 + Happy ×5).
 Reproduced with the engine: ~1 in 6 Level 3 orders required an undiscovered Epic; 11 Happy cost 55g to copy;

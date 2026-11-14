@@ -188,3 +188,13 @@ Snapshot before this pass: git tag `odd-dose-v1.1.1-snapshot`. Full details in `
   minute-by-minute player — tune `orders.payoutMult` / `orders.intervalMs` if progression feels too fast).
   Browser: recreated Level-3 38g save → tray batch migrated, Copier free, "Copier time" on orders, no errors.
 - Known: orders already in an old save (e.g. the reported Ruin order) stay until they expire (no penalty).
+
+---
+
+## v1.6 — Gold economy & shipping rebalance
+- Values table + star multiplier in `BALANCE.values`; order rewards from ship value with a labelled breakdown;
+  Copier timings and XP rate rebalanced; mail priced from values; BACKDOOR references ship value; save migration.
+- Verified: 114 tests (`tests/v16.test.ts` covers the 10 requested scenarios, exact payout examples, star premiums,
+  migration through the real loader, BACKDOOR/mail/Quick Sell arbitrage). Browser: old 75g order → 320g with line
+  values, Gold unchanged, Quick Sell shows "orders pay 40g", no cost labels, no console errors.
+- Tuning knobs: `values`, `copier.msPerPill`, `company.xp.shipPerDollar`, `orders.intervalMs`, `mail.priceOverQuickSellEV`.

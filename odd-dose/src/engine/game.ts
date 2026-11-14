@@ -12,6 +12,7 @@ import {
 import type { Sender } from "../data/content";
 import { COMMON_IDS, PILLS, PILL_BY_ID, PILL_IDS, RARITY_LABEL, TYPE_LABEL, pillsOfRarity } from "../data/pills";
 import { gold } from "./format";
+import { marketReference, orderPayoutBreakdown, quickSellValue } from "./values";
 import { pick, randInt, randRange, weightedIndex } from "./random";
 import { resolveBreed } from "./recipes";
 import {
@@ -208,6 +209,7 @@ export function createInitialState(now: number, rng: Rng = Math.random): GameSta
     nextHistoryAt: now,
     valueHistory: [],
     pendingReactions: [],
+    econVersion: 2,
   };
   for (let i = 0; i < BALANCE.machine.maxMachines; i++) s.machines.push({ id: `machine_${i + 1}`, job: null });
   for (const id of COMMON_IDS) {
@@ -480,7 +482,8 @@ export function speedUpCopy(s: GameState, now: number): number {
 
 /** Fixed Gold for one pill of this exact star tier, sold straight from the Vault. */
 export function quickSellPrice(pillId: string, star: Star): number {
-  return BALANCE.quickSell.price[pillDef(pillId).rarity] * BALANCE.quickSell.starMult[star];
+  pillDef(pillId);
+  return quickSellValue(pillId, star);
 }
 
 /** Sell `quantity` available pills of this exact star tier. Never touches other tiers or reserved pills; pays once. */
@@ -567,14 +570,9 @@ export function frontierPills(s: GameState): PillDef[] {
 
 const ORDER_RARITY_WEIGHT: Record<Rarity, number> = { common: 10, rare: 6, epic: 3, legendary: 1, secret: 0.4 };
 
-export function orderPayout(s: GameState, lines: OrderLine[], sender: Sender, confidential: boolean, rng: Rng): number {
-  const base = lines.reduce((sum, l) => sum + l.quantity * BALANCE.pillValue[PILL_BY_ID[l.pillId].rarity] * BALANCE.stars.valueMult[l.minStar], 0);
-  const pop = 1 + (s.popularity / BALANCE.company.popularity.max) * BALANCE.company.popularity.payoutBonusAtMax;
-  const mult = randRange(rng, BALANCE.orders.payoutMult) * sender.payoutMult * pop * EFFECTS.payoutMult(upgradeTier(s, "sales")) *
-    (confidential ? BALANCE.orders.confidentialPayoutBonus : 1);
-  const quick = lines.reduce((sum, l) => sum + l.quantity * quickSellPrice(l.pillId, l.minStar), 0);
-  const floor = Math.ceil((quick * BALANCE.orders.minPayoutOverQuickSell) / 5) * 5;
-  return Math.max(5, floor, Math.round((base * mult) / 5) * 5);
+/** Order Reward = Σ ship value × quantity, plus clearly labelled bonuses (Confidential premium, Sales Team). */
+export function orderPayout(s: GameState, lines: OrderLine[], confidential: boolean) {
+  return orderPayoutBreakdown(lines, { confidential, salesTier: upgradeTier(s, "sales") });
 }
 
 /** Roughly how long the (free) Copier needs to make an order's pills from scratch. */
@@ -664,7 +662,7 @@ function makeOrder(s: GameState, now: number, rng: Rng, forced?: { sender: Sende
     title: confidentialFile ? "Confidential" : pick(rng, ORDER_TITLES[mainType]),
     description: pick(rng, fresh.length ? fresh : linePool),
     lines,
-    payout: orderPayout(s, lines, sender, confidential, rng),
+    ...(() => { const b = orderPayout(s, lines, confidential); return { payout: b.total, breakdown: { base: b.base, bonuses: b.bonuses } }; })(),
     createdAt: now,
     expiresAt: now + randRange(rng, cfg.deadlineMs),
     confidential: confidentialFile,
@@ -771,6 +769,16 @@ export function dismissNews(s: GameState, id: string) {
 
 // ================================================================ mail gacha
 
+/** Sealed-offer price: expected Quick Sell value of its pulls × a margin, so buying just to resell loses Gold. */
+export function mailPrice(odds: Record<Rarity, number>, pulls: number): number {
+  const total = RARITIES.reduce((a, r) => a + odds[r], 0) || 1;
+  const [b, s1, s2] = BALANCE.stars.defaultWeights;
+  const starEv = (b + s1 * BALANCE.values.starMult[1] + s2 * BALANCE.values.starMult[2]) / (b + s1 + s2);
+  const ev = RARITIES.reduce((a, r) => a + (odds[r] / total) * BALANCE.values.quickSell[r], 0) * starEv;
+  const bulk = pulls >= 3 ? BALANCE.mail.bulkDiscount : 1;
+  return Math.max(5, Math.round((ev * BALANCE.mail.priceOverQuickSellEV * bulk * pulls) / 5) * 5);
+}
+
 function makeMailOffer(s: GameState, now: number, rng: Rng): MailOffer {
   const t = MAIL_TEMPLATES[weightedIndex(rng, [5, 3, 3, 2, 2])];
   return {
@@ -778,7 +786,7 @@ function makeMailOffer(s: GameState, now: number, rng: Rng): MailOffer {
     name: t.name,
     seller: t.seller,
     blurb: t.blurb,
-    price: Math.round(t.priceEach * t.pulls),
+    price: mailPrice(t.odds, t.pulls),
     pulls: t.pulls,
     identified: t.identified,
     odds: { ...t.odds },
@@ -846,13 +854,13 @@ export function buyUpgrade(s: GameState, id: string) {
 // ================================================================ company
 
 export function inventoryValue(s: GameState): number {
-  return s.specimens.reduce((sum, sp) => sum + BALANCE.pillValue[PILL_BY_ID[sp.pillId].rarity] * BALANCE.stars.valueMult[sp.star], 0);
+  return s.specimens.reduce((sum, sp) => sum + quickSellValue(sp.pillId, sp.star), 0);
 }
 
 export function companyValue(s: GameState) {
   const inventory = inventoryValue(s);
   const equipment = UPGRADES.reduce((sum, u) => sum + u.tiers.slice(0, upgradeTier(s, u.id)).reduce((a, t) => a + t.cost, 0), 0) * 0.7 + 500;
-  const discoveries = s.known.reduce((sum, id) => sum + BALANCE.pillValue[PILL_BY_ID[id].rarity] * 5, 0);
+  const discoveries = s.known.reduce((sum, id) => sum + BALANCE.values.ship[PILL_BY_ID[id].rarity] * 2, 0);
   const performance = s.stats.revenue * 0.25 + s.popularity * 20;
   const total = s.cash + inventory + equipment + discoveries + performance;
   return { total: Math.round(total), cash: s.cash, inventory: Math.round(inventory), equipment: Math.round(equipment), discoveries, performance: Math.round(performance) };
@@ -866,7 +874,8 @@ function recordHistory(s: GameState, now: number) {
 // ================================================================ BACKDOOR market
 
 export function marketPrice(s: GameState, pillId: string, star: Star): number {
-  return BALANCE.pillValue[pillDef(pillId).rarity] * (s.market.index[pillId] ?? 1) * BALANCE.stars.valueMult[star];
+  pillDef(pillId);
+  return marketReference(pillId, star) * (s.market.index[pillId] ?? 1);
 }
 export function listingPrice(s: GameState, l: { pillId: string; star: Star; premium: number }): number {
   return Math.max(1, Math.round(marketPrice(s, l.pillId, l.star) * l.premium));
@@ -969,6 +978,16 @@ export function fireList(s: GameState): { pillId: string; change: number }[] {
 /** Repair a loaded save so invariants hold (no orphan reservations, no invalid pills, etc.). */
 export function sanitize(s: GameState): GameState {
   s.cash = Math.max(0, Number.isFinite(s.cash) ? s.cash : 0);
+  // v1.6: open orders get the new ship-value reward if it is higher; promised rewards are never reduced,
+  // shipped/expired orders are untouched (no retroactive Gold).
+  if ((s.econVersion ?? 0) < 2) {
+    for (const o of s.orders) {
+      if (o.status !== "open" || !o.lines.every((l) => PILL_BY_ID[l.pillId])) continue;
+      const b = orderPayoutBreakdown(o.lines, { confidential: o.confidential, salesTier: s.upgrades?.sales ?? 0 });
+      if (b.total > o.payout) { o.payout = b.total; o.breakdown = { base: b.base, bonuses: b.bonuses }; }
+    }
+    s.econVersion = 2;
+  }
   // v1.5: the Starter tray was folded into the (now free) Copier.
   const legacyTray = (s as GameState & { freeCopier?: CopierJob | null }).freeCopier;
   if (legacyTray) {

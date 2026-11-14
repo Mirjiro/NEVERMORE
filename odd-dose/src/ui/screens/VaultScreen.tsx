@@ -7,6 +7,7 @@ import {
 import { RARITIES } from "../../engine/types";
 import type { Rarity, Star } from "../../engine/types";
 import { useGame } from "../../store/GameContext";
+import { shipValue } from "../../engine/values";
 import type { Tab } from "../App";
 import { PillArt } from "../components/PillArt";
 import { PillCard } from "../components/PillCard";
@@ -156,7 +157,7 @@ function PillDetail({ pillId, star, onClose, onMachine, onCopy }: { pillId: stri
       <section className="quick-sell">
         <div className="qs-head">
           <h3>Quick sell</h3>
-          <span className="muted small">{gold(unit)} each{star > 0 ? ` (${"★".repeat(star)})` : ""}</span>
+          <span className="muted small">{gold(unit)} each{star > 0 ? ` (${"★".repeat(star)})` : ""} · orders pay {gold(shipValue(pillId, star))}</span>
         </div>
         {available < 1 ? (
           <p className="muted small">{stack?.reserved ? "These pills are in a Machine right now." : "None left to sell."}</p>

@@ -45,18 +45,26 @@ export const BALANCE = {
     /** The Copier is FREE to run. Time and batch size are the only limits. */
     /** Largest batch per rarity before upgrades (Copier Tray tiers double it). */
     maxBatch: { common: 11, rare: 6, epic: 3, legendary: 1, secret: 1 } as Record<Rarity, number>,
-    /** Time per pill (before Faster Copier upgrades). Happy ×11 = 3 minutes. */
-    msPerPill: { common: (3 * MIN) / 11, rare: 1 * MIN, epic: 4 * MIN, legendary: 15 * MIN, secret: 45 * MIN } as Record<Rarity, number>,
+    /** Time per pill (before Faster Copier upgrades). Tuned so copy-and-Quick-Sell alone earns ~450–1,000g per hour
+     *  (Quick Sell value ÷ time); contracts are the better income. Happy ×11 = 22 minutes. */
+    msPerPill: { common: 2 * MIN, rare: 8 * MIN, epic: 40 * MIN, legendary: 2 * HOUR, secret: 6 * HOUR } as Record<Rarity, number>,
     minBatchMs: 10 * SEC,
   },
 
   // ---------------------------------------------------------------- quick sell (Vault)
   /** Fixed Gold paid per pill when selling straight from the Vault. Deliberately below contract
    *  rewards, BACKDOOR bids and Copier costs, so copying to quick-sell always loses Gold. */
-  quickSell: {
-    price: { common: 2, rare: 18, epic: 88, legendary: 440, secret: 2400 } as Record<Rarity, number>,
-    /** Multipliers for [Base, ★, ★★]. */
-    starMult: [1, 5, 30] as [number, number, number],
+  /**
+   * PILL VALUES — the single source of every pill price (see src/engine/values.ts).
+   *   quickSell: fixed Gold per pill from the Vault (instant, from Level 1)
+   *   ship:      Gold per pill when shipped in a Desk order (always well above Quick Sell)
+   *   starMult:  [Base, ★, ★★] multiplier, shared by Quick Sell, shipping and BACKDOOR
+   * BACKDOOR prices move around `ship` with the live market index.
+   */
+  values: {
+    quickSell: { common: 15, rare: 75, epic: 400, legendary: 1600, secret: 6000 } as Record<Rarity, number>,
+    ship: { common: 40, rare: 200, epic: 950, legendary: 3800, secret: 14000 } as Record<Rarity, number>,
+    starMult: [1, 5, 25] as [number, number, number],
   },
 
   // ---------------------------------------------------------------- stars
@@ -65,8 +73,6 @@ export const BALANCE = {
     defaultWeights: [98.4, 1.5, 0.1] as [number, number, number],
     /** Optional per-rarity overrides. */
     byRarity: {} as Partial<Record<Rarity, [number, number, number]>>,
-    /** Value multipliers for [Base, ★, ★★]. */
-    valueMult: [1, 6, 40] as [number, number, number],
   },
 
   // ---------------------------------------------------------------- scanner
@@ -75,10 +81,6 @@ export const BALANCE = {
     outcomes: { identify: 35, clue: 30, transform: 20, destroy: 15 },
   },
 
-  // ---------------------------------------------------------------- value
-  /** Reference value of a Base pill by rarity (orders, market, company value). */
-  pillValue: { common: 8, rare: 45, epic: 220, legendary: 1100, secret: 6000 } as Record<Rarity, number>,
-
   // ---------------------------------------------------------------- orders
   orders: {
     maxActive: 5,
@@ -86,10 +88,9 @@ export const BALANCE = {
     deadlineMs: [24 * HOUR, 72 * HOUR] as [number, number],
     /** Max orders generated to "catch up" after the game was closed. */
     offlineCatchUp: 2,
-    payoutMult: [1.4, 1.9] as [number, number],
     confidentialFromLevel: 2,
     confidentialChance: 0.18,
-    /** Confidential requests pay this much more than an ordinary order for the same pills. */
+    /** Confidential (special) requests pay this multiple of the ordinary reward, shown as a labelled premium. */
     confidentialPayoutBonus: 2.5,
     starOrdersFromLevel: 3,
     starOrderChance: 0.08,
@@ -97,8 +98,6 @@ export const BALANCE = {
     frontierChance: 0.3,
     quantity: { common: [2, 6], rare: [1, 3], epic: [1, 2], legendary: [1, 1], secret: [1, 1] } as Record<Rarity, [number, number]>,
     reactionDelayMs: [2 * MIN, 8 * MIN] as [number, number],
-    /** Every order pays at least this multiple of what its pills would fetch by Quick Sell. */
-    minPayoutOverQuickSell: 3,
     /** Ordinary orders only ask for Known pills of a rarity once the company reaches this level. */
     knownRarityFromLevel: { common: 1, rare: 1, epic: 4, legendary: 6, secret: 8 } as Record<Rarity, number>,
     /** Ordinary orders may ask for an undiscovered pill (both parents Known) of this rarity from this level.
@@ -118,6 +117,10 @@ export const BALANCE = {
     maxOffers: 4,
     offlineCatchUp: 1,
     offerLifetimeMs: 36 * HOUR,
+    /** Offer price = expected Quick Sell value of its pulls × this (so mail is for collecting/shipping, not reselling). */
+    priceOverQuickSellEV: 1.3,
+    /** Multi-pull crates (3+) get this discount. */
+    bulkDiscount: 0.92,
   },
 
   // ---------------------------------------------------------------- company
@@ -125,7 +128,8 @@ export const BALANCE = {
     /** Total XP needed to reach each level (index 0 = level 1). */
     levelXp: [0, 120, 350, 800, 1600, 3000, 5200, 8500, 13000, 20000],
     xp: {
-      shipPerDollar: 0.5,
+      /** XP per Gold earned from shipping (lowered in v1.6 when ship values rose ~5×). */
+      shipPerDollar: 0.1,
       discovery: { common: 0, rare: 40, epic: 120, legendary: 400, secret: 1200 } as Record<Rarity, number>,
     },
     popularity: {
@@ -135,7 +139,6 @@ export const BALANCE = {
       /** Popularity lost per real hour (gentle). */
       decayPerHour: 0.5,
       /** At 100 popularity: payouts × (1 + this). */
-      payoutBonusAtMax: 0.5,
       /** At 100 popularity: order interval × (1 − this). */
       orderSpeedAtMax: 0.4,
     },

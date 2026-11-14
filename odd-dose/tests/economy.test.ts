@@ -42,14 +42,18 @@ function play(s: GameState, minutes: number, rng: Rng, opts: { sellSpare?: boole
     // Free Copier: make what orders need (incl. missing parents), otherwise something to sell.
     if (!s.copier) {
       const parentNeed = unknownNeed && PILL_BY_ID[unknownNeed.pillId].parents!.find((p) => isKnown(s, p) && availableSpecimens(s, p).length < 2);
-      const target = needs.find((l) => isKnown(s, l.pillId))?.pillId ?? parentNeed ?? "happy";
-      startCopy(s, target, copierMaxBatch(s, target), t, rng);
+      // Copy exactly what an order still needs; with nothing needed, run a full batch to sell.
+      const need = needs.find((l) => isKnown(s, l.pillId));
+      if (need) startCopy(s, need.pillId, Math.min(need.missing, copierMaxBatch(s, need.pillId)), t, rng);
+      else if (parentNeed) startCopy(s, parentNeed, 2, t, rng);
+      else startCopy(s, "happy", copierMaxBatch(s, "happy"), t, rng);
     }
     // Sell spare pills nobody has asked for.
     if (opts.sellSpare) {
       for (const p of PILLS) {
         if (!isKnown(s, p.id)) continue;
-        const wanted = needs.filter((l) => l.pillId === p.id).reduce((a, l) => a + l.quantity, 0) + 2; // keep a couple for breeding
+        // keep everything any open order asks for, plus a couple for breeding
+        const wanted = open.flatMap((o) => o.lines).filter((l) => l.pillId === p.id).reduce((a, l) => a + l.quantity, 0) + 2;
         const spare = countExact(s, p.id, 0) - wanted;
         if (spare > 0) quickSell(s, p.id, 0, spare);
       }
@@ -88,7 +92,7 @@ describe("The Copier is free", () => {
     expect(per("zen")).toBeGreaterThan(per("happy"));
     s.upgrades.copierBatch = 1; s.upgrades.copierSpeed = 1;
     expect(copierMaxBatch(s, "happy")).toBe(22);
-    expect(copierQuote(s, "happy", 11).ms).toBeLessThan(180_000);
+    expect(copierQuote(s, "happy", 11).ms).toBeLessThan(11 * BALANCE.copier.msPerPill.common);
   });
   it("still has a real timer — no instant duplication", () => {
     const s = broke(2);
@@ -162,7 +166,7 @@ describe("Quick Sell", () => {
       for (let i = 0; i < 5; i++) { s.nextOrderAt = s.lastTickAt; s.orders = s.orders.filter((o) => o.status !== "open"); advance(s, s.lastTickAt + 1, seeded(seed * 7 + i)); }
       for (const o of s.orders) {
         const quick = o.lines.reduce((a, l) => a + l.quantity * quickSellPrice(l.pillId, l.minStar), 0);
-        expect(o.payout).toBeGreaterThanOrEqual(quick * BALANCE.orders.minPayoutOverQuickSell);
+        expect(o.payout).toBeGreaterThan(quick * 2);
       }
     }
   });

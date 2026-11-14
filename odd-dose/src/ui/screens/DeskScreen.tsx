@@ -7,6 +7,7 @@ import type { MailOffer, NewsItem, Order } from "../../engine/types";
 import { useGame } from "../../store/GameContext";
 import { PillArt } from "../components/PillArt";
 import { formatDuration, gold } from "../components/common";
+import { shipValue } from "../../engine/values";
 import { sfx } from "../sfx";
 import { allChecked, applyStamp, canShip, canStamp, friendlyDue, initialFlow, toggleCheck } from "../shipFlow";
 import type { ShipFlow, Stamp } from "../shipFlow";
@@ -244,13 +245,16 @@ function OrderDoc({ id, onClose, onShipped }: { id: string; onClose: () => void;
               <span className="box" aria-hidden />
               <PillArt pillId={line.pillId} silhouette={!isKnown(state, line.pillId)} size={46} />
               <span className="check-text">
-                <strong>{p.name}{line.minStar > 0 && <span className="stars"> {"★".repeat(line.minStar)}</span>} ×{line.quantity}</strong>
+                <strong>{p.name}{line.minStar > 0 && <span className="stars"> {"★".repeat(line.minStar)}</span>} ×{line.quantity}
+                  <span className="line-value">{gold(shipValue(line.pillId, line.minStar) * line.quantity)}</span></strong>
                 <span className={`small ${ok ? "muted" : "warn"}`}>{ok ? `You have ${available}` : `Need ${line.quantity - available} more`}</span>
               </span>
             </label>
           );
         })}
       </div>
+
+      <RewardBreakdown order={order} />
 
       <div className="order-foot">
         <div><span className="muted small">Reward{order.confidential && <span className="premium-tag">Premium</span>}</span><div className="payout">{gold(order.payout)}</div></div>
@@ -359,5 +363,21 @@ function NewsDoc({ item, onClose }: { item?: NewsItem; onClose: () => void }) {
         <button className="btn ghost" onClick={() => { act((s) => dismissNews(s, item.id)); onClose(); }}>File away</button>
       </div>
     </FocusFrame>
+  );
+}
+
+/** How the reward adds up: ship value × quantity per line, then labelled bonuses. No hidden adjustments. */
+function RewardBreakdown({ order }: { order: Order }) {
+  const base = order.lines.reduce((a, l) => a + shipValue(l.pillId, l.minStar) * l.quantity, 0);
+  const bonuses = order.breakdown?.bonuses ?? [];
+  const listed = base + bonuses.reduce((a, b) => a + b.amount, 0);
+  const extra = order.payout - listed; // older orders that were promised more keep their higher reward
+  if (!bonuses.length && extra <= 0) return null;
+  return (
+    <div className="reward-breakdown">
+      <span><span className="muted">Pills</span><b>{gold(base)}</b></span>
+      {bonuses.map((b) => <span key={b.label}><span className="muted">{b.label}</span><b>+{gold(b.amount)}</b></span>)}
+      {extra > 0 && <span><span className="muted">Agreed earlier</span><b>+{gold(extra)}</b></span>}
+    </div>
   );
 }

@@ -4,7 +4,8 @@ import type { Rarity } from "../engine/types";
 export interface Sender {
   name: string;
   kind: "Customer" | "Private client" | "Company" | "Researcher" | "University" | "Hospital" | "Government" | "Anonymous" | "Organization";
-  payoutMult: number;
+  /** Unused since v1.6 (no hidden pay adjustments). */
+  payoutMult?: number;
 }
 
 export const SENDERS: Sender[] = [

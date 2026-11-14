@@ -29,12 +29,22 @@ Keep `BUILD_STATUS.md` (what exists / what's next) and `CHANGELOG.md` (what chan
 - **Currency is Gold**, shown as `1,250g` via `gold()` in `src/ui/components/common.tsx`. The save field is still `cash`
   (kept for save compatibility). Never show `$`.
 - **No Charge.** Removed in v1.4 by the owner. Gold is the only spendable resource; old saves' Charge fields are dropped on load.
-- **Economy (v1.5, owner-approved):** the Copier is FREE for every rarity — limited only by time and per-rarity batch
-  size (`BALANCE.copier`). Gold comes from contracts and Vault Quick Sell (contracts pay ≥ 3× Quick Sell).
-  Rushing (Machine or Copier) always costs ≥ 1.25× the instant sale value of what it finishes, so rush-and-sell
-  can never mint Gold. Ordinary orders only ask for Known pills of rarities the level allows, or a one-step
-  discovery within the level's limit (`knownRarityFromLevel` / `discoveryRarityFromLevel`); Confidential orders are the
-  marked special commissions. No state may make earning Gold impossible (`tests/economy.test.ts`).
+- **Economy (v1.6, owner-approved).** All pill prices come from `BALANCE.values` via `src/engine/values.ts`
+  (never compute prices in UI):
+  | Rarity | Quick Sell | Ship value |
+  |---|---|---|
+  | Common | 15g | 40g |
+  | Rare | 75g | 200g |
+  | Epic | 400g | 950g |
+  | Legendary | 1,600g | 3,800g |
+  | Secret | 6,000g | 14,000g |
+  Star multiplier `[1, 5, 25]` (Base, ★, ★★) is shared by Quick Sell, shipping and BACKDOOR.
+  **Order reward = Σ ship value × quantity**, plus only labelled bonuses (Confidential premium ×2.5, Sales Team +10%/tier),
+  shown as a breakdown. No random or sender multipliers. BACKDOOR prices = ship value × live market index.
+  The Copier is FREE; Gold is balanced against **time**: `BALANCE.copier.msPerPill` (Common 2 min … Secret 6 h) keeps
+  copy-and-Quick-Sell to ~350–1,000g/h; `company.xp.shipPerDollar = 0.1`. Rushing costs ≥ 1.25× the instant sale value.
+  Mail prices = expected Quick Sell value × `mail.priceOverQuickSellEV` (1.3). Ordinary orders follow
+  `knownRarityFromLevel` / `discoveryRarityFromLevel`. No state may make earning Gold impossible (`tests/economy.test.ts`, `tests/v16.test.ts`).
 - Exactly four tabs: Desk, Lab, Vault, HQ. Notebook is a floating button, not a tab. BACKDOOR lives inside HQ.
 - No new currencies, ingredients, catalysts, research steps, minigames or extra navigation tabs.
 - Saves must stay compatible. `tests/fixtures/save-v1.0.json` is a real older save the tests load.
@@ -52,6 +62,7 @@ Keep `BUILD_STATUS.md` (what exists / what's next) and `CHANGELOG.md` (what chan
 | UI | `src/ui/App.tsx`, `screens/` (Desk, Lab, Vault, HQ, Backdoor), `components/` (PillCard, PillArt, Notebook, RevealOverlay…) |
 | Desk shipping flow | `src/ui/shipFlow.ts` (pure, tested) |
 | Startup / sign-in | `src/ui/Gate.tsx` (splash → welcome/sign-in), `src/store/profiles.ts` (device-local players, one save slot per name) |
+| Pill values | `src/engine/values.ts` (quickSellValue, shipValue, marketReference, orderPayoutBreakdown) — tunables in `BALANCE.values` |
 | Economy tests | `tests/economy.test.ts` — a no-cheats bot plays every stuck scenario on the real engine |
 | Account sync | `src/store/cloud.ts` — on claude.ai, remembered player + saves in `data/users/<id>/` (publish with `capabilities: {db: {}, user: {}}`) |
 | Sound | `src/ui/sfx.ts` (generated Web Audio, mute stored in localStorage) |
@@ -62,7 +73,6 @@ Keep `BUILD_STATUS.md` (what exists / what's next) and `CHANGELOG.md` (what chan
 
 - Order text = short title from the main pill's Type + one sentence from the sender; pills live in the checklist only.
 - Confidential orders pay `confidentialPayoutBonus` (2.5×) and carry a Premium tag.
-- Quick Sell: common 2g, rare 18g, epic 88g, legendary 440g, secret 2400g; ★ ×5, ★★ ×30 (`BALANCE.quickSell`).
 - Mail offers every 4–7 min, first after ~1 min, max 4 sealed on the desk.
 - Shipping/selling/Machine always use the lowest qualifying star tier first.
 - Familiar Machine results reveal quickly; new pills get the full sequence; new Legendary/Secret the biggest.
